@@ -218,3 +218,33 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# OxHack: local credentials (commit safe example templates only)
+.env.*
+!.env.example
+!.env.*.example
+
+# JavaScript / TypeScript dependencies and generated output
+# These rules support future stack choices; keep the chosen lockfile tracked.
+node_modules/
+.next/
+.nuxt/
+.output/
+.svelte-kit/
+.vite/
+.turbo/
+.parcel-cache/
+coverage/
+*.tsbuildinfo
+.vercel/
+.netlify/
+
+# Local tool state, personal instructions and scratch files
+CLAUDE.local.md
+.claude/settings.local.json
+.local/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini

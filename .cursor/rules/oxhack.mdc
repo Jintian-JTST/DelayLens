@@ -1,0 +1,10 @@
+---
+description: Shared OxHack project instructions for all development tasks
+alwaysApply: true
+---
+
+Read and follow the repository's root `AGENTS.md` as the canonical project-wide
+coding guidance. Keep shared rules there rather than duplicating them here.
+
+Read `docs/PROJECT.md` for relevant requirements and architecture, and
+`docs/PROGRESS.md` for progress and handoffs.

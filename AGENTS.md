@@ -10,13 +10,15 @@ code until a product task is agreed with the user or team.
 
 ## Tool and skill discovery
 
-- At the start of each session, inspect the available connectors, MCP tools,
-  plugins and skills, then match the task to relevant capabilities.
+- At the start of each session, inspect the connectors, MCP tools, plugins and
+  skills actually exposed by this agent's environment. Do not assume a teammate's
+  tools, accounts, global instructions, `/skills` command or skill paths exist here.
 - Use relevant connected tools proactively for user data, current information and
   external systems. Read the matching `SKILL.md` before applying a skill.
 - Run independent reads in parallel when supported; keep dependent actions in order.
-- If a capability is unavailable, state the limitation and the setup needed.
-  Never claim an external action succeeded from a draft, plan or configuration alone.
+- If an optional capability is unavailable, use an available equivalent and continue
+  independent work. Report a blocker only for a required capability. Never claim an
+  external action succeeded from a draft, plan or configuration alone.
 
 ## Context and decisions
 
@@ -42,6 +44,25 @@ code until a product task is agreed with the user or team.
   changes consistent with the selected package manager.
 - Keep integrations behind clear boundaries; handle failures, timeouts and invalid
   responses explicitly rather than silently substituting success or fake live data.
+
+## Portable environments and configuration
+
+- Support teammates on Windows, macOS and Linux. Detect the current OS, shell and
+  installed runtime versions before running commands; label any platform-only steps.
+- Use repository-relative paths in shared instructions and configuration. Resolve
+  runtime file paths with the chosen language's path APIs and explicit project roots;
+  never hard-code a developer's username, drive, home folder or tool installation.
+- Handle spaces and Unicode in paths. Match filename case exactly, including imports;
+  do not depend on a case-insensitive filesystem, symlinks or executable bits alone.
+- Keep team requirements, supported runtime versions, package manager, service
+  prerequisites and real setup/check commands in `docs/PROJECT.md` once selected.
+- Keep personal paths, credentials, tool permissions and machine-specific connector
+  settings in user-level configuration or ignored local files. Commit safe example
+  templates and portable team settings only. Ignoring a file does not prevent AI access.
+- Use `.editorconfig` and `.gitattributes` for shared encoding and line endings.
+  Do not change another person's global Git, shell, editor or AI settings as setup.
+- Follow [CONTRIBUTING.md](CONTRIBUTING.md) for onboarding, local configuration and
+  independent workspaces. Local preferences must not silently change team contracts.
 
 ## Testing and debugging
 
@@ -82,8 +103,12 @@ code until a product task is agreed with the user or team.
   another contributor's changes or force push to bypass a conflict.
 - When working with other agents or teammates, agree on file ownership and interfaces
   before concurrent edits. Use subagents only when requested or explicitly authorized.
-- At a substantial handoff, record the owner, affected files, interface decisions,
-  checks run, blockers and next concrete action in `docs/PROGRESS.md`.
+- Give each concurrent task its own branch and clone or worktree. Two branches in the
+  same working directory are not isolation; do not share staging, commits or branch
+  switches across running agents. Coordinate lockfiles and shared API/schema edits.
+- Use one file per task in `docs/tasks/`, based on `docs/tasks/TEMPLATE.md`, for the
+  owner, branch, affected files, interface decisions, checks and next action. Reference
+  those files from `docs/PROGRESS.md`; let the integrator update shared summaries.
 
 ## Priorities and completion
 

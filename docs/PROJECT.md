@@ -45,6 +45,21 @@ Document required environment variable **names** and safe example values when an
 integration is selected. Real credentials belong in ignored local files or the
 selected platform's secret store.
 
+## Reproducible setup (complete when the stack is selected)
+
+| Item | Shared contract |
+| --- | --- |
+| Supported OS, shell and runtime versions | TBD; record platform-specific exceptions |
+| Package manager version and dependency install command | TBD |
+| Development, test, lint and build commands | TBD |
+| Required services and local initialization | TBD |
+| Environment variable names and safe example file | TBD |
+| Concurrent instance configuration (ports, databases, outputs) | TBD |
+
+Use repository-relative paths and explicit working directories. Specify supported
+version ranges and exact commands, and label shell-specific alternatives. Personal
+paths and credentials stay on each machine; follow [CONTRIBUTING.md](../CONTRIBUTING.md).
+
 ## Acceptance and demo plan
 
 - [ ] Define the user's starting state, core action and observable successful result.
@@ -60,6 +75,9 @@ selected platform's secret store.
 | Product and demo | TBD | TBD |
 | Implementation and integrations | TBD | TBD |
 | Verification and submission | TBD | TBD |
+| Integration and shared documentation | TBD | TBD |
+
+Track independently owned tasks using [the task template](tasks/TEMPLATE.md).
 
 ## Decision log
 
@@ -68,5 +86,6 @@ selected platform's secret store.
 | 2026-10-23 | Use root `AGENTS.md` with thin tool-specific entry points | Share one set of coding rules across AI tools. |
 | 2026-10-23 | Preserve the existing MIT license and original repository content | Extend the existing repository. |
 | 2026-10-23 | Leave the product idea and technology stack undecided | Prepare collaboration documents before the team chooses what to build. |
+| 2026-10-23 | Use portable shared settings and independent task workspaces | Support different computers and concurrent human/AI contributions. |
 
 Keep implementation status and handoffs in [PROGRESS.md](PROGRESS.md).

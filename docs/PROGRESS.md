@@ -9,18 +9,21 @@ team's brief in [PROJECT.md](PROJECT.md).
 
 ## Completed
 
-- Cloned `Jintian-JTST/OxHack` into the requested local folder with `origin` and
-  tracking branch `main`.
+- Initialized the repository with shared AI instructions and project documents.
 - Added canonical AI coding rules in root `AGENTS.md` and thin entry points for
   Copilot, Claude Code, Gemini CLI and Cursor.
 - Added a project brief, decision log and this progress/handoff document.
 - Extended the README and inherited Python `.gitignore`; preserved `LICENSE`.
+- Added cross-platform onboarding, local/shared configuration boundaries, independent
+  task workspaces, a per-task handoff template and shared text-file conventions.
+- Corrected inherited ignore rules that hid library source directories.
 
 ## Verification
 
 - Passed: expected file inventory, UTF-8 content, local Markdown links and imports,
   and Cursor rule frontmatter.
-- Passed: original README and Python ignore rules retained; MIT license unchanged.
+- Passed at initialization: original README and Python ignore rules retained; MIT
+  license unchanged. The later portability update removes broad library ignores.
 - Passed: ignore checks for 13 local credential/generated paths and retention checks
   for 17 example, lockfile and project paths.
 - Passed: `git diff --check`.
@@ -28,6 +31,20 @@ team's brief in [PROJECT.md](PROJECT.md).
 There is no application tooling yet; application tests, lint and builds are not
 configured. Instruction files were checked structurally against the linked official
 formats; individual AI clients have not been launched to test automatic loading.
+
+Portability review completed:
+
+- Passed: 14 intended files, UTF-8, exact-case local links/imports and no personal
+  absolute paths in shared files.
+- Passed: 12 local/generated paths ignored; 30 source, template, portable configuration
+  and lockfile paths retained, including nested `src/lib/` directories.
+- Passed: fresh offline clones in paths containing spaces and Unicode, with both
+  `core.autocrlf=true` and `false`; LF text/shell scripts, CRLF Windows command
+  scripts and unchanged binary fixture bytes.
+- Passed: documented worktree commands and isolation of task working files/staging.
+
+These checks ran on Windows. macOS/Linux execution and each AI client's automatic
+rule loading remain unverified; use the explicit `AGENTS.md` reading fallback.
 
 ## Open decisions and next actions
 
@@ -38,9 +55,10 @@ formats; individual AI clients have not been launched to test automatic loading.
 
 ## Active handoffs
 
-No implementation task is assigned yet. Replace the placeholders when handing off
-substantial work; mark completed handoffs and remove stale entries.
+No implementation task is assigned yet. Create a separate file per task using
+[tasks/TEMPLATE.md](tasks/TEMPLATE.md); the integrator lists those files here and
+maintains the milestone summary after integration.
 
-| Task | Owner | Files and interfaces | Checks and result | Blocker or next action |
-| --- | --- | --- | --- | --- |
-| TBD | TBD | TBD | TBD | TBD |
+| Task record | Owner | Status | Next action |
+| --- | --- | --- | --- |
+| Not assigned | TBD | Awaiting product brief | Agree on an MVP and task ownership |

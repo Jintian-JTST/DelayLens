@@ -163,8 +163,8 @@ departure whose estimated chance of being late is within your tolerance
 
 - **Arrivals are inferred, not measured.** Stop events are inferred from TfL
   arrival predictions; no actual arrival times were measured.
-- **One Saturday afternoon.** The usable data covers Sat 24 Oct 2026, roughly
-  14:50-18:00 London time, so it says nothing about weekdays or peak hours.
+- **One Saturday.** The usable data covers Sat 24 Oct 2026, roughly 14:50-21:00
+  London time (final snapshot), so it says nothing about weekdays or peak hours.
 - **Thin data gets no answer.** Below 15 runs there is no recommendation, and
   below 5 runs only sample counts are shown.
 - **Calibration is preliminary.** The `/api/calibration` blocked hold-out scores

@@ -121,7 +121,9 @@ or give the path's directories `o+x` (search only, not listing). Copy again afte
 unset, `/api/ask` is open to anyone and spends the Gemini key.** Never put these values in
 chat, commands or committed files.
 
-Redeploying a change (needs the same authorization as the first deploy):
+Redeploying a change (needs the same authorization as the first deploy). Per PLAN section 8,
+feature freeze is Sunday 09:30, after which role B (David) approves and announces changes, and
+from 11:15 only B-approved, demo-breaking redeploys are made:
 
 ```sh
 git pull --ff-only

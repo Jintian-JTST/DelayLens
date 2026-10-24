@@ -208,7 +208,7 @@ def main() -> int:
             try:
                 committed = flush_pending(settings)
                 LOG.info("database_batches_acknowledged=%d", committed)
-                from .derive import derive_database
+                from .database_derive import derive_database
                 from .store import connect
                 with connect() as connection:
                     events = derive_database(connection)

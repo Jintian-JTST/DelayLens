@@ -3,6 +3,8 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+
+from ingest.database_derive import advance
 from ingest.database_poller import (
     FetchFailure,
     backup,
@@ -11,7 +13,6 @@ from ingest.database_poller import (
     read_batch,
     utc,
 )
-from ingest.derive import advance
 from ingest.settings import Settings, load_routes
 
 T = datetime(2026, 10, 25, 0, 59, tzinfo=UTC)

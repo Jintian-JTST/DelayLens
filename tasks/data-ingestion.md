@@ -2,15 +2,68 @@
 
 - Task ID: `data-ingestion` / D
 - Owner (person / AI tool): Jintian-JTST (D) / Codex
-- Branch: `feat/data`
+- Branches: `feat/data` (database history); `codex/data-validation-60min` (standalone validation and README)
 - Documentation revision branch: `codex/revise-ingestion-plan`
-- Status: claimed; plan revised after review; implementation not verified
+- Status: standalone 60-minute chain verified; four estimated trips; real-data API adapter pending
 - Integrator / reviewer: B for API/schema integration; M for usable segment evidence
 - Updated: 2026-10-24 (Europe/London)
 - Source: [PLAN.md](../PLAN.md), especially sections 1, 3, 4, 6 and 8
 - Record structure: [task template](TEMPLATE.md)
 
 ## Outcome and acceptance criteria
+
+### Latest checkpoint: completed 60-minute standalone validation
+
+The owner shortened the accepted 90-minute test to 60 minutes while it was
+running. Recording stopped at 14:53:10 UTC on 24 October, after **60 minutes
+4 seconds**, from 13:53:05 UTC (14:53-15:53 Europe/London).
+
+- **121/121 successful polls**, 24,465 full-line prediction rows, zero failed
+  polls or missing UTC capture slots; raw JSONL and closed gzip match exactly.
+- **Four independent estimated trips** over 24 inbound Warren Street -> Leicester
+  Square. Three examples were traced to both endpoint sequences, source IDs,
+  near-stop values and two advancing-source post-ETA absence frames. This is
+  agent evidence review, not human signoff or independently measured arrivals.
+- The capture window and pipeline execution pass; the original five-trip sample
+  gate is only partial. Four usable trips remain `insufficient_data`; no risk
+  recommendation or calibrated probability is established. The owner requested
+  stopping at 60 minutes, so collection was not extended to reach a count target.
+- Complete raw JSONL is durable before derivation. Record/replay/export use the
+  standard library, deterministic canonical evidence, one-writer locking and
+  traceable categorical quality. Repeated/rewound cached source frames are
+  ignored; they neither confirm an absence nor poison otherwise timely new
+  confirmation frames. The original 60/90/120-second thresholds are retained.
+- First real trip: LTZ1607 / 744402, estimated 13:56:07 -> 14:12:53 UTC,
+  **1006 seconds**. Early snapshot and data/source packages were created as soon
+  as it completed. Subsequent trips and quality are in the committed CSV below.
+- [CSV and dated quality evidence](../docs/evidence/bus24-validation-20261024/README.md)
+  are available to M/B. Full raw/provenance, snapshot and SHA256-verified ZIPs
+  remain in the ignored `20261024-bus24-validation` run directory and are delivered
+  as local artifacts. No secrets or machine-specific paths are committed.
+- Real duplicate-backup replay of a 58-poll checkpoint retained identical events
+  and segment IDs/counts. A clean extracted two-trip checkpoint reproduced the
+  snapshot exactly with network forbidden. Final 121-poll source/data ZIPs also
+  passed CRC/SHA256 readback and clean Unicode-path extraction: all 31 tests
+  passed and network-forbidden replay reproduced the snapshot exactly. The
+  [verification receipt](../docs/evidence/bus24-validation-20261024/export-verification.json)
+  records both final archive checksums.
+- Current checks: Windows / PowerShell 7.6.5 / Python 3.11.9; **31 standalone
+  regression tests**; combined latest-main backend **128 passed, 7 opt-in live-DB
+  tests skipped**, one existing Starlette/httpx deprecation warning. Ruff passed.
+- Integration preserves the database recorder at `database_poller` and moves its
+  unchanged derivation to `database_derive`, updating internal imports/tests.
+  The stricter complete-response validator remains at `backend.ingest`; raw
+  formats and quality contracts must not be silently mixed. No DB credentials,
+  schema, dependencies, running database recorder or production service changed.
+- Reviewed the human README and accompanying AGENTS/PROJECT patch supplied from
+  Claude Code. Team demo route is **bus 29**, awaiting a short ordered subsegment;
+  this completed **bus 24** validation is separate evidence of pipeline viability.
+  Current commands, sample support, model/API wiring and frontend state are explicit.
+
+Run/format contract: [ingestion README](../backend/ingest/README.md).
+Remaining: B's snapshot/DB adapter, M's real-data evaluation and bus 29 selection,
+then the API/UI demonstration. Historical database checks and route evidence below
+are preserved and are not claimed as rerun by this standalone validation.
 
 Deliver a small, traceable set of credible inferred London bus segments to M/B
 before spending time on additional infrastructure. TfL supplies predictions;

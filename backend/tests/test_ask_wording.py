@@ -30,11 +30,11 @@ def _routes() -> list[Route]:
     return [Route.model_validate({"trips_observed": 0, "hours_covered": [], **r}) for r in raw]
 
 
-def _gemini(deadline: str, **extra):
+def _gemini(deadline: str, name: str = "get_departure_curve", **extra):
     args = {"route_id": BUS29, "deadline": deadline, **extra}
 
     def handler(request):
-        part = {"functionCall": {"name": "get_departure_curve", "args": args}}
+        part = {"functionCall": {"name": name, "args": args}}
         return httpx.Response(200, json={"candidates": [{"content": {"parts": [part]}}]})
 
     return httpx.MockTransport(handler)
@@ -61,7 +61,13 @@ def _curve(first: datetime, minutes: int, *, recommended: datetime | None, statu
     )
 
 
-def _ask(deadline: str, response: DepartureCurveResponse, now=SUNDAY_MORNING, **extra):
+def _ask(
+    deadline: str,
+    response: DepartureCurveResponse,
+    now=SUNDAY_MORNING,
+    name: str = "get_departure_curve",
+    **extra,
+):
     requests: list[DepartureCurveRequest] = []
 
     def compute(req: DepartureCurveRequest) -> DepartureCurveResponse:
@@ -78,7 +84,7 @@ def _ask(deadline: str, response: DepartureCurveResponse, now=SUNDAY_MORNING, **
         api_key="test-key",
         compute_curve=compute,
         get_live=no_live,
-        transport=_gemini(deadline, **extra),
+        transport=_gemini(deadline, name, **extra),
     )
     return result, requests
 
@@ -133,6 +139,28 @@ def test_insufficient_data_still_names_the_route():
         data_quality=DataQuality(status="insufficient_data", basis="stub basis"),
     )
     answer = _ask("2026-10-25T17:00:00", empty)[0].answer
-    assert answer.startswith("I don't have enough recorded data to say.")
+    assert answer.startswith("I don't have enough recorded data to say (bus 29, ")
     assert "Mornington Crescent" in answer
     assert "stub basis" in answer
+
+
+def test_compare_answer_names_route_walks_and_past_deadline():
+    curve = _curve(datetime(2026, 10, 24, 14, 30, tzinfo=UTC), 120, recommended=None)
+    departures = ["2026-10-24T16:00:00", "2026-10-24T16:20:00"]  # London wall clock (BST)
+    result, _ = _ask("2026-10-24T17:00:00", curve, name="compare_departures", departures=departures)
+    answer = result.answer
+    assert answer.startswith("Chance of arriving by 17:00: 16:00: 50%, 16:20: 50%. Best: 16:00 (bus 29, ")
+    assert "Mornington Crescent" in answer
+    assert "5-minute walks at each end" in answer
+    assert "That time has already passed, so this replays recorded data for Sat 24 Oct." in answer
+
+
+def test_compare_with_no_data_and_future_deadline_names_route_without_past_note():
+    empty = DepartureCurveResponse(
+        points=[], recommended=None, what_if=[], server_ms=0,
+        data_quality=DataQuality(status="insufficient_data", basis="stub basis"),
+    )
+    departures = ["2026-10-25T16:00:00", "2026-10-25T16:20:00"]
+    result, _ = _ask("2026-10-25T17:00:00", empty, name="compare_departures", departures=departures)
+    assert result.answer.startswith("I don't have enough recorded data to compare (bus 29, ")
+    assert "already passed" not in result.answer

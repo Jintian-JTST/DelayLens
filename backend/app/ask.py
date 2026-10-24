@@ -276,7 +276,7 @@ def answer_question(
             cmp_args = _CompareArgs.model_validate(raw)
             if cmp_args.route_id not in by_id:
                 return _unsupported(routes)
-            return _compare_answer(cmp_args, compute_curve)
+            return _compare_answer(cmp_args, compute_curve, by_id[cmp_args.route_id], now)
         if name == "get_live":
             live_args = _LiveArgs.model_validate(raw)
             if live_args.route_id not in by_id:
@@ -287,23 +287,26 @@ def answer_question(
     return _unclear()
 
 
-def _departure_context(route: Route, args: _CurveArgs, now: datetime) -> str:
+def _route_context(route: Route, walk_to_min: float, walk_from_min: float) -> str:
     """Name the route and the assumed walks, so a wrong route or default is visible."""
-    if args.walk_to_min == args.walk_from_min:
-        walks = f"{args.walk_to_min:g}-minute walks at each end"
+    if walk_to_min == walk_from_min:
+        walks = f"{walk_to_min:g}-minute walks at each end"
     else:
         walks = (
-            f"a {args.walk_to_min:g}-minute walk to the stop "
-            f"and {args.walk_from_min:g} minutes from the last stop"
+            f"a {walk_to_min:g}-minute walk to the stop "
+            f"and {walk_from_min:g} minutes from the last stop"
         )
-    text = (
+    return (
         f" ({route.mode} {route.line_id}, {route.origin.name} to {route.destination.name}; "
-        f"assuming {walks}.)"
+        f"assuming {walks})"
     )
-    if args.deadline <= now:
-        day = args.deadline.astimezone(LONDON).strftime("%a %d %b")
-        text += f" That time has already passed, so this replays recorded data for {day}."
-    return text
+
+
+def _past_note(deadline: datetime, now: datetime) -> str:
+    if deadline > now:
+        return ""
+    day = deadline.astimezone(LONDON).strftime("%a %d %b")
+    return f" That time has already passed, so this replays recorded data for {day}."
 
 
 def _departure_answer(
@@ -325,28 +328,32 @@ def _departure_answer(
             tolerance=args.tolerance,
         )
     )
-    context = _departure_context(route, args, now)
+    context = _route_context(route, args.walk_to_min, args.walk_from_min)
+    past = _past_note(args.deadline, now)
     if curve.data_quality.status == "insufficient_data" or not curve.points:
         answer = (
-            f"I don't have enough recorded data to say.{context} {curve.data_quality.basis}"
+            f"I don't have enough recorded data to say{context}.{past} "
+            f"{curve.data_quality.basis}"
         )
     elif curve.recommended is None:
         answer = (
             f"No departure between {_hhmm(curve.points[0].depart_at)} and "
             f"{_hhmm(curve.points[-1].depart_at)} reaches a "
             f"{round((1 - args.tolerance) * 100)}% chance of arriving by "
-            f"{_hhmm(args.deadline)}.{context}"
+            f"{_hhmm(args.deadline)}{context}.{past}"
         )
     else:
         rec = curve.recommended
         answer = (
             f"Leave by {_hhmm(rec.depart_at)} for a {round(rec.p_on_time * 100)}% chance "
-            f"of arriving by {_hhmm(args.deadline)}.{context}"
+            f"of arriving by {_hhmm(args.deadline)}{context}.{past}"
         )
     return AskResponse(interpretation=interp, curve=curve, answer=answer, status="ok")
 
 
-def _compare_answer(args: _CompareArgs, compute_curve: CurveFn) -> AskResponse:
+def _compare_answer(
+    args: _CompareArgs, compute_curve: CurveFn, route: Route, now: datetime
+) -> AskResponse:
     departures = sorted(args.departures)
     interp = Interpretation(
         route_id=args.route_id,
@@ -364,22 +371,33 @@ def _compare_answer(args: _CompareArgs, compute_curve: CurveFn) -> AskResponse:
             window_min=240,
         )
     )
+    context = _route_context(route, args.walk_to_min, args.walk_from_min)
+    past = _past_note(args.deadline, now)
     if curve.data_quality.status == "insufficient_data" or not curve.points:
         return AskResponse(
             interpretation=interp,
             curve=curve,
-            answer=f"I don't have enough recorded data to compare. {curve.data_quality.basis}",
+            answer=(
+                f"I don't have enough recorded data to compare{context}.{past} "
+                f"{curve.data_quality.basis}"
+            ),
             status="ok",
         )
     by_minute = {_utc_minute(p.depart_at): p for p in curve.points}
     found = [(d, by_minute.get(_utc_minute(d))) for d in departures]
     if any(p is None for _, p in found):
-        answer = "Some of those departure times are outside the 4 hours before your deadline."
+        answer = (
+            "Some of those departure times are outside the 4 hours before your "
+            f"deadline{context}.{past}"
+        )
     else:
         scored = [(d, p.p_on_time) for d, p in found if p is not None]
         listing = ", ".join(f"{_hhmm(d)}: {round(p * 100)}%" for d, p in scored)
         best = max(scored, key=lambda item: item[1])
-        answer = f"Chance of arriving by {_hhmm(args.deadline)}: {listing}. Best: {_hhmm(best[0])}."
+        answer = (
+            f"Chance of arriving by {_hhmm(args.deadline)}: {listing}. "
+            f"Best: {_hhmm(best[0])}{context}.{past}"
+        )
     return AskResponse(interpretation=interp, curve=curve, answer=answer, status="ok")
 
 

@@ -12,6 +12,11 @@ import { demoCurve, demoRoutes } from "./demo";
 import { demoRequested } from "./demoFlag";
 import { exampleDeadline, isCovered, pickInitialRoute } from "./defaults";
 import {
+  askOffNotice,
+  nextAskOffReason,
+  type AskOffReason,
+} from "./askAvailability";
+import {
   browserZone,
   inputDate,
   inputISO,
@@ -95,6 +100,7 @@ export default function App() {
     }
   });
   const [needsCode, setNeedsCode] = useState(false);
+  const [askOff, setAskOff] = useState<AskOffReason>(null);
   const [interpretation, setInterpretation] = useState<Interpretation | null>(
     null,
   );
@@ -114,6 +120,7 @@ export default function App() {
     setAskMessage("");
     setInterpretation(null);
     setAskBusy(false);
+    setAskOff(null);
     setDelay(0);
     void (async () => {
       try {
@@ -169,6 +176,14 @@ export default function App() {
       askController.current?.abort();
     };
   }, [mode, retry]);
+
+  // Snapshot mode is known from the first curve basis, before any question.
+  useEffect(() => {
+    if (result)
+      setAskOff((current) =>
+        nextAskOffReason(current, { basis: result.curve.data_quality.basis }),
+      );
+  }, [result]);
 
   const demo = mode === "demo";
   const fixture =
@@ -238,7 +253,7 @@ export default function App() {
 
   async function submitQuestion(event: FormEvent) {
     event.preventDefault();
-    if (!question.trim() || demo) return;
+    if (!question.trim() || demo || askOff) return;
     askController.current?.abort();
     const controller = new AbortController();
     askController.current = controller;
@@ -253,6 +268,11 @@ export default function App() {
       );
       if (controller.signal.aborted) return;
       setNeedsCode(false);
+      setAskOff((current) =>
+        nextAskOffReason(current, { askStatus: response.status }),
+      );
+      // The Ask-off notice explains this case; skip the duplicate reply.
+      if (response.status === "gemini_unavailable") return;
       setAskMessage(response.answer);
       const interpreted = response.interpretation;
       setInterpretation(interpreted);
@@ -461,10 +481,14 @@ export default function App() {
                   id="question"
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
-                  placeholder="“I need to be at Oxford Circus around 2…”"
+                  placeholder={
+                    askOff
+                      ? "Ask is off. Use the journey form below."
+                      : "“I need to be at Oxford Circus around 2…”"
+                  }
                   maxLength={500}
                   required
-                  disabled={demo || !routes.length || askBusy}
+                  disabled={demo || !routes.length || askBusy || !!askOff}
                 />
                 {needsCode && (
                   <>
@@ -495,7 +519,11 @@ export default function App() {
                   className="ask-button"
                   type="submit"
                   disabled={
-                    demo || !routes.length || askBusy || !question.trim()
+                    demo ||
+                    !routes.length ||
+                    askBusy ||
+                    !!askOff ||
+                    !question.trim()
                   }
                 >
                   {askBusy ? "Thinking…" : "Ask"}
@@ -503,6 +531,23 @@ export default function App() {
                 </button>
               </form>
             </section>
+            {askOff && !demo && (
+              <p className="demo-ask-note" role="status">
+                {askOffNotice(askOff)}
+                {askOff === "gemini" && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => setAskOff(null)}
+                    >
+                      Try Ask again
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
             {askMessage && (
               <div className="ask-message" role="status">
                 <Icon name="spark" size={18} />

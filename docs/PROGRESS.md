@@ -77,7 +77,7 @@ Windows / PowerShell 7.6.5 / Python 3.11.9; isolated uv environment and lockfile
 | Model evidence policy | M implements 0-4 / 5-14 / 15+ handling, uncertainty and explicit local-date/clock-change/pooling assumptions |
 | Real API data wiring | B implements DB/snapshot adapter and connects the model; configured routes currently return insufficient_data |
 | Stats / calibration | Explicit 503 responses remain; no fabricated results |
-| Frontend / demo | No frontend branch/source found; real data -> model -> API -> UI remains unverified |
+| Frontend / demo | PR #8 added React/Vite source; the real data -> model -> API -> UI journey remains unverified by this data validation |
 | VM / submission | No deployment or submission performed; existing live services not changed |
 
 ## Active handoffs

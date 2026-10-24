@@ -42,7 +42,7 @@ bus 29 sample coverage.
 | Database recorder | Separate recorder and SQL tooling retained; its archive/derivation contract differs from the standalone validator |
 | Backend API | FastAPI health, routes, departure-curve and Ask endpoints |
 | Model | NumPy replay model; not yet connected to the real-data API adapter |
-| Frontend | Not present in this repository at this checkpoint |
+| Frontend | React/Vite source is present on main (PR #8); the real-data API/UI journey still needs verification |
 
 The bus 24 validation ran on **24 October 2026, 14:53-15:53 Europe/London**
 (13:53-14:53 UTC), stopping after 60 minutes at the owner's request. Three
@@ -58,6 +58,10 @@ API. Current progress and verification live in
 The recorded [sample CSV and quality report](docs/evidence/bus24-validation-20261024/README.md)
 are included for M/B to inspect and load. Complete raw/source ZIPs are delivered
 separately; credentials and local recording archives are not committed.
+
+Frontend setup and its own checks are documented in
+[frontend/README.md](frontend/README.md). This data validation does not claim a
+verified browser journey through the model and live API.
 
 ## Getting started
 
@@ -144,6 +148,7 @@ can record that route. Full instructions: [data validation](backend/ingest/READM
 | `backend/ingest/` | Standalone validator and separate database recording/derivation tools |
 | `backend/config/routes.json` | Configured routes and ordered validation stops |
 | `backend/sql/` | Database schema and queries |
+| `frontend/` | React/Vite interface, presentation assets and frontend tests |
 | `deploy/` | Recorder service files for Linux |
 | `PLAN.md` | Product and implementation plan |
 | `docs/PROJECT.md` | Agreed decisions, stack and ownership |

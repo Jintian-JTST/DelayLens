@@ -2,8 +2,8 @@
 
 - Task ID: model / M
 - Owner (person / AI tool): Olivia Guo (M) / Claude Code
-- Branch: `docs/model-readme` (model code is on `main` via PRs #6, #13, #24)
-- Status: model complete on `main`; README model section ready for review; submission pending
+- Branch: `docs/t10-final-snapshot` (model code is on `main` via PRs #6, #13, #24)
+- Status: model complete on `main`; README model section merged (PR #42); T10/M3 rerun on the final data accepted by the reviewer; submission pending
 - Integrator / reviewer: B merges; PROJECT_REVIEWER checks evidence wording
 - Plan / contract reference: [PLAN.md](../PLAN.md) §3.5, §3.6, §4, §8, §9 at `134dafb`
 
@@ -36,16 +36,43 @@ backtests.
 
 ## Handoff
 
-- **Decisions:** ±60-minute window (PR #20), because ±30 never reached 15 runs on bus
-  29. The 15-run threshold is unchanged. Demo mode is the offline snapshot (PR #36),
-  so the numbers stay fixed.
-- **Verified demo numbers** (main `134dafb`, snapshot mode, by M):
-  - Sat 24 Oct 17:00 London, 5/5 walks: leave **16:25**, 0.90, `ok`, up to 20 runs.
-  - The 15:30 deadline gives `low_data` and no recommendation.
-  - Live DB mode (reported by B and D): 16:22, 0.92.
-- **Calibration** (B's backtest): snapshot status preliminary, Brier 0.1165,
-  448 outcomes, 22 runs, top bin 0.932 → 0.924. Live DB #47: Brier 0.125,
-  0.936 → 0.914. Scored against inferred events only.
+- **Decisions:**
+  - ±60-minute window (PR #20), because ±30 never reached 15 runs on bus 29. The
+    15-run threshold is unchanged.
+  - Demo mode is the offline snapshot (PR #36), so the numbers stay fixed.
+  - The stage demo uses the final snapshot `bus29-db-final-20261024T202558Z` (PR #46),
+    Sat 17:00 deadline only (David, chat #209). Do not show the 20:00 or 21:00 deadlines.
+- **Verified demo numbers** (main `b62c0af`, final snapshot, by M):
+  - Sat 24 Oct 17:00 London, 5/5 walks: leave **16:22**, p=0.9174, 91/91 points `ok`,
+    up to 22 runs. This matches live DB mode (B and D).
+  - The 15:30 deadline: 6 `ok`, 71 `low_data` and 14 `insufficient_data` points, up to
+    17 runs, `no_departure_meets_tolerance`.
+  - The old 16:55Z snapshot still gives 16:25, 0.90.
+- **T10/M3: rerun on the final data** (main `b62c0af`, by M; the reviewer accepted
+  it in chat #208 without rerunning it):
+  - Method: the API's loaders, `calibration.backtest`, ±60 and `n_boot=0`, applied to
+    both snapshots.
+  - All data is from Saturday 24 Oct. Standalone recording counts and database
+    counts are reported separately.
+
+  | Route (database snapshot) | Runs 16:55Z → 20:25Z | Brier | Outcomes (runs) | Top bin, predicted → observed |
+  | --- | --- | --- | --- | --- |
+  | Mornington Crescent → TCR (short) | 26 → 56 | 0.1165 → 0.1296 | 448 (22) → 1104 (49) | 0.932 → 0.924, then 0.918 → 0.908 |
+  | Finsbury Park → TCR (long) | 18 → 48 | 0.1683 → 0.1318 | 296 (16) → 760 (42) | 0.941 → 0.854, then 0.934 → 0.949 |
+
+  - Short segment, final snapshot: the middle bins are slightly conservative
+    (0.695 → 0.768). On the long segment the earlier overconfidence is gone.
+  - Advice on the final snapshot, by deadline:
+    - 18:00 → 17:24 (0.92);
+    - 19:00 → 18:19 (0.92);
+    - 20:00 and 21:00 → p=1.00 on only 12/91 and 2/91 `ok` points. This is an edge
+      effect, not evidence.
+  - Status stays preliminary: one Saturday, scored against inferred events.
+  - PR #46 checks:
+    - both `MANIFEST.json` files: SHA256 and byte counts recomputed, 10/10 each;
+    - standalone 180-min recording: `load_handoff` used 5/5 rows (London 18, 20 and
+      21 h). At most 4 runs per departure, so `too_few_runs` and no advice. Task 1's
+      15-run gate is still not met.
 - **Bus 29 standalone 90-min handoff** (`docs/evidence/bus29-short-20261024`):
   - 7 usable runs and 20 origin events. 8 departures inside coverage had no usable
     segment and are censored; 5 come after the recording end.
@@ -56,7 +83,9 @@ backtests.
   - frontend: 11 tests, build OK.
 - **Unverified by M:** live database mode and Ask on this machine (no keys).
 - **Next (M):**
-  - Sun 07:00: recheck support and calibration on the overnight data.
-  - Sun 08:30: lock the demo scenario.
+  - Sun 07:00: recheck support and calibration only if new data is exported after
+    20:25Z.
+  - Sun 08:30: lock the demo scenario (final snapshot, Sat 17:00). Check at rehearsal
+    that the example button lands on 17:00 after D-claude's default-route PR.
   - Confirm submission rules with the organisers.
   - Sun 09:30–10:30: Devpost draft; submit 11:00–11:15.

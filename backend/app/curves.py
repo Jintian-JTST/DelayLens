@@ -120,22 +120,26 @@ def _utc(epoch: float) -> datetime:
     return datetime.fromtimestamp(float(epoch), UTC)
 
 
-def _basis(segments: model.Segments) -> str:
+def _basis(segments: model.Segments, snapshot_label: str | None = None) -> str:
     n = len(segments)
     if n == 0:
         return "No trips recorded on this route yet."
     first = datetime.fromtimestamp(int(segments.t_origin[0]), LONDON)
     last = datetime.fromtimestamp(int(segments.t_origin[-1]), LONDON)
     span = f"{first:%a %d %b %H:%M} - {last:%a %d %b %H:%M}"
-    return (
+    text = (
         f"Based on {n} trips recorded on this route ({span}, London time), replaying "
         f"±{TOD_WINDOW_MIN} min around each departure. Arrivals are estimated "
         "from TfL predictions, not measured; not yet calibrated."
     )
+    return f"{text} {snapshot_label}" if snapshot_label else text
 
 
 def build_response(
-    curve: model.Curve, req: DepartureCurveRequest, segments: model.Segments
+    curve: model.Curve,
+    req: DepartureCurveRequest,
+    segments: model.Segments,
+    snapshot_label: str | None = None,
 ) -> DepartureCurveResponse:
     points: list[CurvePoint] = []
     statuses: list[str] = []
@@ -181,6 +185,6 @@ def build_response(
         points=points,
         recommended=best,
         what_if=what_if,
-        data_quality=DataQuality(status=status, basis=_basis(segments)),
+        data_quality=DataQuality(status=status, basis=_basis(segments, snapshot_label)),
         server_ms=0.0,
     )

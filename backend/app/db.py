@@ -74,8 +74,11 @@ class Snapshot:
     coverage: dict[str, Coverage]
     origin_events: dict[str, list[OriginEvent]]
     poll_times: list[datetime]
-    stats: Stats
+    # None in offline snapshot mode: row and chunk counts are database facts.
+    stats: Stats | None
     refreshed_at: datetime
+    # Set only for an offline snapshot (SNAPSHOT_DIR); shown in the basis text.
+    source_label: str | None = None
 
 
 def load_snapshot(database_url: str) -> Snapshot:
@@ -180,3 +183,25 @@ class SegmentCache:
         while not self._stop.is_set():
             self.refresh()
             self._stop.wait(self._interval_s)
+
+
+class FrozenCache:
+    """SegmentCache stand-in for offline snapshot mode: one fixed snapshot, no database."""
+
+    last_error: str | None = None
+
+    def __init__(self, snapshot: Snapshot) -> None:
+        self._snapshot = snapshot
+
+    @property
+    def snapshot(self) -> Snapshot:
+        return self._snapshot
+
+    def segments(self, route_id: str) -> list[Segment]:
+        return self._snapshot.segments.get(route_id, [])
+
+    def start(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        pass

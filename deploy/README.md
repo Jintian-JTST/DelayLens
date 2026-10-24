@@ -124,3 +124,36 @@ all their sample rows and state changes are transactionally rolled back. Set tha
 environment variable in the shell appropriate to your OS. Ordinary tests make
 no network calls. Linux/macOS execution and systemd deployment must be verified
 on the actual VM; Windows checks do not prove either.
+
+## Existing local recorders (Windows PowerShell 5.1)
+
+From the repository root, inspect without starting anything (also the default):
+
+```powershell
+.\deploy\local-recorders.ps1 -Check
+.\deploy\local-recorders.ps1 -Start
+.\deploy\local-recorders.ps1 -Start -StartBus29Minutes 60
+```
+
+Use `-SystemPython` to override the independent recorder's default
+`D:\Python311\python.exe`. All workspace paths resolve from the script's repository
+root. The database
+workspace is `.local/data-workspace/backend`, using Python at
+`.local/data-workspace/.local/venv/Scripts/python.exe` and its old `ingest.poller`
+module name. Starts use hidden windows and UTC-stamped stdout/stderr files in
+that workspace's `.local/logs/`. An existing database recorder (including the
+renamed `ingest.database_poller`) prevents another database launch. Concurrent
+helper starts are serialized; manual starts must respect the same writer rule.
+
+The optional independent recording runs `backend.ingest record` in
+`.local/worktrees/bus29-short` for route
+`bus-29-outbound-mornington-crescent-tottenham-court-road`. Each invocation creates
+a new `.local/runs/bus29-short-<UTC timestamp>/` there with `recorder.log` and
+`recorder.err`; it can start even when the database recorder is already running.
+Existing environments/configuration must already be prepared. `-Check` shows
+processes, selected database health counts and the latest run status/counts from
+the last log line (also supporting older sibling `.log` files). Missing data or
+failed health checks are reported as unavailable with error details hidden.
+No environment-file contents or connection strings are printed. The helper never
+stops processes or deletes files. A launch PID alone does not prove collection;
+run `-Check` again and inspect the logs before claiming success.

@@ -79,6 +79,48 @@ so the user service survives logout. Verify it after logout and a reconnect, and
 verify a controlled process restart. A unit file alone does not prove overnight
 operation. Logs intentionally contain counts/error classes, never URLs or secrets.
 
+## Public web: API service and Caddy (prepared, not installed)
+
+B prepared these files; nothing here has been installed, started or provisioned, and
+no server was touched. A VM, open ports 80 and 443, and any DNS name need the team's
+authorization (David and Jintian) before use. D owns this directory: review before use.
+
+The shape: the FastAPI app listens on `127.0.0.1:8000` only; Caddy serves the built
+frontend (`frontend/dist`) and proxies `/api/*` to it. The frontend calls `/api/...` on
+its own origin, so no CORS or `VITE_API_BASE_URL` is needed.
+
+On the VM, from the reviewed integrated commit:
+
+```sh
+cd backend && uv sync --locked                                          # creates backend/.venv from uv.lock
+cd ../frontend && npm ci && npm run build                                   # writes frontend/dist
+cd .. && python deploy/render_web.py --site <ip-with-dashes>.sslip.io       # writes .local/delaylens-api.service and .local/Caddyfile
+```
+
+`render_web.py` only renders into the ignored `.local/` directory and checks that `--site` is
+a plain hostname. Review both files, then (needs authorization) install the unit as a user
+service like the recorder (`systemctl --user enable --now delaylens-api`, plus lingering)
+and give Caddy the Caddyfile (Caddy needs permission to bind ports 80 and 443).
+
+`backend/.env` on the VM must be created privately (`chmod 600`) and set `DATABASE_URL`,
+`TFL_APP_KEY`, `GEMINI_API_KEY` and `ASK_ACCESS_CODE`. **Set `ASK_ACCESS_CODE`: when it is
+unset, `/api/ask` is open to anyone and spends the Gemini key.** Never put these values in
+chat, commands or committed files.
+
+Checks after it is up (run from outside the VM):
+
+```sh
+curl -s https://<site>/api/health                  # {"status":"ok"}
+curl -s -o /dev/null -w '%{http_code}\n' -X POST https://<site>/api/ask \
+  -H 'content-type: application/json' -d '{"question":"hello"}'   # 401 without the passcode
+```
+
+Then open `https://<site>/` on mobile data and confirm the bus 29 form shows the expected
+advice. If uv is not available, create `backend/.venv` and install the dependencies listed in
+`backend/pyproject.toml` by hand (the project has no build backend, so `pip install -e .`
+is not supported). Not verified: Caddy and systemd syntax were not run (neither is installed on the
+machine that wrote these files); the uvicorn command was smoke-tested locally only.
+
 ## Recovery, inspection and handoff
 
 From `backend/`, with the recorder stopped for replay:

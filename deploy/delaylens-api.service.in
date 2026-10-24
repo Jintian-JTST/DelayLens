@@ -1,0 +1,23 @@
+[Unit]
+Description=DelayLens API (FastAPI, loopback only; Caddy proxies /api/*)
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=@BACKEND@
+# Loopback only: the public port belongs to Caddy. Secrets stay in backend/.env.
+ExecStart=@PYTHON@ -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+UMask=0077
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

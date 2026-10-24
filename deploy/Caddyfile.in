@@ -1,0 +1,24 @@
+# Public site: built frontend plus /api/* proxied to the loopback API.
+# render_web.py fills in the hostname (for example 203-0-113-7.sslip.io) and the
+# built frontend directory (frontend/dist). Caddy obtains the HTTPS certificate
+# automatically when ports 80 and 443 are reachable.
+@SITE@ {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	handle {
+		root * @DIST@
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+}

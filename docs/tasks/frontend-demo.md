@@ -3,7 +3,7 @@
 - Task ID: frontend-demo
 - Owner (person / AI tool): F / Codex
 - Branch: feat/frontend
-- Status: real Victoria low-data curves verified; ready for integration review
+- Status: visual refinement and real Victoria curves verified; ready for integration review
 - Integrator / reviewer: B; integration order D → M → B → F
 
 ## Outcome and acceptance criteria
@@ -121,3 +121,36 @@ macOS/zsh, Node 24.22.1, npm 12.2.1, Chrome 151.0.7922.172:
 - Next: B integrates F; D deploys the combined build. Rehearse the recorded-hour
   real-data flow and capture a stable demo/video after integration. Keep recording
   data and verify additional endpoints/calibration as those integrations mature.
+
+### Visual refinement (2026-10-24)
+
+- Preserved the page order, interaction flow and cream/orange/purple identity.
+  Consolidated duplicate base selectors and breakpoint sections in the stylesheet;
+  shared tokens now control body/helper/metadata sizes, card padding, field gaps,
+  section gaps and control sizes instead of a trailing layer of corrective rules.
+- Body text is 14px, helper text 12px and essential metadata at least 11px.
+  Phone text inputs and selects use 16px; chart axes and legends use 12px.
+  Route names wrap in the route summary, and chart readouts/legends wrap on narrow
+  screens. Chart geometry, missing-data gaps and probability logic are unchanged.
+- Buttons, navigation, selects, slider hit areas, the checkbox label and the
+  departure-data disclosure have at least 44px targets. The checkbox itself remains
+  a conventional 20px visual control inside its larger clickable label.
+- Kept low-data/provenance notices visible and aligned the loading, offline,
+  insufficient-data and demo states with the same typography and spacing system.
+  Checked normal text contrast at 4.5:1 and large text at 3:1 in rendered states;
+  retained visible keyboard focus and reduced-motion behavior.
+- Passed `npm run build`, all **11 existing unit tests**, `git diff --check`,
+  and **9 grouped browser acceptance checks**: five viewport widths (1440, 1024,
+  768, 390, 320), long route names, control sizes, contrast, keyboard chart
+  exploration/tab order, normal/low/insufficient/offline/loading/demo states,
+  methodology, and reduced motion. Risk, what-if and conservative interactions
+  still issue no additional curve requests. No uncaught browser errors occurred.
+- Verified 200% zoom-equivalent reflow using 720 CSS pixels and device scale 2
+  for a 1440px-wide display, including chart keyboard control and no horizontal
+  overflow. Native headless Chrome zoom controls were unavailable; manual native
+  browser zoom and physical-device verification remain outstanding.
+- Refreshed actual API-backed screenshots at
+  `frontend/.local/qa/polished-final-{1440,768,390,320}.png`, plus state and
+  zoom-equivalent QA screenshots. These artifacts and the temporary QA runner
+  are ignored. Only the stylesheet and this handoff changed; there are no API,
+  model, recommendation-threshold or dependency changes.

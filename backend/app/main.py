@@ -1,3 +1,4 @@
+import hmac
 import json
 import os
 import time
@@ -8,7 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import Field, TypeAdapter, ValidationError
@@ -175,8 +176,23 @@ def _gemini_models() -> tuple[str, ...]:
     return (override, *ask_module.DEFAULT_MODELS) if override else ask_module.DEFAULT_MODELS
 
 
-@app.post("/api/ask", response_model=AskResponse)
-def ask(req: AskRequest) -> AskResponse:
+def _require_ask_access(code: str | None) -> None:
+    """Gate Gemini behind a team passcode when ASK_ACCESS_CODE is set on the server.
+
+    Unset (local development) leaves Ask open. The passcode lives only in the
+    server's environment; the rest of the API stays public either way.
+    """
+    expected = os.getenv("ASK_ACCESS_CODE", "")
+    if expected and not hmac.compare_digest((code or "").encode(), expected.encode()):
+        raise HTTPException(status_code=401, detail="ask_access_required")
+
+
+@app.post("/api/ask", response_model=AskResponse, responses={401: {"description": "Team passcode required"}})
+def ask(
+    req: AskRequest,
+    x_ask_access_code: str | None = Header(default=None),
+) -> AskResponse:
+    _require_ask_access(x_ask_access_code)
     app_key = os.getenv("TFL_APP_KEY", "")
     return ask_module.answer_question(
         req.question,

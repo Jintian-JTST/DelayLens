@@ -18,6 +18,7 @@ def isolate_config(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "ROUTES_PATH", tmp_path / "routes.json")
     monkeypatch.delenv("TFL_APP_KEY", raising=False)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("ASK_ACCESS_CODE", raising=False)
 
 
 @pytest.fixture
@@ -102,6 +103,24 @@ def test_invalid_tolerance_is_422():
 def test_ask_is_honest_when_unavailable():
     r = client.post("/api/ask", json={"question": "when should I leave?"})
     assert r.json()["status"] == "gemini_unavailable"
+
+
+def test_ask_requires_team_passcode_when_configured(monkeypatch):
+    monkeypatch.setenv("ASK_ACCESS_CODE", "team-secret")
+    body = {"question": "when should I leave?"}
+    assert client.post("/api/ask", json=body).status_code == 401
+    wrong = client.post("/api/ask", json=body, headers={"X-Ask-Access-Code": "guess"})
+    assert wrong.status_code == 401
+    assert wrong.json() == {"detail": "ask_access_required"}
+    ok = client.post("/api/ask", json=body, headers={"X-Ask-Access-Code": "team-secret"})
+    assert ok.status_code == 200
+    assert ok.json()["status"] == "gemini_unavailable"  # no Gemini key in tests
+
+
+def test_passcode_never_gates_the_public_form(monkeypatch):
+    monkeypatch.setenv("ASK_ACCESS_CODE", "team-secret")
+    assert client.get("/api/routes").status_code == 200
+    assert client.post("/api/departure-curve", json=_curve_body()).status_code == 200
 
 
 def test_live_never_fakes_data():

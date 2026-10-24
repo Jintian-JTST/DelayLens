@@ -27,10 +27,14 @@ come later (PLAN.md §8).
 ## Handoff
 
 - Changes: synthetic timetable generator (`synthetic_segments`), `Segments`
-  container, `p_on_time` signature (stub), and hand-checked tests: a step curve
-  with exact time of day, a ramp with a ±30 min window, and walking-time shifts
+  container, vectorised empirical replay (`replay_curve`, `departure_curve`,
+  `p_on_time`) returning `p_on_time`, `arrive_p50/p90` and `n_trips` per departure.
+  If no recorded vehicle covers a departure, the result is NaN with
+  `n_trips = 0`, never 0%.
 - Checks run (macOS, Python 3.14.6, numpy 2.5.4, pytest 9.1.1, via local venv;
-  `uv` not installed): `python -m pytest tests/test_model.py` from `backend/`:
-  5 passed, 3 xfailed (strict; the replay tests wait on the next task)
-- Next action (M): vectorised empirical replay (Sat 15:00–16:30) until the 3
-  xfail tests pass
+  `uv` not installed): `pytest tests/test_model.py` from `backend/`: 13 passed.
+  These include hand-checked step, ramp and walking cases, distinct-trip counts,
+  end of data and multi-day replay. Curve over 2 days of synthetic data (615
+  trips, 91 departures): median 1.5 ms (budget 50 ms)
+- Next action (M): 90% bootstrap band; `low_data` / `insufficient_data`
+  thresholds (Sat 16:30–18:00); match the frozen contract at 17:00

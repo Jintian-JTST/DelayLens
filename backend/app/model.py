@@ -78,6 +78,104 @@ def synthetic_segments(
     return Segments(vehicle_id=vehicle_id, t_origin=t_origin, t_dest=t_origin + ride_s)
 
 
+SECONDS_PER_DAY = 86_400
+BOARD_AFTER_S = SECONDS_PER_MIN  # catch the first vehicle >= 1 min after reaching the stop
+
+
+@dataclass(frozen=True)
+class Curve:
+    """One row per candidate departure; times are UTC epoch seconds.
+
+    Rows with no usable replay instant have p_on_time and arrivals NaN and
+    n_trips 0; thresholds for low/insufficient data are applied on top.
+    """
+
+    depart_at: np.ndarray  # int64
+    p_on_time: np.ndarray  # float
+    arrive_p50: np.ndarray  # float
+    arrive_p90: np.ndarray  # float
+    n_trips: np.ndarray  # int, distinct vehicles behind each row
+
+
+def replay_curve(
+    segments: Segments,
+    depart_at: np.ndarray,
+    deadline: int,
+    *,
+    walk_to_min: float = 0.0,
+    walk_from_min: float = 0.0,
+    tod_window_min: int = 30,
+) -> Curve:
+    """Empirical replay (PLAN.md section 4.1) for many departures at once.
+
+    For each departure d the user reaches O at s = d + walk_to. Every recorded
+    instant s' at the same UTC time of day (+/- tod_window_min, 1-min steps, any
+    recorded day) is replayed: take the first vehicle leaving O at or after
+    s' + 1 min, so TT(s') = t_D - s' + walk_from. Instants with no later vehicle,
+    or before the first recorded departure, are outside the data and dropped.
+    """
+    depart_at = np.asarray(depart_at, dtype=np.int64)
+    walk_to_s = round(walk_to_min * SECONDS_PER_MIN)
+    walk_from_s = round(walk_from_min * SECONDS_PER_MIN)
+    reach = depart_at + walk_to_s  # (m,)
+
+    # Same time of day on every recorded day, then the +/- window in 1-min steps.
+    first, last = segments.t_origin[0], segments.t_origin[-1]
+    k_lo = (first - reach.max()) // SECONDS_PER_DAY - 1
+    k_hi = (last - reach.min()) // SECONDS_PER_DAY + 1
+    days = np.arange(k_lo, k_hi + 1, dtype=np.int64) * SECONDS_PER_DAY
+    steps = np.arange(-tod_window_min, tod_window_min + 1, dtype=np.int64) * SECONDS_PER_MIN
+    offsets = (days[:, None] + steps[None, :]).ravel()
+    instants = reach[:, None] + offsets[None, :]  # (m, k)
+
+    idx = np.searchsorted(segments.t_origin, instants + BOARD_AFTER_S, side="left")
+    valid = (idx < len(segments)) & (instants >= first)
+    safe_idx = np.where(valid, idx, 0)
+
+    travel = segments.t_dest[safe_idx] - instants + walk_from_s  # TT(s')
+    arrive = np.where(valid, reach[:, None] + travel, np.nan)
+
+    n_valid = valid.sum(axis=1)
+    on_time = valid & (arrive <= deadline)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        p = np.where(n_valid > 0, on_time.sum(axis=1) / n_valid, np.nan)
+
+    has_rows = n_valid > 0
+    p50 = np.full(len(depart_at), np.nan)
+    p90 = np.full(len(depart_at), np.nan)
+    if has_rows.any():
+        p50[has_rows], p90[has_rows] = np.nanpercentile(arrive[has_rows], [50, 90], axis=1)
+
+    # Distinct vehicles per row: sort trip indices, count changes (invalid -> -1).
+    trips = np.sort(np.where(valid, idx, -1), axis=1)
+    distinct = (np.diff(trips, axis=1) != 0) & (trips[:, 1:] >= 0)
+    n_trips = distinct.sum(axis=1) + (trips[:, 0] >= 0)
+
+    return Curve(depart_at=depart_at, p_on_time=p, arrive_p50=p50, arrive_p90=p90, n_trips=n_trips)
+
+
+def departure_curve(
+    segments: Segments,
+    deadline: datetime,
+    *,
+    walk_to_min: float = 0.0,
+    walk_from_min: float = 0.0,
+    window_min: int = 90,
+    tod_window_min: int = 30,
+) -> Curve:
+    """Curve from `deadline - window_min` to `deadline` at 1-min resolution (section 4.3)."""
+    t = to_epoch(deadline)
+    depart_at = t - np.arange(window_min, -1, -1, dtype=np.int64) * SECONDS_PER_MIN
+    return replay_curve(
+        segments,
+        depart_at,
+        t,
+        walk_to_min=walk_to_min,
+        walk_from_min=walk_from_min,
+        tod_window_min=tod_window_min,
+    )
+
+
 def p_on_time(
     segments: Segments,
     depart_at: datetime,
@@ -87,5 +185,13 @@ def p_on_time(
     walk_from_min: float = 0.0,
     tod_window_min: int = 30,
 ) -> float:
-    """P(arrive by `deadline` | leave at `depart_at`) by empirical replay (section 4.1)."""
-    raise NotImplementedError("empirical replay is the next task (PLAN.md section 8, Sat 15:00)")
+    """P(arrive by `deadline` | leave at `depart_at`); NaN if no data covers it."""
+    curve = replay_curve(
+        segments,
+        np.array([to_epoch(depart_at)]),
+        to_epoch(deadline),
+        walk_to_min=walk_to_min,
+        walk_from_min=walk_from_min,
+        tod_window_min=tod_window_min,
+    )
+    return float(curve.p_on_time[0])

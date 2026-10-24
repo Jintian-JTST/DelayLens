@@ -164,14 +164,14 @@ frozen, not live, copy. Run from the repository root.
 
    ```text
    cd backend
-   SNAPSHOT_DIR="$(cd ../docs/evidence/bus29-db-snapshot-20261024T1655Z && pwd)" \
+   SNAPSHOT_DIR="$(cd ../docs/evidence/bus29-db-final-20261024T202558Z && pwd)" \
      uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
    ```
 
 2. Start the frontend (terminal 2): `cd frontend && npm run dev`, then open
    <http://127.0.0.1:5173/>. The dev server proxies `/api` to port 8000.
 3. Check the offline numbers (turn Wi-Fi off first): bus 29, Saturday 24 Oct, deadline
-   17:00 London gives leave 16:25 at 90%; deadline 15:30 is `low_data` (data exists, but
+   17:00 London gives leave 16:22 at 92%; deadline 15:30 is `low_data` (data exists, but
    no departure time reaches 90%), so there is no recommendation. `/api/ask` needs a Gemini key and is not available offline; do not
    demo it without network.
 4. Run the smoke check from the demo computer and keep the output:
@@ -180,16 +180,17 @@ frozen, not live, copy. Run from the repository root.
    python3 deploy/smoke_check.py http://127.0.0.1:8000 --skip-ask --skip-port-check
    ```
 
-   Expected: `ALL CHECKS PASSED`, bus 29 with 26 trips, 16:25 / p=0.9, `low_data`
+   Expected: `ALL CHECKS PASSED`, bus 29 with 56 trips, 16:22 / p=0.9174, `low_data`
    at 15:30. Latency is measured from that machine only.
 5. Recording laptop: plug in the charger and stop sleep, for example on macOS
    `caffeinate -dimsu` in a spare terminal (or System Settings > Battery, Lock Screen),
    on Windows `powercfg /change standby-timeout-ac 0`. Confirm AC power with
    `pmset -g batt`. Do not stop the recorder or run `admin replay` while it records.
 
-Verified 24 Oct 2026 on a macOS laptop (main `2d7e51c`): steps 1, 2 and 4 passed with
-the snapshot and no database or key set (`ALL CHECKS PASSED`; 20 requests, p50 4 ms,
-p95 4 ms). Not verified: the actual Wi-Fi-off check (step 3) and the Windows demo
+Verified 24 Oct 2026 on a macOS laptop (main `2d7e51c`, 16:55Z snapshot): steps 1, 2 and 4
+passed with no database or key set (`ALL CHECKS PASSED`; 20 requests, p50 4 ms, p95 4 ms).
+Step 4 repeated on main `b8d6f0a` with the final 20:25Z snapshot: `ALL CHECKS PASSED`,
+56 trips, 15:22Z p=0.9174, `low_data` at 15:30, p50/p95 4 ms. Not verified: the actual Wi-Fi-off check (step 3) and the Windows demo
 computer; repeat both there. The sleep setting was not changed by this checklist.
 
 ## Recovery, inspection and handoff

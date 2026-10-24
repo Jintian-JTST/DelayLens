@@ -176,3 +176,38 @@ Updated: 2026-10-24 (Europe/London).
 - Real Tiger Data (~16:25 UTC): bus 29 Finsbury Park 15 runs + 11 unconfirmed; calibration per route 25-36 ms;
   all routes 69 ms, 744 outcomes, 52 runs, 5 blocks, Brier 0.144, `preliminary`. Top bin predicted 0.96 vs
   observed 0.83 (overconfident at the top). Curves 2-12 ms; Victoria recommendation 15:48 UTC.
+
+## Update: +/-60 min window (PR #20) and Devpost backend draft
+
+- PR #20 (merged): `curves.TOD_WINDOW_MIN = 60`, passed as `tod_window_min` to `model.departure_curve`
+  (`main.py`) and `model.replay_curve` (`calibration.py`), so the API, Ask and the backtest score the same
+  model. `_known_outcome` now uses `<=` for an unconfirmed departure at the run's origin time, matching
+  `model.py`. `curves._basis` states the window and `test_basis_discloses_the_time_of_day_window` pins it
+  (PLAN section 4 allows +/-60 only with disclosed coverage). The 15-run threshold is unchanged.
+- Why: at +/-30 min bus 29 has about 7-13 runs per departure and never reaches 15, so it gives no advice;
+  at +/-60 it does (M's synthetic check, then D's DB check).
+- Checks on `main` after #20, live Tiger Data snapshot, bus 29 Mornington Crescent -> Tottenham Court Road
+  (28 trips): deadline 16:00Z `ok`, 91 points, recommended leave 15:32Z P=0.9174; deadline 14:30Z `low_data`,
+  `recommended=null`. `/api/calibration` with +/-60: Brier 0.1251, `preliminary`, 504 outcomes from 24 runs,
+  216 set aside; top bin 0.936 predicted vs 0.914 observed (was 0.96 vs 0.83 at +/-30). Arrivals are
+  inferred from TfL predictions and outcomes overlap, so these are not independent samples.
+- Latency, in-process (TestClient on one laptop, so no network or TLS), 240 warm requests to
+  `/api/departure-curve`: total p50 3.5 ms, p95 4.1 ms, max 5.4 ms; `server_ms` p95 3.2 ms; first cold call
+  45 ms. Calibration first call 45 ms, then 1 ms memoised. PLAN target p95 < 300 ms. Say "in-process" if quoted.
+- Not checked: Ask against Gemini, the UI, and latency over the network.
+- Open: use `n_boot=0` in `calibration.backtest` once M's `feat/model-nboot` is on `main`.
+
+### Devpost draft: backend and Gemini (about 150 words, for M's submission)
+
+> A FastAPI service reads Tiger Data (PostgreSQL) into an in-memory snapshot of recorded bus trips, refreshed
+> every 60 s; a failed refresh keeps serving the last good snapshot. A curves adapter turns the snapshot into
+> model inputs and the model's output into the API response, with a data-quality status and a plain-language
+> basis line. Gemini is used only for Ask: it maps a question to one validated function call, with a 4 s
+> timeout and a fallback model. It never produces numbers; every figure comes from our empirical-replay model
+> and the answer is a template. Public Ask is passcode-gated. Calibration is a blocked hold-out: six
+> 30-minute blocks, each scored by a model trained on the other blocks, against arrivals inferred from TfL
+> predictions (Brier 0.125, preliminary). In-process, a warm /api/departure-curve takes p95 4 ms (server time
+> 3 ms); a cold first call takes 45 ms.
+
+Caveats for the submission: the passcode sentence holds only when `ASK_ACCESS_CODE` is set on the deployed
+server (unset leaves Ask open); the Brier score and status will move as recording continues.

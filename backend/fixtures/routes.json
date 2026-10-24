@@ -1,0 +1,11 @@
+[
+  {
+    "route_id": "fixture-bus-outbound",
+    "line_id": "fixture",
+    "mode": "bus",
+    "origin": {"naptan_id": "FIXTURE-O", "name": "Fixture Origin (not real)"},
+    "destination": {"naptan_id": "FIXTURE-D", "name": "Fixture Destination (not real)"},
+    "trips_observed": 0,
+    "hours_covered": []
+  }
+]

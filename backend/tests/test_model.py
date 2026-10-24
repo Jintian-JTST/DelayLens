@@ -5,6 +5,7 @@ exactly 20 min to D. Query times are Europe/London local time; the deadline is
 12:00 on Sat 24 Oct 2026 (BST).
 """
 
+import json
 import time
 from datetime import UTC, date, datetime, timedelta
 
@@ -16,12 +17,15 @@ from app.model import (
     Segments,
     departure_curve,
     evidence_status,
+    load_handoff,
     load_segments_csv,
     p_on_time,
+    recommend,
     reference_instants,
     replay_curve,
     synthetic_segments,
     to_epoch,
+    what_if,
 )
 
 SAT = date(2026, 10, 24)
@@ -40,15 +44,21 @@ def timetable() -> Segments:
 @pytest.fixture
 def fortnight() -> Segments:
     """Fifteen recorded days of the same timetable (spans the clock change)."""
-    return synthetic_segments(START, END + timedelta(days=14), headway_min=10, ride_min=20)
+    return synthetic_segments(
+        START, END + timedelta(days=14), headway_min=10, ride_min=20
+    )
 
 
 def at(hh: int, mm: int) -> datetime:
     return datetime(2026, 10, 24, hh, mm, tzinfo=LONDON)
 
 
-def curve_at(segments: Segments, depart: datetime, deadline: datetime = DEADLINE, **kwargs):
-    return replay_curve(segments, np.array([to_epoch(depart)]), to_epoch(deadline), **kwargs)
+def curve_at(
+    segments: Segments, depart: datetime, deadline: datetime = DEADLINE, **kwargs
+):
+    return replay_curve(
+        segments, np.array([to_epoch(depart)]), to_epoch(deadline), **kwargs
+    )
 
 
 # --- synthetic generator and inputs -----------------------------------------
@@ -62,7 +72,9 @@ def test_regular_timetable_is_exact(timetable: Segments) -> None:
     assert np.all(timetable.t_dest - timetable.t_origin == 1200)
     assert timetable.t_origin.dtype == np.int64
     assert len(set(timetable.segment_id)) == len(timetable)
-    np.testing.assert_array_equal(timetable.coverage, [[to_epoch(START), to_epoch(END)]])
+    np.testing.assert_array_equal(
+        timetable.coverage, [[to_epoch(START), to_epoch(END)]]
+    )
 
 
 def test_jitter_is_reproducible_and_valid() -> None:
@@ -173,7 +185,12 @@ def test_walking_time_shifts_the_step(fortnight: Segments) -> None:
     # A 4-min walk from D means the bus must arrive by 11:56: the 11:30 bus. You
     # catch it only if you reach O by 11:29, so with a 6-min walk to O, leave by
     # 11:23. Leaving at 11:24 means the 11:40 bus and arriving at 12:04.
-    kwargs = {"walk_to_min": 6, "walk_from_min": 4, "tod_window_min": 0, "reference_dates": FIFTEEN_DAYS}
+    kwargs = {
+        "walk_to_min": 6,
+        "walk_from_min": 4,
+        "tod_window_min": 0,
+        "reference_dates": FIFTEEN_DAYS,
+    }
     assert p_on_time(fortnight, at(11, 23), DEADLINE, **kwargs) == 1.0
     assert p_on_time(fortnight, at(11, 24), DEADLINE, **kwargs) == 0.0
 
@@ -206,7 +223,9 @@ def test_too_few_runs_gives_counts_but_no_probability(timetable: Segments) -> No
 def test_dates_are_not_pooled_unless_requested() -> None:
     two_days = synthetic_segments(START, END + timedelta(days=1))
     default = curve_at(two_days, at(11, 30))
-    pooled = curve_at(two_days, at(11, 30), reference_dates=[SAT, SAT + timedelta(days=1)])
+    pooled = curve_at(
+        two_days, at(11, 30), reference_dates=[SAT, SAT + timedelta(days=1)]
+    )
     assert default.n_trips[0] == 7
     assert pooled.n_trips[0] == 14
 
@@ -220,20 +239,27 @@ def test_repeated_local_hour_stays_distinct() -> None:
     inst = reference_instants(reach, sun, tod_window_min=0)
     np.testing.assert_array_equal(inst[:, 0], reach)
     # The same local 12:00 maps to 11:00 UTC on Saturday and 12:00 UTC on Sunday.
-    noon = reference_instants(np.array([to_epoch(DEADLINE)]), [SAT, sun[0]], tod_window_min=0)
+    noon = reference_instants(
+        np.array([to_epoch(DEADLINE)]), [SAT, sun[0]], tod_window_min=0
+    )
     assert noon[0, 1] - noon[0, 0] == 86_400 + 3_600
 
 
 def test_capture_gap_is_censored_not_late(timetable: Segments) -> None:
     # Recording dropped 11:35-11:55, losing the 11:40 and 11:50 buses.
-    keep = (timetable.t_origin < to_epoch(at(11, 35))) | (timetable.t_origin > to_epoch(at(11, 55)))
+    keep = (timetable.t_origin < to_epoch(at(11, 35))) | (
+        timetable.t_origin > to_epoch(at(11, 55))
+    )
     gappy = Segments(
         segment_id=timetable.segment_id[keep],
         vehicle_id=timetable.vehicle_id[keep],
         t_origin=timetable.t_origin[keep],
         t_dest=timetable.t_dest[keep],
         coverage=np.array(
-            [[to_epoch(START), to_epoch(at(11, 35))], [to_epoch(at(11, 55)), to_epoch(END)]]
+            [
+                [to_epoch(START), to_epoch(at(11, 35))],
+                [to_epoch(at(11, 55)), to_epoch(END)],
+            ]
         ),
     )
     # Leaving 11:30, instants 11:00..12:00 board at 11:01..12:01.
@@ -263,7 +289,11 @@ def test_end_of_recording_is_censored(timetable: Segments) -> None:
 
 def test_departure_curve_covers_window_and_is_monotone(fortnight: Segments) -> None:
     curve = departure_curve(
-        fortnight, DEADLINE, walk_to_min=6, walk_from_min=4, reference_dates=FIFTEEN_DAYS
+        fortnight,
+        DEADLINE,
+        walk_to_min=6,
+        walk_from_min=4,
+        reference_dates=FIFTEEN_DAYS,
     )
     assert len(curve.depart_at) == 91  # T - 90 .. T at 1-min steps
     assert curve.depart_at[0] == to_epoch(DEADLINE) - 90 * 60
@@ -275,7 +305,11 @@ def test_departure_curve_covers_window_and_is_monotone(fortnight: Segments) -> N
 
 def test_curve_is_fast_on_a_weekend_of_noisy_data() -> None:
     weekend = synthetic_segments(
-        START, END + timedelta(days=1), headway_min=4, headway_jitter_min=2, ride_jitter_min=6
+        START,
+        END + timedelta(days=1),
+        headway_min=4,
+        headway_jitter_min=2,
+        ride_jitter_min=6,
     )
     dates = [SAT, SAT + timedelta(days=1)]
     departure_curve(weekend, DEADLINE, reference_dates=dates)  # warm-up
@@ -287,3 +321,178 @@ def test_curve_is_fast_on_a_weekend_of_noisy_data() -> None:
     assert elapsed_ms < 50, f"{elapsed_ms:.1f} ms"
     assert not np.isnan(curve.p_on_time).any()
     assert np.all((curve.p_on_time >= 0) & (curve.p_on_time <= 1))
+
+
+# --- unconfirmed departures, band, advisor and what-if -------------------------
+
+
+def test_unconfirmed_departure_is_censored_not_skipped(timetable: Segments) -> None:
+    # The 11:40 bus left O but has no usable segment (e.g. its D event was uncertain).
+    bus = timetable.t_origin == to_epoch(at(11, 40))
+    keep = ~bus
+    partial = Segments(
+        segment_id=timetable.segment_id[keep],
+        vehicle_id=timetable.vehicle_id[keep],
+        t_origin=timetable.t_origin[keep],
+        t_dest=timetable.t_dest[keep],
+        coverage=timetable.coverage,
+        unconfirmed_departures=timetable.t_origin[bus],
+    )
+    # Leaving 11:30, boards 11:31..11:40 (10 instants) would catch the 11:40 bus:
+    # censored. Skipping to the 11:50 bus instead would invent waits of up to 19 min.
+    curve = curve_at(partial, at(11, 30))
+    assert curve.n_censored[0] == 10 and curve.n_steps[0] == 51
+    assert curve.n_trips[0] == 6  # 11:10, 11:20, 11:30, 11:50, 12:00, 12:10
+    assert curve.p_on_time[0] == 1.0
+
+
+def test_band_only_for_ok_rows_and_brackets_estimate() -> None:
+    noisy = synthetic_segments(
+        START,
+        END + timedelta(days=14),
+        headway_min=8,
+        headway_jitter_min=3,
+        ride_jitter_min=6,
+    )
+    curve = departure_curve(
+        noisy, DEADLINE, walk_to_min=5, walk_from_min=5, reference_dates=FIFTEEN_DAYS
+    )
+    ok = curve.status == "ok"
+    assert ok.all()
+    assert np.all(curve.ci_low <= curve.p_on_time + 1e-12)
+    assert np.all(curve.p_on_time <= curve.ci_high + 1e-12)
+    assert np.any(curve.ci_high - curve.ci_low > 0)  # noisy data: a real band
+    again = departure_curve(
+        noisy, DEADLINE, walk_to_min=5, walk_from_min=5, reference_dates=FIFTEEN_DAYS
+    )
+    np.testing.assert_array_equal(curve.ci_low, again.ci_low)  # reproducible
+    low = curve_at(synthetic_segments(START, END), at(11, 30))  # 7 runs: low_data
+    assert low.status[0] == "low_data" and np.isnan(low.ci_low[0])
+
+
+def test_advisor_picks_latest_safe_departure(fortnight: Segments) -> None:
+    curve = departure_curve(
+        fortnight, DEADLINE, tod_window_min=0, reference_dates=FIFTEEN_DAYS
+    )
+    advice = recommend(curve, tolerance=0.10)
+    # Hand-checked step: 11:39 is the last departure that is always on time.
+    assert advice.reason == "ok"
+    assert advice.depart_at == to_epoch(at(11, 39))
+    assert advice.p_on_time == 1.0
+    assert advice.conservative_depart_at == to_epoch(at(11, 39))  # no spread: same
+
+
+def test_advisor_suppressed_below_fifteen_runs(timetable: Segments) -> None:
+    curve = departure_curve(timetable, DEADLINE)  # one date, about 7 runs per row
+    assert not np.any(curve.status == "ok")
+    advice = recommend(curve)
+    assert advice.reason == "too_few_runs" and advice.depart_at is None
+
+
+def test_advisor_reports_when_nothing_meets_tolerance(fortnight: Segments) -> None:
+    # Only 11:50..12:00 departures: the 20-min ride makes every one late.
+    curve = departure_curve(
+        fortnight,
+        DEADLINE,
+        window_min=10,
+        tod_window_min=0,
+        reference_dates=FIFTEEN_DAYS,
+    )
+    assert recommend(curve).reason == "no_departure_meets_tolerance"
+
+
+def test_what_if_reads_the_curve(fortnight: Segments) -> None:
+    curve = departure_curve(
+        fortnight, DEADLINE, tod_window_min=0, reference_dates=FIFTEEN_DAYS
+    )
+    result = what_if(curve, to_epoch(at(11, 35)))
+    # 11:35 is safe; leaving 5, 10 or 15 min later (11:40..11:50) always misses.
+    assert result == [(5, 0.0, -1.0), (10, 0.0, -1.0), (15, 0.0, -1.0)]
+    # 11:50 + 15 min = 12:05 is outside the curve: unavailable, not zero.
+    assert what_if(curve, to_epoch(at(11, 50)))[-1] == (15, None, None)
+
+
+# --- D's handoff folder --------------------------------------------------------
+
+
+def _write_handoff(folder, *, gaps=()) -> None:
+    route = {
+        "route_id": "bus-24-inbound-warren-leicester",
+        "route_pattern_id": "24-inbound-branch-0",
+        "origin": {"naptan_id": "O1"},
+        "destination": {"naptan_id": "D1"},
+    }
+    quality = {
+        "route_id": route["route_id"],
+        "capture_start_utc": "2026-10-24T13:53:05.672238Z",
+        "last_poll_utc": "2026-10-24T14:23:35.721234Z",
+        "successful_poll_gaps": list(gaps),
+        "missing_successful_slot_starts_utc": [],
+    }
+
+    def event(eid, stop, ts, quality="estimated"):
+        return {
+            "event_id": eid,
+            "route_pattern_id": "24-inbound-branch-0",
+            "naptan_id": stop,
+            "inferred_at": ts,
+            "quality": quality,
+        }
+
+    events = [
+        event("e1", "O1", "2026-10-24T13:56:07.000000Z"),
+        event("e2", "D1", "2026-10-24T14:12:53.000000Z"),
+        event("e3", "O1", "2026-10-24T14:01:00.000000Z", "uncertain"),
+        event("e4", "O1", "2026-10-24T14:07:51.000000Z"),
+        event("e5", "D1", "2026-10-24T14:21:43.000000Z"),
+    ]
+    csv_rows = [
+        (
+            "segment_id,route_id,vehicle_id,origin_at,destination_at,travel_seconds,"
+            "inference_method,quality,source,origin_event_id,destination_event_id"
+        ),
+        (
+            f"s1,{route['route_id']},V1,2026-10-24T13:56:07.000000Z,2026-10-24T14:12:53.000000Z,"
+            "1006.0,near_stop_prediction_v1,estimated,tfl_live_recording,e1,e2"
+        ),
+        (
+            f"s2,{route['route_id']},V2,2026-10-24T14:07:51.000000Z,2026-10-24T14:21:43.000000Z,"
+            "832.0,near_stop_prediction_v1,estimated,tfl_live_recording,e4,e5"
+        ),
+    ]
+    (folder / "route.json").write_text(json.dumps(route), encoding="utf-8")
+    (folder / "quality.json").write_text(json.dumps(quality), encoding="utf-8")
+    (folder / "stop_events.json").write_text(json.dumps(events), encoding="utf-8")
+    (folder / "segments.csv").write_text("\n".join(csv_rows) + "\n", encoding="utf-8")
+
+
+def test_load_handoff_uses_capture_window_and_unpaired_departures(tmp_path) -> None:
+    _write_handoff(tmp_path)
+    segments, report = load_handoff(tmp_path)
+    assert report.n_used == 2
+    assert list(segments.segment_id) == ["s1", "s2"]
+    # The uncertain 14:01 departure from O is kept as an unconfirmed departure.
+    np.testing.assert_array_equal(
+        segments.unconfirmed_departures,
+        [to_epoch(datetime(2026, 10, 24, 14, 1, tzinfo=UTC))],
+    )
+    start = datetime(2026, 10, 24, 13, 53, 5, 672238, tzinfo=UTC)
+    assert segments.coverage[0, 0] == to_epoch(start)
+
+
+def test_load_handoff_splits_coverage_at_poll_gaps(tmp_path) -> None:
+    # D's exporter format: last good poll before the gap, first good poll after.
+    gap = {
+        "from": "2026-10-24T14:00:00Z",
+        "to": "2026-10-24T14:05:00Z",
+        "seconds": 300.0,
+    }
+    _write_handoff(tmp_path, gaps=[gap])
+    segments, _ = load_handoff(tmp_path)
+
+    def utc(hh, mm):
+        return to_epoch(datetime(2026, 10, 24, hh, mm, tzinfo=UTC))
+
+    assert segments.coverage.shape == (2, 2)
+    assert segments.coverage[0, 1] == utc(14, 0)
+    assert segments.coverage[1, 0] == utc(14, 5)

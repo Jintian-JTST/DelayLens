@@ -1,5 +1,6 @@
 import hmac
 import json
+import logging
 import os
 import threading
 import time
@@ -17,7 +18,7 @@ from pydantic import Field, TypeAdapter, ValidationError
 
 from app import ask as ask_module
 from app import calibration as calibration_module
-from app import curves, db, fixtures, model, tfl
+from app import curves, db, fixtures, model, snapshot_files, tfl
 from app.schemas import (
     AskRequest,
     AskResponse,
@@ -63,7 +64,7 @@ def _load_routes() -> list[_ConfiguredRoute]:
         ) from None
 
 
-_cache: db.SegmentCache | None = None
+_cache: db.SegmentCache | db.FrozenCache | None = None
 
 
 def _database_url() -> str:
@@ -74,7 +75,13 @@ def _database_url() -> str:
 @asynccontextmanager
 async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
     global _cache
-    if url := _database_url():
+    if snapshot_dir := os.getenv("SNAPSHOT_DIR"):
+        # Offline snapshot mode (PLAN.md section 9): no database. A bad folder fails
+        # startup loudly rather than serving an empty site.
+        _cache = db.FrozenCache(snapshot_files.load_snapshot_dir(snapshot_dir))
+        if _database_url():
+            logging.getLogger(__name__).warning("SNAPSHOT_DIR is set; DATABASE_URL is ignored")
+    elif url := _database_url():
         _cache = db.SegmentCache(url)
         _cache.start()
     yield
@@ -185,7 +192,9 @@ def _compute_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
                 window_min=req.window_min,
                 tod_window_min=curves.TOD_WINDOW_MIN,
             )
-            result = curves.build_response(curve, req, segments)
+            result = curves.build_response(
+                curve, req, segments, snapshot_label=snapshot.source_label
+            )
     else:
         result = fixtures.fixture_curve(req)
     result.server_ms = round((time.perf_counter() - started) * 1000, 2)

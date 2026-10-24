@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "files": [
+    {
+      "path": "audit_review.json",
+      "bytes": 1791,
+      "sha256": "e8083b8e1e6bae81cc17a72844188694d6e81d21215179443e78d1c564977f20"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3663,
+      "sha256": "60bc2c97d90fd85a280d43d9c39984d222378afa6088ff4c33d06ed69971b723"
+    },
+    {
+      "path": "source_excerpt.json",
+      "bytes": 15909,
+      "sha256": "f5b2e8ae450e1f9db9683fb57481ce6688e3fdd3c243c5b8b9a7205e8a18dde1"
+    },
+    {
+      "path": "verify_source_review.py",
+      "bytes": 9988,
+      "sha256": "a4e1a53ce263b18b3ed6bc0b3784d1ccc7a6d753ca090e3af866e01b87666346"
+    }
+  ]
+}

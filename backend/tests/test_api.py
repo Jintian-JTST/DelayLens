@@ -289,3 +289,52 @@ def test_tube_without_direction_does_not_mix_platforms(monkeypatch, configured_r
         "/api/live", params={"route_id": configured_route["route_id"]}
     )
     assert response.status_code == 503
+
+
+def _live_get(route):
+    return client.get("/api/live", params={"route_id": route["route_id"]})
+
+
+def test_live_repeated_calls_share_one_tfl_request(monkeypatch, configured_route):
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200, json=[_prediction()])
+
+    _mock_tfl(monkeypatch, handler)
+    first = _live_get(configured_route)
+    second = _live_get(configured_route)
+    assert first.status_code == second.status_code == 200
+    assert second.json() == first.json()
+    assert len(calls) == 1
+
+
+def test_live_refetches_after_the_ttl(monkeypatch, configured_route):
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200, json=[_prediction()])
+
+    _mock_tfl(monkeypatch, handler)
+    monkeypatch.setattr(main, "LIVE_TTL_S", 0.0)
+    _live_get(configured_route)
+    _live_get(configured_route)
+    assert len(calls) == 2
+
+
+def test_live_errors_are_not_cached(monkeypatch, configured_route):
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        if len(calls) == 1:
+            return httpx.Response(500)
+        return httpx.Response(200, json=[_prediction()])
+
+    _mock_tfl(monkeypatch, handler)
+    assert _live_get(configured_route).status_code == 503
+    assert _live_get(configured_route).status_code == 200  # retried, not a cached failure
+    assert _live_get(configured_route).status_code == 200  # now served from cache
+    assert len(calls) == 2

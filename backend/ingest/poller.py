@@ -64,7 +64,7 @@ def process_run(run_dir: Path, final: bool = False) -> None:
     if final:
         args.append("--package")
     try:
-        result = subprocess.run(args, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=45)
+        result = subprocess.run(args, check=False, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=45)
         print(json.dumps({"event": "derivation", "exit_code": result.returncode, "result": result.stdout[-2500:], "error": result.stderr[-1500:]}), flush=True)
     except (OSError, subprocess.TimeoutExpired) as exc:
         print(json.dumps({"event": "derivation_failed", "error": type(exc).__name__}), flush=True)
@@ -163,9 +163,12 @@ def record(run_dir: Path, minutes: float = 90, interval: float = 30, key: str = 
         atomic_json(run_dir / "run.json", metadata)
         if raw_path.exists():
             compressed = raw_path.with_suffix(".jsonl.gz")
-            with raw_path.open("rb") as source, compressed.with_suffix(".gz.tmp").open("wb") as target:
-                with gzip.GzipFile(fileobj=target, mode="wb", mtime=0) as archive:
-                    shutil.copyfileobj(source, archive)
+            with (
+                raw_path.open("rb") as source,
+                compressed.with_suffix(".gz.tmp").open("wb") as target,
+                gzip.GzipFile(fileobj=target, mode="wb", mtime=0) as archive,
+            ):
+                shutil.copyfileobj(source, archive)
             os.replace(compressed.with_suffix(".gz.tmp"), compressed)
             process_run(run_dir, final=True)
         print(json.dumps({"event": "recording_finished", "status": metadata["status"], "run": str(run_dir)}), flush=True)

@@ -66,20 +66,28 @@ and verifying five consecutive polls; Victoria remains optional P2.
 
 ## Reproducible setup status
 
-Application source, manifests and lockfiles are absent from the inspected main
-baseline `e09ab18`. Do not present proposed app commands as tested setup. B/F add
-actual install/run/test/build commands when code lands.
+Integration branch `codex/integrate-branches` imports API/data/model source and
+the uv lockfile; frontend source is absent. See [README](../README.md) for the
+backend install/run/test/lint commands and [integration record](../tasks/branch-integration.md)
+for actual results. This is a PR proposal; main is not updated before review.
 
 | Item | Shared contract / remaining action |
 | --- | --- |
-| Versions | Python >=3.11; Node >=20; exact supported/package-manager versions pinned by B/F when code lands |
+| Versions | Python >=3.11; uv lockfile; Windows Python 3.11.9 used for integration checks; Node >=20 planned for frontend |
 | Package managers | uv backend; npm frontend; commit generated lockfiles |
 | Services | TfL access; Tiger Data after capture begins; Vultr overnight; Gemini optional |
 | Local ports | API 8000; frontend 5173; isolate concurrent instance ports/data roots |
 | Config names | TFL_APP_KEY, DATABASE_URL, GEMINI_API_KEY, POLL_LINE_IDS, POLL_STOP_IDS, POLL_INTERVAL_SECONDS, RAW_BACKUP_DIR, FRONTEND_ORIGIN |
-| Environment examples | B owns `.env.example`; no real credentials in shared files |
+| Environment examples | `backend/.env.example`; placeholders only; optional services configured in ignored `backend/.env` |
 | Platforms | Portable Windows/macOS/Linux local paths; systemd deployment Linux-only |
-| Verified here | Documentation/Git only; no application setup, service call or deployment verified |
+| Verified here | See current integration task for test results; external services and deployment not rerun |
+
+The two preserved recorder entry points use different formats: full-response raw
+capture stays in `backend.ingest.poller`; the database pipeline and service use
+`ingest.database_poller`. Retain all four configured routes, including main's
+short bus 24 segments and D's corrected bus 29 origin. Tube remains optional P2.
+The database pipeline's inference/SQL and the model still need reconciliation
+with the revised evidence policy; no API adapter exposes those estimates yet.
 
 Use repository-relative paths and each teammate's local credentials. Follow
 [CONTRIBUTING.md](../CONTRIBUTING.md).
@@ -102,8 +110,8 @@ phone/keyboard/evidence states.
 | Code | Owner / scope | Task record |
 | --- | --- | --- |
 | D | Jintian-JTST; collection, inference, schema/routes, snapshot and infra | [data-ingestion](../tasks/data-ingestion.md) |
-| M | Person not recorded; model, evaluation, README/submission | `tasks/model.md` — owner to create |
-| B | Person not recorded; backend/Gemini/contracts, integration/shared docs | `tasks/backend-api.md` — owner to create |
+| M | Olivia Guo / Claude Code, as recorded by M; model/evaluation/submission | [model](../tasks/model.md) |
+| B | David / Codex, as recorded by B; API/Gemini/contracts | [backend-api](../tasks/backend-api.md) |
 | F | Person not recorded; frontend, pitch, screenshots/video | `tasks/frontend-demo.md` — owner to create |
 
 Use [tasks/TEMPLATE.md](../tasks/TEMPLATE.md). Defining roles does not establish

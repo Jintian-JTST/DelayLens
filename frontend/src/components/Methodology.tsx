@@ -192,9 +192,27 @@ export default function Methodology({
           <span className="eyebrow">CHECKING OUR CONFIDENCE</span>
           <h3>Does 80% mean 80%?</h3>
           <p className="small muted">
-            Predicted probability compared with observed on-time arrivals on
-            held-out journeys.
+            Predicted probability compared with inferred stop events on held-out
+            journeys. This does not validate actual arrival times.
           </p>
+          {calibration && (
+            <div className="notice calibration-status">
+              <Icon name="shield" />
+              <div>
+                <strong>
+                  {calibration.calibration_status === "preliminary"
+                    ? "Preliminary backtest · not validated"
+                    : "Calibration not validated"}
+                </strong>
+                <p>
+                  {(calibration.n_outcomes ?? 0).toLocaleString()} scored outcomes
+                  {" · "}
+                  {(calibration.n_runs ?? 0).toLocaleString()} distinct runs
+                </p>
+                {calibration.basis && <p>{calibration.basis}</p>}
+              </div>
+            </div>
+          )}
           {calibration?.bins.length ? (
             <>
               <svg
@@ -245,11 +263,14 @@ export default function Methodology({
               <strong>
                 {busy
                   ? "Loading calibration…"
-                  : "Calibration is not available yet"}
+                  : calibration
+                    ? "No scored backtest outcomes yet"
+                    : "Calibration is not available yet"}
               </strong>
               <p>
-                We will show measured reliability when a recorded backtest is
-                available.
+                {calibration
+                  ? "More recorded journeys are needed before the backtest can be shown."
+                  : "We will show backtest results when the service is available."}
               </p>
             </div>
           )}

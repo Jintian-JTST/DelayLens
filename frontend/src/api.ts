@@ -73,6 +73,10 @@ export interface Stats {
 export interface Calibration {
   bins: { predicted: number; observed: number; n: number }[];
   brier_score: number | null;
+  calibration_status: "not_validated" | "preliminary";
+  n_outcomes: number;
+  n_runs: number;
+  basis: string;
 }
 
 const base = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");

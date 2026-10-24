@@ -1,0 +1,37 @@
+{
+  "review_type": "agent_source_trace",
+  "reviewer": "Codex",
+  "reviewed_at_utc": "2026-10-24T14:40:20.761378Z",
+  "human_review_claimed": false,
+  "checks": [
+    "matching line 24 / inbound / vehicle LTZ1607 / trip 744402 at both endpoints",
+    "origin source timestamps 13:55:25 and 13:55:36 UTC, last countdown 31 seconds",
+    "destination source timestamps 14:11:48 and 14:11:58 UTC, last countdown 55 seconds",
+    "two changed, successful post-ETA absence frames at each endpoint",
+    "seven-stop ordered pattern and positive 1006-second estimated travel duration",
+    "Sample 2 LTZ1171 / trip 744420: UTC 14:07:51 to 14:21:43, 832 seconds; endpoint last countdowns 44/48 seconds; source gaps 3.58/65.88 seconds; two advancing-source post-ETA absence frames at both endpoints.",
+    "Sample 3 LTZ1146 / trip 744438: UTC 14:16:32 to 14:32:05, 933 seconds; endpoint last countdowns 25/21 seconds; source gaps 38.09/40.03 seconds; destination confirmations 14:33:05 and 14:34:06 UTC, ignoring the identical cached 14:33:35 response."
+  ],
+  "limitations": "This reviews captured prediction evidence only; no measured actual-arrival or human signoff is claimed.",
+  "reviewed_segments": [
+    {
+      "segment_id": "segment_3ad38bb56c70cfff3765b1e6be2e3d95",
+      "origin_event_id": "event_f67b9d1a7e30489f1f755f429698824a",
+      "destination_event_id": "event_4e2d4cb23058df6f67e5f78884868b9f",
+      "outcome": "consistent_with_rule"
+    },
+    {
+      "segment_id": "segment_89b488cb0b6c839d52b225fd80277b38",
+      "origin_event_id": "event_0fab76990e7d09fe62fe1d8a88860ed5",
+      "destination_event_id": "event_b60af3679c62be73e299653a9964a234",
+      "outcome": "consistent_with_rule"
+    },
+    {
+      "segment_id": "segment_eece4936a4945acfce0a969e7b99d71c",
+      "origin_event_id": "event_7836e2afbc99fee436e23bba1bb6bfdd",
+      "destination_event_id": "event_0e78341b8a3c2d73faea7e46aa924df5",
+      "outcome": "consistent_with_rule"
+    }
+  ],
+  "derivation_note": "Repeated/rewound cache responses do not supply confirmations or invalidate otherwise timely independent advancing-source frames; 60/90/120-second thresholds unchanged."
+}

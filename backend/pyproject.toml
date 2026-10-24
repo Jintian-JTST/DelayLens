@@ -9,11 +9,17 @@ dependencies = [
     "pydantic>=2.8",
     "httpx>=0.27",
     "python-dotenv>=1.0",
+    "psycopg[binary]>=3.2,<4",
+    "numpy>=2.4.6",
 ]
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "ingest/tests"]
 pythonpath = ["."]
+markers = [
+    "live_db: explicitly opted-in real Tiger Data transaction rollback tests",
+    "live_gemini: explicitly opted-in real Gemini API calls (costs quota)",
+]

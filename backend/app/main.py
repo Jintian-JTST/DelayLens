@@ -120,6 +120,8 @@ def routes() -> list[Route]:
 
 # TfL's rate limit is per app key, so viewers share one upstream request per route
 # for LIVE_TTL_S. Only successes are cached: a failure is retried on the next call.
+# A cached response is up to LIVE_TTL_S old, so its time_to_station_s is stale by that
+# much: clients should count down from expected_arrival (or compare with fetched_at).
 LIVE_TTL_S = 25.0
 _live_cache: dict[str, tuple[float, LiveResponse]] = {}
 _live_locks: dict[str, threading.Lock] = {}

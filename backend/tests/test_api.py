@@ -113,10 +113,10 @@ def test_out_of_range_float_is_422_not_500():
     assert "input" not in r.json()["detail"][0]
 
 
-def test_deeply_nested_body_is_422_not_500():
+def test_deeply_nested_body_is_client_error_not_500():
     for path in ("/api/departure-curve", "/api/ask"):
         r = client.post(path, content=b"[" * 5000 + b"]" * 5000, headers={"content-type": "application/json"})
-        assert r.status_code == 422
+        assert r.status_code in (400, 422)  # 400 on Python 3.11, 422 on 3.14; never 500
 
 
 def test_ask_is_honest_when_unavailable():

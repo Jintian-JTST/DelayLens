@@ -73,7 +73,7 @@ def export(snapshot: db.Snapshot, out_dir: Path, route_filter: str = "") -> dict
             if cov else None
         )
         (folder / "coverage.json").write_text(
-            json.dumps(coverage, indent=2) + "\n", encoding="utf-8"
+            json.dumps(coverage, indent=2) + "\n", encoding="utf-8", newline="\n"
         )
         summary["routes"][route_id] = {
             "segments": len(segments),
@@ -82,7 +82,9 @@ def export(snapshot: db.Snapshot, out_dir: Path, route_filter: str = "") -> dict
             "last_origin_utc": segments[-1].origin_observed_at.isoformat() if segments else None,
             "coverage": coverage,
         }
-    (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    (out_dir / "summary.json").write_text(
+        json.dumps(summary, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     return summary
 
 

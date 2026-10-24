@@ -1,13 +1,13 @@
 # DelayLens — table demo (role F)
 
 Target: 2 minutes, with F presenting and a technical teammate available.
-This script is ready for rehearsal; the live-data gate is not yet met.
+This is the general structure. The locked stage version, with verified numbers (Sat 17:00 → leave by 16:22, about 92%), is [docs/demo-script.md](../../docs/demo-script.md).
 
 ## Before showing it to judges
 
 1. M chooses a route and deadline inside the recorded coverage hours. D confirms
    data recording, the deployed URL and the fallback snapshot. B verifies the
-   API, including Ask. F checks the page on the presentation device and a phone.
+   API, including Ask. F checks the page on the presentation laptop (desktop only, per David's decision).
 2. Confirm fixture banners are absent because the result uses real recorded
    observations. Do not hide a banner to make synthetic output look real.
 3. Choose a route with enough journeys and rehearse its actual recommendation.
@@ -32,7 +32,7 @@ This script is ready for rehearsal; the live-data gate is not yet met.
 - **M:** empirical replay, distinct-trip bootstrap, calibration and small samples.
 - **D:** TfL recording, Tiger Data, UTC timestamps, overnight reliability and backup.
 - **B:** API latency, integration boundaries, Gemini validation and honest failures.
-- **F:** accessible interaction, mobile layout, local risk controls and error recovery.
+- **F:** accessible interaction, desktop layout, local risk controls and error recovery.
 
 ## Recording checklist (when the real-data gate passes)
 
@@ -40,7 +40,7 @@ This script is ready for rehearsal; the live-data gate is not yet met.
   and what-if interaction. Record Ask only when it is reliably available.
 - Show the methodology coverage and relevant limitations. Keep the core under
   two minutes and keep a copy on the second presentation device.
-- Capture Devpost desktop and phone screenshots from the same verified build.
+- Capture Devpost desktop screenshots from the same verified build.
   Current fixture QA screenshots must not be represented as real predictions.
 - Use `architecture.svg` as the implementation-plan graphic; confirm each
   integration before describing the whole pipeline as deployed.

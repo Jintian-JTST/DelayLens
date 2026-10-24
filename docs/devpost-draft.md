@@ -22,7 +22,7 @@ time from trips we actually recorded, and recommends the latest departure that m
 your risk tolerance (default: at most 10% late).
 
 On bus 29 (Mornington Crescent → Tottenham Court Road) with a 5pm Saturday deadline, it
-says **leave by 16:25 for an estimated 90% chance** (frozen snapshot of our recording; the live database gives the same).
+says **leave by 16:22 for an estimated 92% chance** (frozen snapshot of our recording; the live database gives the same).
 You can also just ask in plain English. Gemini interprets the question; our model
 computes every number.
 
@@ -36,8 +36,9 @@ When the evidence is thin, it says so:
 
 - **Data (D):**
   - A recorder polls TfL's live arrival predictions every 30 s into Tiger Data
-    (TimescaleDB hypertable, continuous aggregate for coverage, columnstore
-    compression), with raw JSONL backups.
+    (TimescaleDB hypertable, a real-time continuous aggregate for hourly coverage,
+    and a columnstore policy that converts chunks after 2 hours; we claim no
+    compression ratio), with raw JSONL backups.
   - Stop events are inferred conservatively from near-stop predictions, and paired
     into origin → destination trips with quality labels.
   - ___ D's data/infra paragraph (due Sun 10:00) ___

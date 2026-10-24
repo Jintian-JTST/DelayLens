@@ -59,9 +59,11 @@ export default function DepartureCurve({
       "Z";
     return { segment, line, band };
   });
+  // Without a recommendation nothing is pre-selected: highlighting the first
+  // point (the earliest departure, often 100%) would read as advice.
   const focus =
     hover === null
-      ? (selected ?? recommended ?? points[0])
+      ? (selected ?? recommended ?? null)
       : points[Math.min(hover, points.length - 1)];
   const ticks = [0, 0.25, 0.5, 0.75, 1];
 

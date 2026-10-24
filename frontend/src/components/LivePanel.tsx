@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { api, type LiveResponse, type Route } from "../api";
+import { LIVE_UNAVAILABLE_MESSAGE, OFFLINE_LIVE_MESSAGE } from "../live";
 import { timeLabel, type Clock } from "../time";
 import Icon from "./Icon";
 
 export default function LivePanel({
   route,
   demo,
+  offline = false,
   clock,
 }: {
   route: Route;
   demo: boolean;
+  /** Offline snapshot mode: live TfL arrivals are off, so never fetch or retry. */
+  offline?: boolean;
   clock: Clock;
 }) {
   const [data, setData] = useState<LiveResponse | null>(null);
@@ -20,7 +24,7 @@ export default function LivePanel({
   useEffect(() => {
     setData(null);
     setError("");
-    if (demo) {
+    if (demo || offline) {
       setBusy(false);
       return;
     }
@@ -40,9 +44,7 @@ export default function LivePanel({
       } catch {
         if (!current.signal.aborted) {
           setData(null);
-          setError(
-            "TfL live arrivals are unavailable. Try refreshing in a moment.",
-          );
+          setError(LIVE_UNAVAILABLE_MESSAGE);
         }
       } finally {
         if (!current.signal.aborted) setBusy(false);
@@ -56,7 +58,7 @@ export default function LivePanel({
       clearInterval(poll);
       clearInterval(clockTick);
     };
-  }, [route.route_id, demo, refresh]);
+  }, [route.route_id, demo, offline, refresh]);
 
   return (
     <section className="card live-card" aria-label="Live arrivals">
@@ -69,7 +71,7 @@ export default function LivePanel({
           type="button"
           className="icon-button"
           aria-label="Refresh live arrivals"
-          disabled={demo || busy}
+          disabled={demo || offline || busy}
           onClick={() => setRefresh((r) => r + 1)}
         >
           <Icon name="refresh" size={17} />
@@ -84,6 +86,11 @@ export default function LivePanel({
             Demonstration routes have no live vehicles. No arrivals are
             simulated.
           </p>
+        </div>
+      ) : offline ? (
+        <div className="inline-state" role="status">
+          <Icon name="info" />
+          <p>{OFFLINE_LIVE_MESSAGE}</p>
         </div>
       ) : busy && !data ? (
         <div

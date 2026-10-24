@@ -1,21 +1,23 @@
 # OxHack
 Hackathon project developed at OxHack 2026, University of Oxford.
 
-The repository is prepared for AI-assisted team development. The product idea,
-requirements and technology stack are awaiting the team's decision.
+The team is building **DelayLens**: departure choices from recorded London bus
+predictions, with visible data-quality and small-sample limits. Read
+[PLAN.md](PLAN.md) for the agreed direction; implementation and verification are
+tracked separately in [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Start here
 
 1. Read [AGENTS.md](AGENTS.md) for shared coding and collaboration rules.
-2. Complete [docs/PROJECT.md](docs/PROJECT.md) with the product brief, event
-   constraints, MVP scope, technology choices and demo plan.
+2. Read [PLAN.md](PLAN.md) and [docs/PROJECT.md](docs/PROJECT.md) for the product,
+   event constraints still to verify, MVP scope, stack and demo plan.
 3. Use [docs/PROGRESS.md](docs/PROGRESS.md) for milestones, verification, blockers
    and agent handoffs.
 4. Build one working end-to-end slice, verify it, then add optional features.
 
 For team onboarding, personal configuration and concurrent human/AI tasks, read
 [CONTRIBUTING.md](CONTRIBUTING.md). Each task can use the
-[handoff template](docs/tasks/TEMPLATE.md).
+[handoff template](tasks/TEMPLATE.md).
 
 ## AI tool entry points
 
@@ -52,16 +54,18 @@ connectors are optional unless a specific task needs them. Open the repository r
 in your chosen tool; if it does not load rules automatically, explicitly ask it to
 read `AGENTS.md` and the relevant project/task documents.
 
-This is a documentation-only preparation stage. Application dependencies, run
-commands and checks will be documented when the team chooses the stack. The
-inherited Python ignore rules do not imply a Python implementation.
+The intended stack is Python/FastAPI/NumPy with uv, React/Vite/TypeScript with
+npm, Tiger Data and Vultr. The inspected main baseline currently contains
+planning documents rather than runnable application tooling. Owners will add
+actual setup/run/check commands with source and lockfiles; do not infer a working
+app from this plan. The inherited ignore rules do not define the stack.
 
 ## Development workflow
 
 - Check the current branch and worktree before editing; keep changes scoped.
 - Use short feature branches for team tasks and coordinate shared interfaces.
 - Give concurrent AI tasks separate clones or worktrees and task branches; keep
-  ownership and handoffs in separate files under `docs/tasks/`.
+  ownership and handoffs in separate files under `tasks/`.
 - Keep real credentials in ignored environment files. Add `.env.example` with
   placeholders when configuration is introduced; commit the selected lockfile.
 - Run the checks relevant to the change and record the actual result.

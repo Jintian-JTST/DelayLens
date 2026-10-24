@@ -3,185 +3,199 @@
 - Task ID: `data-ingestion` / D
 - Owner (person / AI tool): Jintian-JTST (D) / Codex
 - Branch: `feat/data`
-- Status: claimed; task record prepared; implementation not started
-- Integrator / reviewer: B (backend, API contract and branch integration); M reviews segment usability
+- Documentation revision branch: `codex/revise-ingestion-plan`
+- Status: claimed; plan revised after review; implementation not verified
+- Integrator / reviewer: B for API/schema integration; M for usable segment evidence
 - Updated: 2026-10-24 (Europe/London)
-- Source: [PLAN.md](../PLAN.md), sections 1, 3, 6, 7 and 8, at commit `73006fa`
-- Record structure: [task template](../docs/tasks/TEMPLATE.md)
+- Source: [PLAN.md](../PLAN.md), especially sections 1, 3, 4, 6 and 8
+- Record structure: [task template](TEMPLATE.md)
 
 ## Outcome and acceptance criteria
 
-Deliver real TfL recordings and usable trip segments to M and B, then keep the
-recorder and demo running through the overnight gap. Recorder first: time spent
-without collecting cannot be recovered from TfL's live API.
+Deliver a small, traceable set of credible inferred London bus segments to M/B
+before spending time on additional infrastructure. TfL supplies predictions;
+inferred stop times are not independent measurements of actual arrival.
 
-### P0: collection and usable data
+### P0 — start collecting and prove the samples
 
-- [ ] Select one bus segment of roughly 30-45 minutes and one Tube contrast
-  segment; verify line status, stop order, direction and TfL identifiers. Record
-  the supported segments in `backend/config/routes.json`.
-- [ ] Poll `/Line/{lineIds}/Arrivals` every 30 seconds, filtering to the selected
-  stops. Preserve `vehicleId`, `naptanId`, `lineId`, `direction`,
-  `timeToStation`, `expectedArrival` and the source `timestamp`; record collection
-  time separately as `polled_at`.
-- [ ] Save every fetched poll to a gzipped JSONL backup and insert predictions
-  into Tiger Data. A database outage must leave the raw backup recoverable.
-- [ ] Handle 429, 5xx, timeouts, malformed responses and network loss with
-  explicit logs and bounded backoff; resume recording after recovery.
-- [ ] Store all timestamps in UTC. The repeated local 01:00 hour on Sunday
-  25 October must remain distinct, ordered and recoverable.
-- [ ] Run derivation every minute. Produce stop events and same-direction
-  origin-to-destination segments with positive, plausible ride times.
-- [ ] Hand M a real segment CSV and B the segment query and coverage SQL.
-  Counts must reflect real recordings; incomplete coverage stays visible.
+- [ ] Start one bus line's complete TfL -> JSONL recording at 30-second cadence;
+  database/account/migration setup is not a prerequisite for raw capture.
+- [ ] Check five consecutive polls for stable vehicle identity and progression.
+  Select one **10-20-minute segment over 4-8 consecutive stops**, one direction
+  and a verified route pattern; record route/config versions and IDs.
+- [ ] Assign `poll_id`/collector identity, record UTC collection time separately
+  from source timestamps, and durably append complete raw results before any
+  retryable database import. Detect incomplete tails and disk-write failures.
+- [ ] Start Tiger Data import after raw capture works. An unavailable DB must
+  leave a recoverable archive. Deduplicate source predictions as well as polls.
+- [ ] Derive only plausible near-stop events: a qualifying prediction sequence,
+  `timeToStation <= 60 s`, timestamps and stop order checked. The initial
+  two-distinct-source-prediction heuristic needs D/M inspection of raw examples.
+- [ ] Early disappearance or ambiguous identity becomes uncertain/rejected
+  evidence, not a usable inferred arrival. Preserve exclusion reasons/counts.
+- [ ] Store `inference_method`, categorical `confidence`, `last_seen_at`,
+  `prediction_count`, inferred time and raw provenance on stop events.
+- [ ] Match `line_id + vehicle_id + direction + route_pattern_id` within one
+  canonical run, with increasing `stop_sequence` and plausible positive ride
+  duration. A 20-minute episode gap alone is not sufficient identity evidence.
+- [ ] Manually trace the first O->D samples to raw records, then deliver CSV,
+  ordinary SQL/query contract, quality metadata and a **first real-data snapshot
+  immediately**. M reads the CSV; B verifies DB-independent snapshot loading.
 
-### Infrastructure and demo readiness
+**Cut rule:** after about **90 minutes of continuous recording** without a
+manually checkable O->D segment, shorten the segment or change route. Preserve raw
+records and record the new route version; do not keep debugging a 30-45-minute
+segment indefinitely.
 
-- [ ] Run the recorder and derivation on Vultr under `systemd` with automatic
-  restart; keep the laptop recorder as the planned backup.
-- [ ] Verify a forced recorder termination restarts collection and that a
-  network/database interruption can be recovered from JSONL without duplicate
-  derived trips.
-- [ ] Provide `coverage_hourly`, compression configuration and stats SQL to B;
-  target the planned SQL checks below 100 ms and report actual measurements.
-- [ ] Deploy the API package from B and production frontend build from F;
-  verify the core journey at the public URL with B.
-- [ ] Show overnight row counts and gaps, including the clock change; recover
-  available missing data from JSONL before other morning work.
-- [ ] Produce a fallback snapshot of real recorded data and verify B's API can
-  serve it without Tiger Data. Identify its capture time and coverage clearly.
-- [ ] Measure deployed API latency against the plan's p95 < 300 ms target,
-  prepare the hotspot backup and complete the final VM/recorder/snapshot check.
+### P1 — keep the proven path running
 
-### Optional work and scope limits
+- [ ] Deploy the recorder/derivation to Vultr under `systemd` before unattended
+  overnight operation. Use one active canonical derivation/DB writer; laptop
+  backup records raw data only after handover.
+- [ ] Verify the three essential recovery cases: unexpected process exit restarts
+  collection; DB outage still saves raw data; backup replay/overlap does not
+  duplicate canonical events or segments.
+- [ ] Publish separate polling completeness and unique usable-journey coverage,
+  initially with ordinary SQL. Add continuous aggregates/Hypercore only after
+  the real-data handoff, checking the actual instance version and migration.
+- [ ] Deploy B's API and F's build and verify the real UI journey with them.
+  Record deployed revision; latency targets follow correctness and are measured,
+  not prerequisites for first samples.
+- [ ] Inspect overnight gaps and the repeated local 01:00 hour, recover available
+  records, refresh the snapshot and support the final demo rehearsal.
 
-- [ ] Submit the National Rail HSP access request. Build rail support only if
-  access arrives by Saturday evening and the core pipeline is working (P2).
+### P2 — only after the core works
 
-M owns modelling and calibration; B owns API endpoints, caching and Gemini; F
-owns the frontend. Multi-leg routing, arbitrary A-to-B journeys and accounts are
-outside the MVP. Do not expand into another role's files without coordination.
+Tube contrast, longer routes, HSP sign-up/integration, full compression benchmarks,
+complex fault drills and extended backup-network exercises are optional. Prepare
+a simple hotspot fallback if time; these items cannot block the single-bus MVP.
 
 ## Ownership and dependencies
 
-### Owned files and deliverables
+### Owned paths and deliverables
 
-These application paths are planned in `PLAN.md`; they do not exist yet at task
-creation.
+Application paths below are the planned ownership contract, not evidence that
+these files or services have been implemented.
 
-| Path / deliverable | D's responsibility |
+| Path / deliverable | Responsibility |
 | --- | --- |
-| `backend/ingest/poller.py` | TfL polling, stop filtering, JSONL durability, database writes and recovery |
-| `backend/ingest/derive.py` | Prediction episodes, inferred stop events, trip segments and repeatable derivation |
-| `backend/sql/001_schema.sql` | Prediction hypertable, indexes, stop events, coverage aggregate and compression |
-| `backend/config/routes.json` | Verified route IDs, modes, directions, endpoints and supported stop IDs |
-| `deploy/` | VM setup instructions, service units, deployment and recovery procedures |
-| `tasks/data-ingestion.md` | D's status, decisions, evidence and handoff |
-| Data handoff | Segment CSV, segment/coverage/stats SQL and a real-data fallback snapshot; artifact locations agreed with M/B |
+| `backend/ingest/poller.py` | Raw-first polling, durable recording, explicit failures and retryable import boundary |
+| `backend/ingest/derive.py` | Canonical episodes, inference quality, ordered matching, replay and traceability |
+| `backend/sql/001_schema.sql` | P0 raw/prediction/event/segment storage, provenance and unique keys; later version-tested optimisation |
+| `backend/config/routes.json` | One verified London bus pattern, stop order/endpoints and route version |
+| `deploy/` | VM/service/deployment and essential recovery instructions |
+| `tasks/data-ingestion.md` | D's decisions, real checks and handoffs |
+| CSV / snapshot / query handoff | Real canonical segments, provenance and quality/coverage manifest; location agreed with B/M |
 
-D also owns TfL, Tiger Data and Vultr setup, the HSP request, and hotspot backup
-preparation. Keep credentials in local environment files or the server's secret
-configuration; never put credentials or personal machine paths in this record.
+B owns `backend/app/db.py`, API schemas/endpoints, `.env.example`, dependency
+manifests and lockfiles. M owns model thresholds/implementation; F owns UI labels.
+D requests changes there instead of editing another role's application files.
+The owner explicitly requested this shared documentation revision; B maintains
+project summaries/contracts after integration.
 
-### Shared interfaces and decisions to agree
+### Minimum segment interface
 
-`PLAN.md` provides the initial contract and schema sketch. B owns the final API
-contract and freezes it at Saturday 17:00; subsequent changes require B's approval.
+The following is a **format example, not a collected sample**:
 
-| Interface | Required handoff / decision |
+```json
+{
+  "segment_id": "stable-unique-id",
+  "route_id": "bus-example-A-B",
+  "vehicle_id": "vehicle-123",
+  "origin_at": "2026-10-24T17:10:00Z",
+  "destination_at": "2026-10-24T17:24:30Z",
+  "travel_seconds": 870,
+  "inference_method": "near_stop_prediction",
+  "quality": "estimated",
+  "source": "tfl_live_recording"
+}
+```
+
+Keep the CSV's minimum fields identical. Full records additionally carry route
+version/pattern, line/direction, canonical run ID, endpoint event IDs, categorical
+confidence and a lookup from `segment_id` to raw predictions. `origin_at` and
+`destination_at` remain inferred UTC timestamps; never call them `actualArrival`.
+Only deduplicated estimated segments passing the agreed endpoint checks go to M.
+
+### Decisions and handoffs to B/M
+
+| Interface | Agreement needed before use |
 | --- | --- |
-| `routes.json` -> B/M | Agree the file shape and stable `route_id` values. Match the planned API route fields; B supplies dynamic trip counts and `hours_covered` from real data. |
-| Predictions -> stop events | Use the last `expectedArrival` seen with `timeToStation <= 60 s`, otherwise the last poll in which the prediction appeared. A return to the same stop more than 20 minutes later starts a new episode. Preserve the distinction between inferred events and independently measured arrivals. |
-| Stop events -> segments -> M | Match the same vehicle and direction from origin to destination with `t_D > t_O`. Agree segment table/CSV fields, UTC timestamp representation and sample identity before M consumes them. |
-| Segment storage -> B | Supply the `get_segments` query, coverage SQL and stats SQL. B implements `backend/app/db.py`, the minute-refreshed cache and API responses. |
-| Raw backups and laptop/VM overlap | Agree duplicate identity, replay rules and treatment of still-active prediction episodes. Re-running derivation or importing overlapping backups must not inflate trip counts. |
-| Fallback snapshot -> B | Agree the snapshot format and loading interface; B owns API-side loading. Keep source, capture time and supported hours visible. |
-| Deployment -> B/F | Receive their runnable API package and production frontend build; coordinate environment variables, service commands and public smoke tests. |
+| Route configuration | Verified IDs, direction/pattern, stop sequence, route version and duration bounds |
+| Event/segment identity | Stable canonical episode/endpoint-based keys and `ON CONFLICT`; `poll_id` alone does not deduplicate independent collectors |
+| Backup recovery | Merge/deduplicate source evidence through one derivation writer; prove the same unique segment counts on overlapping replay |
+| M's model support | Count distinct usable run segments, not rows/replay minutes. 0-4: insufficient; 5-14: preliminary; 15+: empirical estimate, not automatically calibrated. M owns implementation and further policy changes. |
+| B's API | Retain `ok` / `low_data` / `insufficient_data` names where possible; B updates nullable recommendation/interval behaviour and fixtures before contract freeze |
+| B's queries | Supply `get_segments`, ordinary coverage and stats SQL against the agreed schema; B implements the database adapter/cache |
+| Coverage | Separate expected/successful polls/gaps from usable segments, distinct vehicles and exclusions |
+| Snapshot | First handoff includes real segments, capture/reference times, route version, quality and provenance; B loads without Tiger Data and labels snapshot mode |
+| Demo time | M/F pick a genuinely recorded period early; any Saturday-to-Sunday transfer is explicit and unvalidated |
 
-Verify TfL rate limits and current Tiger Data schema/compression syntax against
-official documentation during implementation. The SQL in `PLAN.md` is a sketch,
-not a migration already verified against a live service.
+Use UTC storage plus Europe/London local date, weekday and offset/fold for
+features. Keep the two local 01:00 hours distinct; do not silently pool Saturday
+and Sunday or shift recordings to a fictional date.
 
-### Local configuration and prerequisites
+### Configuration and prerequisites
 
-Configuration names from `PLAN.md` relevant to D:
+Use `TFL_APP_KEY`, `DATABASE_URL`, `POLL_LINE_IDS`, `POLL_STOP_IDS`,
+`POLL_INTERVAL_SECONDS` (30) and `RAW_BACKUP_DIR` (planned `.local/raw`). B owns
+safe `.env.example` values. Secrets and personal paths stay local. Python >=3.11
+with uv is planned; systemd is Linux-specific. Record exact install/run/service
+commands when the code exists and the commands have been exercised.
 
-| Name | Purpose |
+## Milestones and handoff order
+
+Times are **targets**, in Europe/London; no unchecked row claims completion.
+Start immediately if the original Saturday timetable has slipped.
+
+| Gate | Exit condition / recipient |
 | --- | --- |
-| `TFL_APP_KEY` | Server-side TfL access |
-| `DATABASE_URL` | Tiger Data PostgreSQL connection |
-| `POLL_LINE_IDS` | Selected bus and Tube line IDs |
-| `POLL_STOP_IDS` | Selected NaPTAN stop IDs |
-| `POLL_INTERVAL_SECONDS` | Poll interval; planned value `30` |
-| `RAW_BACKUP_DIR` | Local raw archive directory; planned value `.local/raw` |
+| G0 immediately; original Sat 15:00 target | Continuous durable real polls without waiting for DB; route identity checked |
+| First 90 minutes of capture | Manually inspect credible O->D samples; otherwise shorten/change route |
+| First usable samples (G2) | CSV -> M; query/schema/quality contract and snapshot -> B; snapshot mode tested immediately |
+| Sat 17:00 contract gate | B reconciles quality/nullable states with M/F; identity rules explicit |
+| Sat 18:30 handoff | Real samples, ordinary coverage SQL and refreshed snapshot consumable by M/B |
+| Sat 19:30 core gate | Real data -> model -> API -> UI; cut optional work if absent |
+| Evening, target Sat 21:30 | Supervised VM; one active writer; three essential recovery checks |
+| Sat 23:45 overnight gate | Restart, disk/raw backup and snapshot checked before team absence |
+| Sun 07:00-08:30 | Gaps/clock-change QA/recovery; snapshot refreshed, not first created |
+| Sun 09:30 freeze | Covered demo reference locked; performance measurement/redeploy support |
+| Sun 10:00 / 10:30 | Data/infra notes -> M; final infra/rehearsal support |
 
-B owns `.env.example`, `backend/pyproject.toml` and `backend/uv.lock`; request
-needed dependencies or configuration changes through B. The plan selects Python
->= 3.11 with `uv`. D's `systemd` deployment is Linux-specific; local setup and
-shared instructions must remain portable. No dependencies are installed by this
-task-file preparation step.
-
-## Milestones and handoffs
-
-Times below are targets from `PLAN.md`, in **Europe/London**. Checkboxes indicate
-completion evidence, not simply that the scheduled time has passed.
-
-| Target | D deliverable / exit check | Recipient |
-| --- | --- | --- |
-| Sat 24 Oct, kickoff | Supported routes selected; identifiers and contract questions recorded | B, M |
-| Sat 15:00 | Real rows every 30 seconds; JSONL backup; schema and `routes.json` available. If blocked, M helps D at the recorder gate. | M, B |
-| Sat 16:30 | Recovery/backoff exercised, stop IDs checked and HSP request submitted | B |
-| Sat 18:30 | Plausible derived segments, segment CSV, `get_segments` and coverage SQL | CSV -> M; SQL -> B |
-| Sat 19:30 | Support the real data -> model -> API -> screen gate; follow the team's bus-only cut if needed | All |
-| Sat 21:30 | Recorder and derivation supervised on the VM; compare laptop/VM collection coverage and row counts | B |
-| Sat 22:30 | Coverage aggregate, compression and stats SQL ready; receive API/frontend builds | SQL -> B; builds <- B/F |
-| Sat 23:00 | Public deployment works; smoke-tested with B, with deployed revision recorded | B, F |
-| Sat 23:45 | Forced-kill restart proven; disk and laptop backup readiness checked | All |
-| Sun 25 Oct, 07:00-07:15 | Overnight rows/gaps shown across the clock change; JSONL recovery first if needed | All |
-| Sun 08:30 | Data QA complete and snapshot-backed API verified without Tiger Data | B, M |
-| Sun 09:30 | Deployed latency measured, hotspot prepared, redeploy coordinated with B; feature freeze | B, F |
-| Sun 10:00 | Data/infra description and evidence ready for the submission | M |
-| Sun 10:30 | Final VM, recorder, snapshot and hotspot checks; dress rehearsal | All |
-
-B integrates branches in order **D -> M -> B -> F**. After the feature freeze,
-coordinate bug fixes with B; after submission, only B-approved demo-breaking fixes
-are redeployed. D covers the pipeline portion of the table demo.
+B integrates D -> M -> B -> F. After freeze, bug fixes only; after submission,
+B approves demo-breaking redeploys. D explains the evidence/inference pipeline.
 
 ## Verification plan
 
-Record actual commands, inputs and results here as implementation lands. Planned
-checks are not completed tests.
-
-- Collection: inspect successive real polls and database rows at the configured
-  cadence; compare retained records with the raw archive.
-- Failure and replay: exercise 429/5xx/timeouts, Wi-Fi loss, database loss, JSONL
-  recovery and overlapping laptop/VM recordings.
-- Derivation: check episode boundaries, missing/vanishing predictions, direction,
-  repeated vehicle IDs, incomplete trips, replay idempotency and plausible ride
-  times. Include the repeated local hour with distinct UTC instants.
-- Handoff: M reads the real CSV; B runs the segment, coverage and stats queries
-  against the agreed schema. Check counts and covered hours against source data.
-- Deployment: prove service restart, public UI behaviour, snapshot operation
-  without the database and the backup network path; record latency measurements.
-- Documentation: check UTF-8/LF, exact-case local links and Git whitespace.
+- Inspect real polling durability/source freshness and route identity.
+- Check disappearance, stale/jumping predictions, branch mismatch, reused IDs,
+  insufficient evidence, incomplete trips and the repeated local hour.
+- Trace accepted/excluded examples to raw records; verify count units.
+- Exercise restart, DB-down raw saving and idempotent overlapping replay.
+- M reads CSV; B reads the same snapshot/query results. Verify real UI behaviour
+  and DB-independent snapshot mode, rather than inferring success from a build.
+- For this documentation revision: UTF-8/LF, exact-case local links, canonical
+  paths/template, JSON examples, scope invariants and Git whitespace.
 
 ## Handoff
 
-- Changes and relevant commits: local checkout fast-forwarded to `73006fa`
-  (`Initialise PLAN.md`); `feat/data` created from that revision; this task record
-  added at the path assigned to D in `PLAN.md`.
-- Checks actually run, OS/runtime and results: Windows, PowerShell 7.6.5,
-  Git 2.52.0.windows.1 and Python 3.11.9 detected; clean starting worktree verified;
-  remote fetch, fast-forward and branch creation succeeded. One-off Python
-  documentation checks passed: UTF-8 without BOM, LF, final newline, no trailing
-  whitespace, three exact-case local links, template sections, owner and branch.
-  `git diff --check` passed; the new file also passed
-  `git diff --no-index --check -- NUL tasks/data-ingestion.md` (Windows empty-file
-  comparison; exit 1 indicates the new content differs, with no whitespace errors).
-- Unverified behaviour or blockers: implementation has not started. Route choices,
-  service/account access, API/schema details, recovery, latency and deployment are
-  unverified; no application tests, service setup or external sign-ups have run.
-- Next action: D selects and verifies the bus/Tube segments, agrees the data
-  interfaces with B/M, then starts the minimal recorder plus JSONL backup. B, as
-  integrator, adds this task to [docs/PROGRESS.md](../docs/PROGRESS.md) and reconciles
-  the preparation-stage project summary with `PLAN.md`.
+- Changes: short-bus/raw-first P0, 90-minute cut, conservative inference,
+  provenance/identity contract, early snapshot and deferred extras; shared
+  plan/project/progress/instructions reconciled in the same revision.
+- Checks actually run: Windows / PowerShell 7.6.5 / Python 3.11.9; remote fetched
+  and clean branch fast-forwarded to main `e09ab18`. One-off Python documentation
+  validation passed: eight final files checked for UTF-8/LF, whitespace and
+  personal paths; 39 exact-case local links across 11 Markdown files; canonical
+  template, PLAN sections, scope invariants and matching segment JSON checked.
+  The example's timestamps correctly differ by 870 seconds. `git diff --check`
+  and the new-template whitespace check passed. No application checks ran.
+- Unverified: no live collection, selected route, DB migration, inferred sample,
+  recovery check, model integration or deployment verified by this revision.
+  Planned app checks are not passed tests.
+- Concurrent handoff: remote `feat/data` commit `ee055d6` adds bus 29/Victoria
+  configuration and reports route/status checks in a legacy task record. Keep
+  that evidence on integration; short-route/five-poll suitability still needs
+  checking against this revision. Victoria is P2. B/D consolidate the record
+  under this canonical path; this docs branch does not overwrite their code.
+- Next action: B reviews/integrates plan and contract changes; D begins G0 raw
+  capture/route evidence, then delivers the first inspectable segments.

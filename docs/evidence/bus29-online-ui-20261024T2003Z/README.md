@@ -15,8 +15,19 @@ The default form is the first route, Victoria line Brixton -> Oxford Circus (Tub
 (Sat 24 Oct 14:49 - 20:47, London time)", no recommendation. curl: `insufficient_data`,
 0 points, no recommendation, same 120-trip basis. They agree.
 
-Not covered: the default form is not bus 29, so it shows no advice. Bus 29 online numbers are
-in `../bus29-online-api-20261024T2000Z/` (curl only), and bus 29 offline UI screenshots in
-`../bus29-browser-20261024/`. No online-UI screenshot of bus 29 advice was saved: the browser
-tool here cannot write screenshots of a clicked state to disk. Recorded TfL predictions replayed;
-arrivals estimated, not measured; not yet calibrated.
+## Bus 29, online UI (added ~20:06 UTC, live data had grown to 54 trips)
+
+Driven in headless Chrome over DevTools on the real page: route set to Mornington Crescent ->
+Tottenham Court Road (bus 29), "Try a recorded-hour example" clicked (fills arrive by
+2026-10-24 20:00 Europe/London = 19:00 UTC), "Update my journey" clicked. Files:
+`online-bus29-recorded-example-1280.png` and `bus29-recorded-example-departure-curve.json`
+(the same request replayed with curl).
+
+UI and API agree: "Low data", 54 trips (14:49-20:48 London), advice "Aim to leave by 18:53,
+100%" (curl: 17:53 UTC = 18:53 BST, p_on_time 1). "Low data" because some departures have
+fewer than 15 trips; the page says the estimate is preliminary. No DEMO label (DOM checked).
+The live "Next to arrive" panel on the page is a real-time TfL feed, not part of the curve.
+
+Not covered: `/api/ask`, public deployment, the 90%-tolerance advice for 16:00 UTC on the UI
+(that figure is in `../bus29-online-api-20261024T2000Z/` as curl). Recorded TfL predictions
+replayed; arrivals estimated, not measured; not yet calibrated.

@@ -19,6 +19,7 @@ def isolate(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "ROUTES_PATH", tmp_path / "routes.json")
     monkeypatch.setenv("GEMINI_API_KEY", SECRET)
     monkeypatch.delenv("TFL_APP_KEY", raising=False)
+    monkeypatch.delenv("ASK_ACCESS_CODE", raising=False)
 
 
 def _gemini(monkeypatch, handler):

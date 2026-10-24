@@ -404,6 +404,14 @@ main {
 .ask-bar input::placeholder {
   color: #716b78;
 }
+.ask-bar input.ask-passcode {
+  width: 150px;
+  flex: none;
+  border: 1px solid #dfddd8;
+  border-radius: 7px;
+  background: white;
+  padding: 9px 10px;
+}
 .ask-button {
   display: flex;
   align-items: center;
@@ -1476,6 +1484,13 @@ footer button {
   }
   .ask-button {
     padding: 9px 12px;
+  }
+  .ask-bar form {
+    flex-wrap: wrap;
+  }
+  .ask-bar input.ask-passcode {
+    width: auto;
+    flex: 1 1 120px;
   }
   .workspace {
     grid-template-columns: 1fr;

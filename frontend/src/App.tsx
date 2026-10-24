@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   api,
+  ApiError,
   type CurveRequest,
   type CurveResponse,
   type Interpretation,
@@ -20,6 +21,8 @@ import DepartureCurve from "./components/DepartureCurve";
 import Icon from "./components/Icon";
 import LivePanel from "./components/LivePanel";
 import Methodology from "./components/Methodology";
+
+const ACCESS_CODE_KEY = "delaylens.askAccessCode";
 
 interface JourneyForm {
   routeId: string;
@@ -77,6 +80,15 @@ export default function App() {
   const [question, setQuestion] = useState("");
   const [askBusy, setAskBusy] = useState(false);
   const [askMessage, setAskMessage] = useState("");
+  // Team passcode for Ask on the public site; kept for this browser tab only.
+  const [accessCode, setAccessCode] = useState(() => {
+    try {
+      return sessionStorage.getItem(ACCESS_CODE_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const [needsCode, setNeedsCode] = useState(false);
   const [interpretation, setInterpretation] = useState<Interpretation | null>(
     null,
   );
@@ -226,8 +238,13 @@ export default function App() {
     setAskMessage("");
     setInterpretation(null);
     try {
-      const response = await api.ask(question.trim(), controller.signal);
+      const response = await api.ask(
+        question.trim(),
+        controller.signal,
+        accessCode,
+      );
       if (controller.signal.aborted) return;
+      setNeedsCode(false);
       setAskMessage(response.answer);
       const interpreted = response.interpretation;
       setInterpretation(interpreted);
@@ -277,11 +294,20 @@ export default function App() {
           });
         }
       }
-    } catch {
-      if (!controller.signal.aborted)
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      if (error instanceof ApiError && error.status === 401) {
+        setNeedsCode(true);
+        setAskMessage(
+          accessCode
+            ? "That team passcode was not accepted. The journey form below works for everyone."
+            : "Ask DelayLens is limited to the DelayLens team on this site. Enter the team passcode to use it; the journey form below works for everyone.",
+        );
+      } else {
         setAskMessage(
           "Ask DelayLens is unavailable right now. Your journey form still works.",
         );
+      }
     } finally {
       if (!controller.signal.aborted) setAskBusy(false);
     }
@@ -431,6 +457,31 @@ export default function App() {
                   required
                   disabled={demo || !routes.length || askBusy}
                 />
+                {needsCode && (
+                  <>
+                    <label className="sr-only" htmlFor="ask-passcode">
+                      Team passcode
+                    </label>
+                    <input
+                      id="ask-passcode"
+                      className="ask-passcode"
+                      type="password"
+                      autoComplete="off"
+                      placeholder="Team passcode"
+                      value={accessCode}
+                      onChange={(event) => {
+                        const next = event.target.value;
+                        setAccessCode(next);
+                        try {
+                          sessionStorage.setItem(ACCESS_CODE_KEY, next);
+                        } catch {
+                          // Storage can be unavailable; the code still works for this page.
+                        }
+                      }}
+                      disabled={askBusy}
+                    />
+                  </>
+                )}
                 <button
                   className="ask-button"
                   type="submit"

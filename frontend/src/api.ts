@@ -89,6 +89,7 @@ async function request<T>(
   path: string,
   body?: unknown,
   signal?: AbortSignal,
+  headers: Record<string, string> = {},
 ): Promise<T> {
   const response = await fetch(`${base}/api/${path}`, {
     signal: signal
@@ -98,7 +99,7 @@ async function request<T>(
       ? {}
       : {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...headers },
           body: JSON.stringify(body),
         }),
   });
@@ -118,8 +119,14 @@ export const api = {
     request<Route[]>("routes", undefined, signal),
   curve: (body: CurveRequest, signal?: AbortSignal) =>
     request<CurveResponse>("departure-curve", body, signal),
-  ask: (question: string, signal?: AbortSignal) =>
-    request<AskResponse>("ask", { question }, signal),
+  /** `accessCode` is the team passcode when the server sets ASK_ACCESS_CODE. */
+  ask: (question: string, signal?: AbortSignal, accessCode = "") =>
+    request<AskResponse>(
+      "ask",
+      { question },
+      signal,
+      accessCode ? { "X-Ask-Access-Code": accessCode } : {},
+    ),
   live: (route: string, signal?: AbortSignal) =>
     request<LiveResponse>(
       `live?route_id=${encodeURIComponent(route)}`,

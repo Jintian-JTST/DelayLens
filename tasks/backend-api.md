@@ -85,3 +85,65 @@ Updated: 2026-10-24 (Europe/London).
   (7 ingest tests need a database and skipped).
 - Still unverified: `app/db.py` against real Tiger Data; `/api/stats`, `/api/calibration` are still 503 stubs.
 - Next (B): `db.py` pool + minute cache using D's `get_segments` / `route_coverage` views, then M's `model.py`.
+
+## Update: Tiger Data cache (db.py)
+
+- Added `backend/app/db.py`: read-only connection, loads D's `get_segments` and `route_coverage`
+  views plus row/chunk/compression stats into an in-memory snapshot every 60 s in a background
+  thread (started by the FastAPI lifespan when `DATABASE_URL` is set). A failed refresh keeps the
+  last good snapshot and logs only the error type.
+- `/api/routes` now fills `trips_observed` and `hours_covered` from the database; `/api/stats` is real;
+  real-route curves stay `insufficient_data` but report the recorded trip count until M's model lands.
+  `SegmentCache.segments(route_id)` is the hook for M's model.
+- Checks (macOS, Python 3.14): `pytest -q` 62 passed; `ruff check app tests` passed. Against real
+  Tiger Data at ~14:34 UTC: cache loaded with no error; routes 11 ms (bus 29: 0 trips, Victoria: 14
+  trips over 2 hours); stats 2 ms (10,674 rows, 2 chunks, no compression yet).
+- Open: bus 29 has 0 matched trips so far (D to check); `/api/calibration` still a 503 stub.
+
+## Update: M's model connected
+
+- Merged `feat/model` (which already contains `main` and PR #5) into `feat/api`; no conflicts. `uv sync` added numpy.
+- Added `backend/app/curves.py`: D's segments -> `model.Segments` (deduplicated on vehicle + origin episode),
+  `model.departure_curve` -> contract. NaN/`insufficient_data` rows are omitted; overall status is
+  `insufficient_data` (no points), `low_data` (any low row) or `ok`. Recommendation and what-if only from `ok`
+  rows (M's advisor policy). `ci` is a provisional 90% Wilson interval over distinct runs until M's bootstrap.
+- `db.py` now also reads `origin_episode_started_at` (D's stable trip key).
+- Checks (macOS, Python 3.14): `pytest -q` 111 passed, 7 skipped (live DB); `ruff check app tests` passed.
+  Real Tiger Data, Victoria Brixton -> Oxford Circus, 15 trips: `low_data`, 62 points, P falls 1.00 -> 0.81 -> 0.00
+  as departure moves later; server 40 ms. All three bus routes: 0 trips.
+- For M: (1) replay uses only the deadline's date +/- 30 min, so a 10-min bus shows ~7 runs and can never reach `ok`
+  (no recommendation) - see `tests/test_curves.py`; (2) bootstrap band to replace the Wilson placeholder;
+  (3) coverage intervals still default to first..last departure (needs D).
+- For D: bus 29 and both bus 24 routes have 0 matched trips; the bus is the core demo route.
+
+## Update: Ask test set (21 phrasings)
+
+- `backend/tests/ask_cases.json` + `tests/test_ask_cases.py`: vague times, tolerance words, comparisons, walking,
+  live, route list, off-topic, unsupported places, missing deadline, slang and Chinese, against a fixed
+  "now" (Sat 24 Oct 15:00 London). Structure check always runs; Gemini checks are opt-in:
+  `DELAYLENS_RUN_GEMINI_TESTS=1 uv run pytest tests/test_ask_cases.py` (paced 5 s per case; costs quota).
+- Prompt fix: "a bit late is fine" without a number now relaxes tolerance instead of moving the deadline.
+- Results (real Gemini, 2026-10-24): best run 17/21. After the prompt fix no case returned a wrong
+  interpretation; every failure was `gemini_unavailable`. 19 cases are confirmed passing; `walk-time` and
+  `no-deadline` are unconfirmed (Gemini unavailable in the runs where they were identified). Logged causes:
+  `gemini-3.1-flash-lite` ReadTimeout (>4 s) and `gemini-3-flash-preview` HTTP 429 (free-tier rate limit
+  exhausted by repeated test runs). Ask now logs model + HTTP status/error type on failure (never the key).
+- Risk for the demo: free-tier Gemini quota and latency. Consider a paid/credit key and avoid bulk test runs before judging.
+
+## Update: /api/calibration (rolling-origin backtest)
+
+- `backend/app/calibration.py` (B, built at the user's request; M owns calibration policy and may take it over):
+  forecast origins every 30 min; the model sees only runs that had arrived by the origin (coverage ends
+  before the first unfinished run), and is scored on departures in the next disjoint 30-min block against
+  the first recorded catchable run. Deadlines = training median ride + (-2..12) min. 5 reliability bins
+  and a Brier score; uses only M's public `model.replay_curve`.
+- Waits over 4x the training median headway are censored as suspected capture gaps (unknown, not late)
+  and counted in `basis`; placeholder until D supplies coverage intervals.
+- Contract change (B-approved, additive with defaults): `Calibration` gains `calibration_status`
+  (`not_validated` | `preliminary`; never "validated"), `n_outcomes`, `n_runs`, `basis`.
+  `GET /api/calibration?route_id=` optional; 503 without the database; memoised per cache refresh.
+- Checks: `pytest -q` 120 passed, 28 skipped. Real data at ~15:10 UTC: 23 ms; `not_validated` with 0 scored
+  outcomes, because the only held-out block fell on a 16.7-min hole in recorded Victoria runs
+  (35 outcomes censored). Before censoring, that hole produced a misleading Brier score of 0.63.
+- For D: Victoria has a 16.7-min gap between recorded departures (trains run every 2-3 min) - likely
+  unmatched runs; coverage intervals would let the model and backtest handle this properly.

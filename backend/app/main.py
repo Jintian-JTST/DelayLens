@@ -1,6 +1,8 @@
 import json
 import os
 import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
@@ -12,7 +14,8 @@ from fastapi.responses import JSONResponse
 from pydantic import Field, TypeAdapter, ValidationError
 
 from app import ask as ask_module
-from app import fixtures, tfl
+from app import calibration as calibration_module
+from app import curves, db, fixtures, model, tfl
 from app.schemas import (
     AskRequest,
     AskResponse,
@@ -58,7 +61,26 @@ def _load_routes() -> list[_ConfiguredRoute]:
         ) from None
 
 
-app = FastAPI(title="DelayLens API")
+_cache: db.SegmentCache | None = None
+
+
+def _database_url() -> str:
+    url = os.getenv("DATABASE_URL", "")
+    return "" if "user:password@host" in url else url
+
+
+@asynccontextmanager
+async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
+    global _cache
+    if url := _database_url():
+        _cache = db.SegmentCache(url)
+        _cache.start()
+    yield
+    if _cache is not None:
+        _cache.stop()
+
+
+app = FastAPI(title="DelayLens API", lifespan=_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")],
@@ -79,24 +101,58 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _snapshot() -> db.Snapshot | None:
+    return _cache.snapshot if _cache is not None else None
+
+
 @app.get("/api/routes", response_model=list[Route])
 def routes() -> list[Route]:
-    return _load_routes()
+    result = _load_routes()
+    if snapshot := _snapshot():
+        for route in result:
+            if cov := snapshot.coverage.get(route.route_id):
+                route.trips_observed = cov.trips_observed
+                route.hours_covered = cov.hours_covered
+    return result
+
+
+_segments_memo: dict[tuple[datetime, str], model.Segments] = {}
+_calibration_memo: dict[tuple[datetime, tuple[str, ...]], Calibration] = {}
+
+
+def _segments_for(snapshot: db.Snapshot, route_id: str) -> model.Segments:
+    key = (snapshot.refreshed_at, route_id)
+    if key not in _segments_memo:
+        _segments_memo.clear()  # keep only the current snapshot's conversions
+        _segments_memo[key] = curves.to_segments(snapshot.segments.get(route_id, []))
+    return _segments_memo[key]
 
 
 def _compute_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
     started = time.perf_counter()
     if ROUTES_PATH.exists():
-        result = DepartureCurveResponse(
-            points=[],
-            recommended=None,
-            what_if=[],
-            server_ms=0,
-            data_quality=DataQuality(
-                status="insufficient_data",
-                basis="Recorded-trip model not connected; no probability available.",
-            ),
-        )
+        snapshot = _snapshot()
+        if snapshot is None:
+            result = DepartureCurveResponse(
+                points=[],
+                recommended=None,
+                what_if=[],
+                server_ms=0,
+                data_quality=DataQuality(
+                    status="insufficient_data",
+                    basis="Recorded-trip data not connected; no probability available.",
+                ),
+            )
+        else:
+            segments = _segments_for(snapshot, req.route_id)
+            curve = model.departure_curve(
+                segments,
+                req.deadline,
+                walk_to_min=req.walk_to_min,
+                walk_from_min=req.walk_from_min,
+                window_min=req.window_min,
+            )
+            result = curves.build_response(curve, req, segments)
     else:
         result = fixtures.fixture_curve(req)
     result.server_ms = round((time.perf_counter() - started) * 1000, 2)
@@ -145,9 +201,30 @@ def live(route_id: str) -> LiveResponse | JSONResponse:
 
 @app.get("/api/stats", response_model=Stats)
 def stats() -> Stats:
+    if snapshot := _snapshot():
+        return snapshot.stats
     raise HTTPException(status_code=503, detail="database_not_connected")
 
 
 @app.get("/api/calibration", response_model=Calibration)
-def calibration() -> Calibration:
-    raise HTTPException(status_code=503, detail="calibration_not_available")
+def calibration(route_id: str | None = None) -> Calibration:
+    snapshot = _snapshot()
+    if snapshot is None:
+        raise HTTPException(status_code=503, detail="database_not_connected")
+    route_ids = (
+        (_route_or_404(route_id).route_id,)
+        if route_id
+        else tuple(r.route_id for r in _load_routes())
+    )
+    key = (snapshot.refreshed_at, route_ids)
+    if key not in _calibration_memo:
+        _calibration_memo.clear()
+        outcomes, censored = [], 0
+        for rid in route_ids:
+            route_outcomes, route_censored = calibration_module.backtest(
+                _segments_for(snapshot, rid)
+            )
+            outcomes += route_outcomes
+            censored += route_censored
+        _calibration_memo[key] = calibration_module.summarise(outcomes, censored)
+    return _calibration_memo[key]

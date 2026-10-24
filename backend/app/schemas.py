@@ -121,3 +121,8 @@ class ReliabilityBin(BaseModel):
 class Calibration(BaseModel):
     bins: list[ReliabilityBin]
     brier_score: float | None
+    # Added after the freeze (B approved): never claims validated calibration.
+    calibration_status: Literal["not_validated", "preliminary"] = "not_validated"
+    n_outcomes: int = 0
+    n_runs: int = 0
+    basis: str = ""

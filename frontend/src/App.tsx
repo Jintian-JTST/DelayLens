@@ -9,6 +9,7 @@ import {
 } from "./api";
 import { recommend, delayedPoint, MIN_RECOMMENDATION_TRIPS } from "./advisor";
 import { demoCurve, demoRoutes } from "./demo";
+import { exampleDeadline, isCovered, pickInitialRoute } from "./defaults";
 import {
   browserZone,
   inputDate,
@@ -120,10 +121,11 @@ export default function App() {
           setCurveBusy(false);
           return;
         }
-        const initialRoute = list.reduce((best, route) =>
-          route.trips_observed > best.trips_observed ? route : best,
-        );
+        const initialRoute = pickInitialRoute(list)!;
         const initialForm = formFor(initialRoute.route_id, clockRef.current);
+        const example = exampleDeadline(initialRoute);
+        if (example && !isCovered(initialRoute, defaultDeadline()))
+          initialForm.deadline = inputDate(example, clockRef.current);
         setForm(initialForm);
         setCurveBusy(true);
         const body = requestFor(
@@ -179,6 +181,7 @@ export default function App() {
   );
   const selected = best ? delayedPoint(points, best, delay) : null;
   const activeRoute = routes.find((route) => route.route_id === form.routeId);
+  const exampleIso = activeRoute ? exampleDeadline(activeRoute) : null;
   const latestCoveredHour = activeRoute?.hours_covered.length
     ? Math.max(...activeRoute.hours_covered.map(Date.parse))
     : null;
@@ -669,7 +672,8 @@ export default function App() {
                             onClick={() =>
                               editForm({
                                 deadline: inputDate(
-                                  new Date(latestCoveredHour).toISOString(),
+                                  exampleIso ??
+                                    new Date(latestCoveredHour).toISOString(),
                                   clock,
                                 ),
                               })

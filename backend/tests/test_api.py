@@ -17,6 +17,7 @@ ROUTE_ID = "fixture-bus-outbound"
 def isolate_config(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "ROUTES_PATH", tmp_path / "routes.json")
     monkeypatch.delenv("TFL_APP_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
 
 
 @pytest.fixture

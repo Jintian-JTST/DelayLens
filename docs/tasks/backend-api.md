@@ -58,3 +58,19 @@ Updated: 2026-10-24 (Europe/London).
   B verifies live arrivals against those routes. Then implement `db.py`'s pool
   and minute-refreshed segment cache against D's SQL contract and connect M's
   model. Do not invent the missing database or model interfaces.
+
+## Update: Ask DelayLens (Gemini)
+
+- Added `backend/app/ask.py` and wired `POST /api/ask`. Gemini only chooses one function call
+  (`list_routes`, `get_departure_curve`, `compare_departures`, `get_live`, `unclear`); arguments are
+  validated, and every number and the answer sentence come from our model and templates.
+- Times from Gemini are treated as London wall-clock time and given the real UTC offset by us
+  (clocks change at 02:00 on Sun 25 Oct and models guess the offset wrongly).
+- Models tried in order: `gemini-3.1-flash-lite`, `gemini-3-flash-preview` (4 s each; `GEMINI_MODEL`
+  overrides the first). `gemini-2.5-*` is no longer available to new keys.
+- Failures return status `gemini_unavailable` and never leak the key.
+- Checks run (macOS, Python 3.14): `.venv/bin/python -m pytest -q` 54 passed; `.venv/bin/ruff check app tests`.
+  Real Gemini, fixture route only: curve, compare, relaxed-deadline, off-topic and unsupported-place
+  questions behaved correctly. Latency measured 0.8 s to 6 s (Gemini load varies).
+- Unverified: Ask against real routes and real model output (waiting for D's routes.json and M's model);
+  the plan's 20-phrasing test set is not written yet.

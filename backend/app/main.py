@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import Field, TypeAdapter, ValidationError
 
+from app import ask as ask_module
 from app import fixtures, tfl
 from app.schemas import (
     AskRequest,
@@ -19,7 +20,6 @@ from app.schemas import (
     DataQuality,
     DepartureCurveRequest,
     DepartureCurveResponse,
-    Interpretation,
     LiveError,
     LiveResponse,
     Route,
@@ -84,9 +84,7 @@ def routes() -> list[Route]:
     return _load_routes()
 
 
-@app.post("/api/departure-curve", response_model=DepartureCurveResponse)
-def departure_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
-    _route_or_404(req.route_id)
+def _compute_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
     started = time.perf_counter()
     if ROUTES_PATH.exists():
         result = DepartureCurveResponse(
@@ -105,14 +103,30 @@ def departure_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
     return result
 
 
+@app.post("/api/departure-curve", response_model=DepartureCurveResponse)
+def departure_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
+    _route_or_404(req.route_id)
+    return _compute_curve(req)
+
+
+def _gemini_models() -> tuple[str, ...]:
+    override = os.getenv("GEMINI_MODEL", "").strip()
+    return (override, *ask_module.DEFAULT_MODELS) if override else ask_module.DEFAULT_MODELS
+
+
 @app.post("/api/ask", response_model=AskResponse)
 def ask(req: AskRequest) -> AskResponse:
-    # Gemini wiring lands in app/ask.py (Sat 19:30). Until then say so explicitly.
-    return AskResponse(
-        interpretation=Interpretation(),
-        curve=None,
-        answer="Ask DelayLens is not connected yet. Please use the form.",
-        status="gemini_unavailable",
+    app_key = os.getenv("TFL_APP_KEY", "")
+    return ask_module.answer_question(
+        req.question,
+        now=datetime.now(UTC),
+        routes=_load_routes(),
+        api_key=os.getenv("GEMINI_API_KEY", ""),
+        models=_gemini_models(),
+        compute_curve=_compute_curve,
+        get_live=lambda r: tfl.get_live(
+            r, app_key=app_key, direction=getattr(r, "direction", None)
+        ),
     )
 
 

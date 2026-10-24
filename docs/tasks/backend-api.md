@@ -74,3 +74,14 @@ Updated: 2026-10-24 (Europe/London).
   questions behaved correctly. Latency measured 0.8 s to 6 s (Gemini load varies).
 - Unverified: Ask against real routes and real model output (waiting for D's routes.json and M's model);
   the plan's 20-phrasing test set is not written yet.
+
+## Update: D integrated
+
+- Merged `feat/data` (D) into `feat/api`; resolved `backend/.env.example` (kept D's polling IDs, plus optional `GEMINI_MODEL`).
+- Added `psycopg[binary]>=3.2,<4` to `pyproject.toml` / `uv.lock`, as D requested.
+- Verified with the real TfL key: `/api/routes` loads D's two routes; `/api/live` returns real arrivals for
+  both (bus 29 outbound, Victoria outbound); `/api/ask` picks the right real route and answers
+  "not enough recorded data" for curves (honest: M's model is not connected). 54 API tests + 23 ingest tests pass
+  (7 ingest tests need a database and skipped).
+- Still unverified: `app/db.py` against real Tiger Data; `/api/stats`, `/api/calibration` are still 503 stubs.
+- Next (B): `db.py` pool + minute cache using D's `get_segments` / `route_coverage` views, then M's `model.py`.

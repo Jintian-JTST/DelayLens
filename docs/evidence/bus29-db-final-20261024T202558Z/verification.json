@@ -1,0 +1,19 @@
+{
+  "snapshot_refreshed_at_utc": "2026-10-24T20:25:58.575884+00:00",
+  "poll_count": 791,
+  "routes": {
+    "bus-29-outbound-finsbury-park-tottenham-court-road": {
+      "segments": 48,
+      "recorded_hours": 6,
+      "unique_episode_keys": 48,
+      "target_counts_met": true
+    },
+    "bus-29-outbound-mornington-crescent-tottenham-court-road": {
+      "segments": 56,
+      "recorded_hours": 8,
+      "unique_episode_keys": 56,
+      "target_counts_met": true
+    }
+  },
+  "database_counts_pooled_with_standalone": false
+}

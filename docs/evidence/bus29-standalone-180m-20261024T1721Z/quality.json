@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "source": "tfl_live_recording",
+  "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+  "recording_status": "completed",
+  "capture_start_utc": "2026-10-24T17:21:48.620061Z",
+  "last_poll_utc": "2026-10-24T20:21:28.351586Z",
+  "capture_end_utc": "2026-10-24T20:21:55.872001Z",
+  "observed_span_seconds": 10779.731525,
+  "planned_duration_minutes": 180.0,
+  "poll_interval_seconds": 30,
+  "validation_window_seconds": 10807.25194,
+  "validation_window_complete": true,
+  "ninety_minute_window_complete": true,
+  "raw_polls": 354,
+  "successful_polls": 353,
+  "failed_polls": 1,
+  "empty_successful_polls": 0,
+  "http_failures": {
+    "429": 1
+  },
+  "raw_prediction_rows": 138863,
+  "unique_source_predictions": 87228,
+  "selected_source_predictions": 8514,
+  "expected_utc_30_second_slots_through_last_poll": 360,
+  "successful_utc_30_second_slots": 352,
+  "poll_slot_completeness": 0.9777777777777777,
+  "missing_successful_slot_starts_utc": [
+    "2026-10-24T18:39:00.000000Z",
+    "2026-10-24T18:57:00.000000Z",
+    "2026-10-24T19:12:30.000000Z",
+    "2026-10-24T19:13:00.000000Z",
+    "2026-10-24T19:28:00.000000Z",
+    "2026-10-24T19:29:00.000000Z",
+    "2026-10-24T19:46:00.000000Z",
+    "2026-10-24T20:19:30.000000Z"
+  ],
+  "successful_poll_gaps": [
+    {
+      "from": "2026-10-24T18:56:55.837439Z",
+      "to": "2026-10-24T18:57:41.497617Z",
+      "seconds": 45.660178
+    },
+    {
+      "from": "2026-10-24T19:12:14.965565Z",
+      "to": "2026-10-24T19:13:44.302007Z",
+      "seconds": 89.336442
+    },
+    {
+      "from": "2026-10-24T19:27:56.910988Z",
+      "to": "2026-10-24T19:28:44.254265Z",
+      "seconds": 47.343277
+    },
+    {
+      "from": "2026-10-24T19:28:44.254265Z",
+      "to": "2026-10-24T19:29:30.416815Z",
+      "seconds": 46.16255
+    },
+    {
+      "from": "2026-10-24T19:38:39.246735Z",
+      "to": "2026-10-24T19:39:25.242887Z",
+      "seconds": 45.996152
+    },
+    {
+      "from": "2026-10-24T20:19:18.773138Z",
+      "to": "2026-10-24T20:20:05.195016Z",
+      "seconds": 46.421878
+    },
+    {
+      "from": "2026-10-24T20:20:05.195016Z",
+      "to": "2026-10-24T20:20:51.132048Z",
+      "seconds": 45.937032
+    }
+  ],
+  "stop_events": 251,
+  "estimated_stop_events": 127,
+  "uncertain_stop_events": 124,
+  "pending_stop_events": 29,
+  "uncertain_event_reasons": {
+    "stale_prediction_at_last_sighting": 40,
+    "disappeared_before_near_stop": 26,
+    "source_prediction_gap": 8,
+    "capture_interruption": 17,
+    "prediction_time_jump": 1,
+    "awaiting_two_post_eta_absences": 3,
+    "pending_approach": 26,
+    "fewer_than_two_source_timestamps": 3
+  },
+  "excluded_source_records": {
+    "stale_source_prediction": 1381
+  },
+  "rejected_segment_reasons": {},
+  "independent_trips": 5,
+  "distinct_vehicles": 5,
+  "support_state": "low_data",
+  "calibration_verified": false,
+  "data_gate": "pass",
+  "coverage_hourly": [
+    {
+      "hour_utc": "2026-10-24T17:00:00.000000Z",
+      "reference_local": {
+        "local_at": "2026-10-24T18:00:00+01:00",
+        "local_date": "2026-10-24",
+        "weekday": 5,
+        "utc_offset_seconds": 3600,
+        "fold": 0,
+        "timezone": "Europe/London"
+      },
+      "successful_polls": 77,
+      "usable_segments": 1,
+      "distinct_vehicles": 1
+    },
+    {
+      "hour_utc": "2026-10-24T18:00:00.000000Z",
+      "reference_local": {
+        "local_at": "2026-10-24T19:00:00+01:00",
+        "local_date": "2026-10-24",
+        "weekday": 5,
+        "utc_offset_seconds": 3600,
+        "fold": 0,
+        "timezone": "Europe/London"
+      },
+      "successful_polls": 119,
+      "usable_segments": 0,
+      "distinct_vehicles": 0
+    },
+    {
+      "hour_utc": "2026-10-24T19:00:00.000000Z",
+      "reference_local": {
+        "local_at": "2026-10-24T20:00:00+01:00",
+        "local_date": "2026-10-24",
+        "weekday": 5,
+        "utc_offset_seconds": 3600,
+        "fold": 0,
+        "timezone": "Europe/London"
+      },
+      "successful_polls": 115,
+      "usable_segments": 3,
+      "distinct_vehicles": 3
+    },
+    {
+      "hour_utc": "2026-10-24T20:00:00.000000Z",
+      "reference_local": {
+        "local_at": "2026-10-24T21:00:00+01:00",
+        "local_date": "2026-10-24",
+        "weekday": 5,
+        "utc_offset_seconds": 3600,
+        "fold": 0,
+        "timezone": "Europe/London"
+      },
+      "successful_polls": 42,
+      "usable_segments": 1,
+      "distinct_vehicles": 1
+    }
+  ],
+  "limitations": [
+    "TfL supplies arrival predictions, not independently measured arrival events.",
+    "Near-stop inference can still be wrong; confidence is a rule-evidence category, not a probability.",
+    "This short weekend recording does not establish calibrated predictions or weekday/general-route performance.",
+    "Saturday-to-Sunday transfer is unvalidated; use explicitly dated replay/reference periods.",
+    "A data snapshot is not a verified model, API, UI, deployment or database integration.",
+    "Trip IDs are required for usable samples in v1; missing or ambiguous identities are excluded.",
+    "Only complete identity-stable 120-2400-second segments are usable; excluded or missing trips can bias delay distributions."
+  ],
+  "counting_rule": "One canonical complete route segment per matched vehicle/run; never prediction rows or minute replay steps.",
+  "raw_recovery": {
+    "duplicate_poll_records": 0,
+    "incomplete_tails": []
+  },
+  "generation_id": "generation_9b29a8202412a501bf885251a379808d",
+  "source_trace_review": {
+    "review_type": "not_reviewed",
+    "reviewed_segment_ids_in_current_generation": [],
+    "reviewed_segment_count": 0,
+    "required_examples": 3,
+    "human_review_claimed": false
+  },
+  "acceptance_gate": "pending_source_trace_review"
+}

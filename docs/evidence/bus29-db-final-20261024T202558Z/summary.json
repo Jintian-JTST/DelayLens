@@ -1,0 +1,45 @@
+{
+  "snapshot_refreshed_at_utc": "2026-10-24T20:25:58.575884+00:00",
+  "source": "Tiger Data views via backend/app/db.load_snapshot (read-only)",
+  "poll_count": 791,
+  "first_poll_utc": "2026-10-24T13:49:34.840394+00:00",
+  "last_poll_utc": "2026-10-24T20:25:30.626782+00:00",
+  "routes": {
+    "bus-29-outbound-finsbury-park-tottenham-court-road": {
+      "segments": 48,
+      "origin_events": 65,
+      "first_origin_utc": "2026-10-24T14:06:14+00:00",
+      "last_origin_utc": "2026-10-24T19:42:58+00:00",
+      "coverage": {
+        "trips_observed": 48,
+        "hours_covered": [
+          "2026-10-24T14:00:00+00:00",
+          "2026-10-24T15:00:00+00:00",
+          "2026-10-24T16:00:00+00:00",
+          "2026-10-24T17:00:00+00:00",
+          "2026-10-24T18:00:00+00:00",
+          "2026-10-24T19:00:00+00:00"
+        ]
+      }
+    },
+    "bus-29-outbound-mornington-crescent-tottenham-court-road": {
+      "segments": 56,
+      "origin_events": 63,
+      "first_origin_utc": "2026-10-24T13:49:20+00:00",
+      "last_origin_utc": "2026-10-24T20:02:12+00:00",
+      "coverage": {
+        "trips_observed": 56,
+        "hours_covered": [
+          "2026-10-24T13:00:00+00:00",
+          "2026-10-24T14:00:00+00:00",
+          "2026-10-24T15:00:00+00:00",
+          "2026-10-24T16:00:00+00:00",
+          "2026-10-24T17:00:00+00:00",
+          "2026-10-24T18:00:00+00:00",
+          "2026-10-24T19:00:00+00:00",
+          "2026-10-24T20:00:00+00:00"
+        ]
+      }
+    }
+  }
+}

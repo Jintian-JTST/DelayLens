@@ -2,8 +2,9 @@
 
 import json
 
-from app.main import app
 from fastapi.testclient import TestClient
+
+from app.main import app
 from ingest import database_poller, poller
 from ingest.common import load_route
 from ingest.settings import Settings, load_routes

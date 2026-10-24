@@ -4,10 +4,9 @@ from functools import partial
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
-
 from app import main, tfl
 from app.main import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 ROUTE_ID = "fixture-bus-outbound"

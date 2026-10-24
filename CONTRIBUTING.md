@@ -1,8 +1,9 @@
 # Team and AI collaboration
 
 The same repository guidance applies to every teammate and AI tool. Shared
-requirements live in [docs/PROJECT.md](docs/PROJECT.md), coding rules in
-[AGENTS.md](AGENTS.md), and milestone summaries in [docs/PROGRESS.md](docs/PROGRESS.md).
+requirements live in [PLAN.md](PLAN.md) and [docs/PROJECT.md](docs/PROJECT.md),
+coding rules in [AGENTS.md](AGENTS.md), and milestone summaries in
+[docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Start on your own computer
 
@@ -14,9 +15,10 @@ requirements live in [docs/PROJECT.md](docs/PROJECT.md), coding rules in
 3. Ask the AI to read `AGENTS.md` and the documents relevant to your task. If automatic
    loading is supported, use the existing tool entry point. Confirm the AI can describe
    the task, scope and verification steps before relying on that context.
-4. Once the stack is selected, follow the versions and actual install/run/check
-   commands recorded in `docs/PROJECT.md`. Until then, there is nothing to install
-   beyond the tools needed for the documentation task.
+4. Follow the selected stack and setup status in `docs/PROJECT.md`. Owners add
+   actual install/run/check commands with application source and lockfiles. A
+   documented stack does not establish that application tooling already exists;
+   documentation-only work does not require installing app dependencies.
 
 Commands below use Git plus `cd`, which work in PowerShell, bash and zsh. Run them
 one line at a time. Replace example branch names and task IDs with unique names;
@@ -52,8 +54,8 @@ current checkout, and teammates may choose different locations.
 ## Separate tasks and working directories
 
 Agree on a task ID, owner (person and AI if applicable), acceptance criteria, API
-contract and files before concurrent work. Copy [docs/tasks/TEMPLATE.md](docs/tasks/TEMPLATE.md)
-to a uniquely named task file such as `docs/tasks/map-search.md`, and fill it in.
+contract and files before concurrent work. Copy [tasks/TEMPLATE.md](tasks/TEMPLATE.md)
+to a uniquely named task file such as `tasks/map-search.md`, and fill it in.
 Two AI sessions must not stage or switch branches inside the same working directory.
 
 For one task in an otherwise idle checkout, start from the current shared main:

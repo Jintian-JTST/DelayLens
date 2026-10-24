@@ -1,578 +1,445 @@
 # DelayLens — Implementation Plan
 
-> **When should I leave?** Tell DelayLens when you must arrive, as a form or in
-> your own words. It shows the probability of arriving on time for each
-> departure time and tells you when to leave.
+> **When should I leave?** Use recorded London bus predictions to show an
+> empirical journey-time distribution, its limitations and departure choices.
 
-Written 2026-10-24 during OxHack 26. Requirements come from the opening-ceremony
-slides and the official schedule. Anything still to confirm is listed in §10.
+Rewritten 2026-10-24 after the ingestion review. This is the intended MVP, not a
+report of completed implementation. See [progress](docs/PROGRESS.md) for verified
+work and [the project brief](docs/PROJECT.md) for shared decisions.
 
-**Contents:** 0 Tracks & judging · 1 First priority · 2 Scope · 3 Data ·
-4 Model · 5 Ask DelayLens (Gemini) · 6 Architecture · 7 Team & ownership ·
-**8 Schedule** · 9 Demo · 10 Risks & checklist
+**Contents:** 0 Tracks · 1 Priorities · 2 Scope · 3 Data · 4 Model · 5 Ask ·
+6 Architecture · 7 Ownership · 8 Schedule · 9 Demo · 10 Risks, rules and sources
 
----
+## 0. Tracks and judging
 
-## 0. What we are entering and how we're judged
+The initial team plan records opening-slide/schedule notes below. They remain
+planning inputs: this rewrite does not independently verify organiser rules,
+prize eligibility or submission requirements. M confirms those points.
 
-### Tracks and prizes
+| Target | Planned contribution |
+| --- | --- |
+| HRT — Data for Predictions & Decision Making (primary) | Real recordings -> empirical estimates -> understandable decisions; no claim of proven calibration |
+| Tiger Data | Traceable time series and useful queries first; continuous aggregates and columnstore after the core works |
+| Built with Delta | Role threads, reviewed output and collaboration links collected by M |
+| Gemini API | Optional natural-language input grounded in our model; independent form fallback |
+| Vultr (optional track) | Unattended recording and a supervised public demo |
 
-| Target | Asks for | How DelayLens fits |
-| --- | --- | --- |
-| **HRT — Best use of Data for Predictions & Decision Making** (primary) | Data used to predict and drive a decision | The product: a calibrated prediction (P(on time)) turned into a decision (when to leave) |
-| **Tiger Data** (MLH) | Best implementation; $1,000 credits on sign-up | Our self-recorded time-series archive is the core: hypertable, continuous aggregate, compression |
-| **Built with Delta** | Team collaboration in Delta from ideation to testing; shared threads | All development in Delta on this repo; one thread per role; links on Devpost |
-| **Gemini API** (MLH) | Gemini used *inside* the product | "Ask DelayLens": flexible natural-language questions answered by our model (§5) |
-| Vultr (MLH, optional) | Top project on Vultr | The recorder and API run on a Vultr VM, which they must anyway for the overnight gap |
+Recorded judging weights: Speed & Performance 30%, Technical Implementation 25%,
+Innovation 25%, Polish & Usability 20%. Fixtures are labelled during development;
+they cannot substitute for real-data evidence in the judged product.
 
-### Judging criteria → design
+## 1. Priorities and cut rules
 
-| Criterion | Weight | What we do |
-| --- | --- | --- |
-| **Speed & Performance** | **30%** | In-memory cache, vectorised model, advisor and what-if computed in the browser; target < 300 ms API, instant sliders (§6.5) |
-| **Technical Implementation** | 25% | Clean module boundaries, typed contract, tests, visible Delta collaboration |
-| **Innovation** | 25% | Journey planners give one number; we give a calibrated distribution from data TfL doesn't publish, and you can just ask |
-| **Polish & Usability** | 20% | One screen; clear loading/empty/error states; works on a phone |
+**Real recordings -> credible inferred segments -> model-readable handoff ->
+working screen -> additional infrastructure and optimisation.**
 
-The organisers asked for projects that are "not a demo": real recorded data,
-real live arrivals, no mocked numbers in the final build.
+1. Start TfL -> recoverable JSONL immediately. Database setup is not a gate.
+2. Prove one short bus segment works; inspect five consecutive polls before
+   locking its vehicle identity, direction and stop pattern.
+3. Deliver manually checked samples, CSV/query contract and a real-data snapshot
+   to M/B as soon as the first usable segments exist.
+4. Connect model/API/UI with honest small-sample states, then add extras.
 
----
-
-## 1. First priority: start recording data
-
-TfL's Unified API gives **live predictions only — there is no archive** of
-past arrivals or delays. Every historical sample must be recorded by us, so
-every hour without the recorder is data lost for good.
-
-- Recorder writing to Tiger Data by **Sat 15:00**.
-- On a Vultr server under a supervisor by **Sat 21:30**, because the team sleeps
-  00:00–07:00 and nobody will be watching it.
-
----
+- After **90 minutes of continuous recording** without a manually checkable O->D
+  segment, shorten/change the route. Preserve the archive and version the change.
+- At Saturday 19:30, if the real-data journey is absent, cut Gemini, calibration,
+  Tube and DB optimisation. Close the single-bus data/model/API/UI gap first.
+- If support remains below the evidence thresholds, show insufficient/preliminary
+  output. A recording demonstration alone does not meet the probability goal.
+- Export the first snapshot at the **first usable-segment delivery**, not for the
+  first time on Sunday morning.
 
 ## 2. Product scope
 
-### Core user journey
+The MVP uses **London TfL bus data**. Oxford BODS is outside this version, not an
+interchangeable second source. D/M/B use the same identifiers and contract; any
+city/source change requires a shared plan/contract update first.
 
-1. Pick a supported route segment, enter walking times and a **deadline**,
-   or type a question: *"I need to be at Oxford Circus around 2, ten minutes
-   late is OK."*
-2. See the **departure curve**: P(on time) for each departure time in the
-   90 minutes before the deadline, with an uncertainty band and sample size.
-3. Get the **latest departure** that meets your risk tolerance.
-4. **What-if:** +5 / +10 / +15 min shows how the risk changes.
-5. **Live panel:** next vehicles at the origin stop now.
+| Priority | Deliverable |
+| --- | --- |
+| P0 | One short bus segment, 30-second raw recording, traceable inference, CSV/query/snapshot handoff and ordinary database queries |
+| P0 | Route/deadline/walking-time form, supported empirical distribution/curve, eligible advisor/what-if and a separate live-predictions panel |
+| P0 | Usable sample counts, inferred-data labels, source dates/hours and insufficient/preliminary states |
+| P1 | Supervised overnight VM, public demo and three essential recovery checks |
+| P1 after core | Gemini, coverage UI, version-tested Tiger Data optimisation and properly labelled held-out evaluation |
+| P2 | Tube, HSP sign-up/integration, longer 30-45-minute routes, full benchmarks, complex drills and live correction research |
+| Out of scope | Arbitrary A-to-B, multi-leg journeys, accounts and unqualified calibrated-arrival guarantees |
 
-### Features and priority
-
-| Feature | What we build | Priority |
-| --- | --- | --- |
-| Route Selection | Supported segments (ones we have data for), deadline, walk times, tolerance slider | **P0** |
-| Live Arrivals | `GET /Line/{ids}/Arrivals`, server-side | **P0** |
-| Delay Prediction | Empirical travel-time distribution from recorded data, with uncertainty | **P0** |
-| Departure Advisor | Latest departure with P(late) ≤ tolerance | **P0** |
-| What-if Simulation | +5/+10/+15 markers and risk deltas | **P0** |
-| **Ask DelayLens (Gemini)** | Free-text questions → structured request → our model → plain answer (§5) | **P1, scheduled** |
-| Data coverage + calibration | Trips per hour, "low data" badges, reliability chart | **P1, scheduled** |
-| Live correction | TfL's own ETA error by horizon, used for the next 30 min | P1 if time |
-| Rail mode | National Rail HSP history (e.g. Oxford → Paddington) | P2, only if access arrives |
-| Multi-leg journeys, any A→B, accounts | — | Out of scope |
-
-### Success criteria
-
-- A recommendation from **real recorded data** in under 2 seconds via the form,
-  with sample size shown.
-- A judge can type a question their own way and get a correct, grounded answer.
-- Limitations are visible in the UI, not only in the pitch.
-
----
+Targets: a form result under two seconds, API p95 <300 ms and model work <50 ms
+where feasible. Measure after correctness; these are goals, not existing results
+or prerequisites for the first data handoff.
 
 ## 3. Data strategy
 
-### 3.1 What we record
+### 3.1 Short route first
 
-- Poll `GET https://api.tfl.gov.uk/Line/{lineIds}/Arrivals?app_key=…` every
-  **30 s**. One call covers all listed lines. Confirm the keyed rate limit on
-  the TfL API portal.
-- Keep only predictions for stops on the chosen segments (≈10–20 stops):
-  `vehicleId`, `naptanId`, `lineId`, `direction`, `timeToStation`,
-  `expectedArrival`, `timestamp`.
-- Tiger Data account via `mlh.link/tigerdata` (credits); standard service,
-  European region if offered.
-- Every poll is also appended to a gzipped JSONL backup, so a database outage
-  never loses data.
-- **Everything in UTC.** UK clocks go back at 02:00 on Sun 25 Oct while we
-  sleep, so 01:00–02:00 local time happens twice.
+D selects a frequent bus line and a **10-20-minute, 4-8 consecutive-stop** segment
+on one unambiguous direction/pattern. Check duration against real recordings,
+current service status and route sequence. Do not guess IDs or assume one branch.
 
-### 3.2 From predictions to observed trips
+Inspect five consecutive polls for identifiable vehicles progressing through that
+pattern. Lock `route_id`, `line_id`, `direction`, `route_pattern_id`, ordered stop
+IDs and `route_version`. Missing direction or ambiguous identity cannot produce
+usable segments without further evidence. Exact IDs await D's live verification.
+Tube and longer routes follow only after short-route samples/handoff work.
 
-- **Observed arrival** for a `(vehicleId, naptanId)` episode = the last
-  `expectedArrival` seen while `timeToStation ≤ 60 s`, or else the last poll
-  in which the prediction appeared.
-- The same vehicle at the same stop more than 20 min later = a new episode.
-- **Trip segment** = same vehicle at origin O (`t_O`), then destination D in
-  the same direction (`t_D > t_O`). Ride time = `t_D − t_O`.
+Concurrent D commit `ee055d6` records bus 29 (Finsbury Park to Tottenham Court
+Road) and Victoria candidates, with route/status checks reported in its task
+record. Those calls were not rerun here. Bus 29 still needs a short subsegment
+and the five-poll identity check for this revised P0; Victoria remains P2. B/D
+reconcile that configuration with this plan rather than discarding its evidence.
 
-### 3.3 Choosing routes (D decides at kickoff)
+### 3.2 Capture before database
 
-- **Main: one bus segment of ~30–45 min through traffic.** Real variance and
-  reliable `vehicleId`s. Find IDs with `GET /Line/Mode/bus` and stop order with
-  `GET /Line/{id}/Route/Sequence/{direction}`.
-- **Contrast: one Tube segment.** Low variance, which shows the model says
-  "either is fine" when that's true.
-- Avoid lines with closures this weekend (`GET /Line/{ids}/Status`).
+Poll `GET /Line/{lineIds}/Arrivals` every **30 seconds**. TfL describes a
+30-second refresh for bus-arrival feeds; this does not prove every Unified API
+response contains new observations. Check actual source timestamps, caching and
+registered endpoint limits. See [TfL feed guidance](https://tfl.gov.uk/info-for/open-data-users/our-open-data).
 
-### 3.4 Honest time coverage
+Each request has a unique `poll_id`, collector identity, UTC `polled_at`, config
+version, HTTP outcome and complete response payload. Durably append a recoverable
+JSONL poll before database writes; maintain a gzipped archive. Preserve source
+`timestamp` separately, full raw payloads before downstream stop filtering, and
+available destination information for branch QA. Never log credential-bearing
+URLs. Flush/rotation and truncated-tail recovery must be explicit; disk-write
+failure is an error, not saved data.
 
-- We'll have data from Sat ~15:00 onwards, weekend only. **Demo deadlines must
-  fall inside recorded hours.** `/api/routes` returns `hours_covered`.
-- Every result is labelled, e.g. "based on 38 trips observed Sat 24 – Sun 25
-  Oct (weekend)".
+A separate retryable importer/worker writes Tiger Data later; no message broker
+is required. Raw capture and derivation from JSONL work before DB readiness.
+Normalised predictions retain `vehicleId`, `naptanId`, `lineId`, `direction`,
+`timeToStation`, `expectedArrival`, `timestamp`, provenance and pattern mapping.
+Identical cached payloads do not create independent observations.
 
-### 3.5 Optional: National Rail HSP (P2)
+### 3.3 Conservative inferred events
 
-Historical actual-vs-scheduled times for station pairs, via POST `serviceMetrics`
-and `serviceDetails`. Needs a National Rail Data Portal account with HSP ticked.
-D submits the sign-up at kickoff; we only build this if access arrives by
-Saturday evening.
+TfL supplies **predictions**, not independent measurements of actual arrival.
+Never rename `expectedArrival` to `actualArrival` or call inferred times ground
+truth.
 
----
+- Require a plausible ordered near-stop series reaching `timeToStation <= 60 s`,
+  consistent timestamps and route progression. Initial heuristic: at least two
+  distinct source predictions; repeated cached polls do not satisfy this check.
+  D/M inspect raw examples before admitting this heuristic to the model.
+- Use the last qualifying `expectedArrival` as an **inferred** time. Store
+  `inference_method`, categorical `confidence`, `last_seen_at`,
+  `prediction_count`, inferred time and raw-prediction/poll provenance.
+- Early disappearance, stale/jumping forecasts, ambiguous branches/vehicle reuse
+  and missing direction become uncertain/rejected evidence. Disappearance alone
+  never creates a usable arrival event.
+- Match `line_id + vehicle_id + direction + route_pattern_id` within a canonical
+  vehicle run, with increasing `stop_sequence` and positive plausible duration.
+  D/M agree route-specific duration bounds; ambiguous candidates are excluded.
+- A 20-minute separation is an episode clue, not sufficient identity proof.
+  Account for sequence resets and branch changes rather than merging by gap alone.
 
-## 4. Model
+`confidence=high` means heuristic checks passed, not a calibrated probability of
+correct inference. Quality labels/exclusion reasons survive every query/export.
 
-Plain NumPy. The goal is **calibrated probabilities with honest uncertainty**.
+### 3.4 Identity and replay
 
-### 4.1 Empirical replay
+`poll_id` deduplicates re-import of the same saved poll, not two independent
+collectors. Deduplicate repeated source predictions by documented source-field
+identity; resolve canonical episodes on the merged stream. Stable event/segment
+keys and uniqueness constraints with `ON CONFLICT` prevent repeat derivation.
 
-For departure `d`, walking times `w₁` and `w₂`, and deadline `T`:
+D agrees the episode-key/reconciliation rule with B/M before handoff. Segment
+identity includes route version and canonical run/endpoint events; it cannot be
+a fresh UUID per derivation or depend on `collector_id`.
 
-1. The user reaches the stop at `s = d + w₁`.
-2. Take every recorded instant `s'` at the same time of day (± 30 min, 1-min
-   steps).
-3. For each `s'`, take the first vehicle leaving O at or after `s'` + 1 min, and
-   its arrival at D. Then `TT(s') = t_D − s' + w₂`. This captures waiting,
-   headway gaps and ride time together, with no parametric assumptions.
-4. `P(on time | d) = mean(1[d + w₁ + TT ≤ T])`.
+Use **one active derivation/database writer per route**. After VM handover, the
+laptop is a raw backup rather than another independent live segment producer.
+Replay overlapping logs through the same canonical path and verify unchanged
+unique segment counts before accepting recovered samples.
 
-Output per departure: `p_on_time`, `arrive_p50`, `arrive_p90`, and `n_trips`
-(distinct vehicles, not replay steps).
+### 3.5 Minimum segment handoff
 
-### 4.2 Uncertainty
+This is a **format example, not collected evidence**:
 
-- Bootstrap over distinct trips (200 resamples, vectorised) gives a 90% band.
-- If `n_trips < 15`, widen to ± 60 min and flag `low_data`. If still below 15,
-  return `insufficient_data`. **Never fabricate a probability.**
-
-### 4.3 Advisor and what-if
-
-- The curve runs from `T − 90 min` to `T` at 1-min resolution.
-- The recommendation is the latest `d` with P(late) ≤ tolerance (default 10%).
-  The "conservative" option uses the band's lower edge.
-- What-if reads the curve at `+5 / +10 / +15`.
-
-### 4.4 Calibration (P1)
-
-Hold out the latest hours, predict for synthetic deadlines, and compare with
-what happened. This gives reliability bins and a Brier score, shown on the
-Methodology tab ("when we say 80%, we were on time x% of the time").
-
-### 4.5 Live correction (P1 if time)
-
-Measure TfL's prediction error (actual − predicted) by horizon. For departures
-in the next 30 min, use the live ETA plus a sampled error instead of history.
-
----
-
-## 5. Ask DelayLens (Gemini API)
-
-**Why:** the form is fast but rigid. People ask questions with slack in them:
-*"around 2"*, *"I really can't be late"*, *"is 13:10 or 13:20 better?"*,
-*"what's the latest I can leave?"*. Gemini turns these into a precise request.
-**Our model always produces the numbers.**
-
-### How it works
-
-1. `POST /api/ask` sends the question plus the current time to Gemini with
-   **function declarations** that mirror our API:
-
-   | Function | Parameters | Covers questions like |
-   | --- | --- | --- |
-   | `list_routes()` | — | "Which routes can you do?" |
-   | `get_departure_curve` | `route_id, deadline, walk_to_min, walk_from_min, tolerance` | "When should I leave to be there by 2?" |
-   | `compare_departures` | `route_id, deadline, departures[]` | "13:10 or 13:20?" |
-   | `get_live` | `route_id` | "When's the next bus?" |
-
-2. Gemini maps vague language to parameters:
-
-   | The user says | Gemini sets |
-   | --- | --- |
-   | "around 2, ten minutes late is OK" | deadline 14:10 |
-   | "I really can't be late" | tolerance 0.05 |
-   | "a bit relaxed" | tolerance 0.20 |
-
-   Free-text places are matched to supported routes only.
-
-3. The backend validates the arguments against `routes.json` and runs **our
-   model**.
-4. The answer sentence is built from a template using the computed numbers.
-   An optional Gemini rephrasing is used only if every number in it matches
-   the result; otherwise we fall back to the template.
-5. The UI shows the **interpretation as editable chips** (route, deadline,
-   tolerance) above the normal curve, so the user can see and fix what was
-   understood.
-
-### Guardrails
-
-- Unsupported place or route → a helpful reply listing the routes we cover.
-  Never a guess.
-- 3-second timeout; on failure, the form opens prefilled with whatever was
-  parsed. **The form always works without Gemini.**
-- The key lives server-side only (`GEMINI_API_KEY`). Use a fast Gemini Flash
-  model; confirm the current model ID in Google AI Studio.
-- A test set of ~20 phrasings (vague times, comparisons, off-topic,
-  unsupported places) is run before freeze.
-
----
-
-## 6. Architecture
-
-```
-  TfL Unified API ──30 s──► ingest/poller ──► JSONL backup
-                                │
-                                ▼
-          Tiger Data: arrival_predictions (hypertable) → stop_events → trip segments
-                      coverage_hourly (continuous aggregate), compression
-                                │  (cached in memory, refreshed every minute)
-                                ▼
-   Gemini API ◄── /api/ask ── FastAPI backend + model.py ── /api/live ──► TfL
-                                │
-                                ▼
-         React (Vite + TS): Ask box · form · curve · advisor · what-if · live · methodology
-```
-
-All of it runs on one Vultr VM, with the recorder under `systemd` (auto-restart).
-
-### 6.1 Repository layout and owners
-
-```
-backend/
-  ingest/poller.py, ingest/derive.py      D
-  sql/001_schema.sql                      D
-  config/routes.json                      D
-  app/model.py, tests/test_model.py       M
-  app/main.py, app/schemas.py             B   (the contract)
-  app/tfl.py, app/db.py, app/ask.py       B   (ask.py = Gemini)
-  tests/test_api.py, tests/ask_cases.json B
-  fixtures/                               B
-  pyproject.toml, uv.lock                 B
-frontend/                                 F
-deploy/ (systemd units, scripts)          D
-README.md additions                       M
-.env.example                              B
-```
-
-### 6.2 Tiger Data schema (sketch; verify syntax against current Tiger docs)
-
-```sql
-CREATE TABLE arrival_predictions (
-  polled_at timestamptz NOT NULL, line_id text NOT NULL, direction text,
-  vehicle_id text NOT NULL, naptan_id text NOT NULL, destination_name text,
-  time_to_station integer NOT NULL, expected_arrival timestamptz NOT NULL
-);
-SELECT create_hypertable('arrival_predictions', by_range('polled_at', INTERVAL '1 hour'));
-CREATE INDEX ON arrival_predictions (vehicle_id, naptan_id, polled_at DESC);
-
-CREATE TABLE stop_events (
-  line_id text, direction text, vehicle_id text, naptan_id text,
-  observed_at timestamptz NOT NULL,
-  PRIMARY KEY (vehicle_id, naptan_id, observed_at)
-);
-
-CREATE MATERIALIZED VIEW coverage_hourly WITH (timescaledb.continuous) AS
-SELECT time_bucket('1 hour', polled_at) AS hour, line_id, naptan_id,
-       count(DISTINCT vehicle_id) AS vehicles
-FROM arrival_predictions GROUP BY 1, 2, 3;
-```
-
-Percentiles are computed in Python. Compression is enabled on older chunks,
-and its ratio is shown on the Methodology tab.
-
-### 6.3 API contract (B owns it; frozen at Sat 17:00)
-
-`GET /api/routes`
 ```json
-[{"route_id": "bus-XX-outbound-A-B", "line_id": "XX", "mode": "bus",
-  "origin": {"naptan_id": "…", "name": "…"}, "destination": {"naptan_id": "…", "name": "…"},
-  "trips_observed": 412, "hours_covered": ["2026-10-24T14:00Z", "…"]}]
+{
+  "segment_id": "stable-unique-id",
+  "route_id": "bus-example-A-B",
+  "vehicle_id": "vehicle-123",
+  "origin_at": "2026-10-24T17:10:00Z",
+  "destination_at": "2026-10-24T17:24:30Z",
+  "travel_seconds": 870,
+  "inference_method": "near_stop_prediction",
+  "quality": "estimated",
+  "source": "tfl_live_recording"
+}
 ```
 
-`POST /api/departure-curve`
-```json
-// request
-{"route_id": "…", "deadline": "2026-10-25T11:00:00Z",
- "walk_to_min": 6, "walk_from_min": 4, "tolerance": 0.10, "window_min": 90}
-// response
-{"points": [{"depart_at": "…", "p_on_time": 0.94, "ci": [0.89, 0.97],
-             "arrive_p50": "…", "arrive_p90": "…", "n_trips": 38}],
- "recommended": {"depart_at": "…", "p_on_time": 0.91},
- "what_if": [{"delay_min": 5, "p_on_time": 0.84, "delta": -0.07}],
- "data_quality": {"status": "ok | low_data | insufficient_data",
-                  "basis": "38 trips observed Sat 24 – Sun 25 Oct (weekend)"},
- "server_ms": 23}
+CSV uses the same minimum fields. Times are inferred UTC timestamps and duration
+is their difference. Full records retain `line_id`, `direction`, pattern/version,
+`vehicle_run_id`, endpoint event IDs, confidence and a `segment_id` -> raw-record
+lookup; snapshots retain that traceability. M uses only deduplicated estimated
+segments passing both endpoint checks. Uncertain evidence is inspectable and
+counted in exclusions, never silently added to the probability model.
+
+### 3.6 Coverage, local time and early snapshots
+
+Separate **poll completeness** (expected/successful/failed polls, gaps) from
+**journey support** (usable run segments, vehicles, uncertain/rejected candidates,
+represented hours). Prediction row count is not a journey count.
+
+Store UTC. Derive Europe/London local date, weekday, UTC offset and repeated-hour
+distinction. The two local 01:00 hours on Sunday 25 October remain separate;
+Saturday and Sunday are not automatically interchangeable.
+
+M/F choose a supported demo reference period early. Prefer explicitly dated
+historical replay, e.g. an actually recorded Saturday-evening window. A Sunday
+evening scenario using Saturday data is an explicit, unvalidated cross-day
+assumption. Do not default to 14:00 when capture started later, silently pool
+dates for more samples or relabel source recordings as another date.
+
+Export the first real snapshot with the first usable segments; refresh it at
+handoffs and before freeze. Include capture time, source dates/hours, route
+version, quality/exclusion counts and provenance. B verifies loading without
+Tiger Data; F labels snapshot mode separately from current TfL predictions.
+
+## 4. Model and evidence policy (M)
+
+Use NumPy empirical replay: for each departure add walk-to-stop and a documented
+boarding buffer (initially one minute), find the next usable inferred origin
+event and its paired destination, then add the final walk. Reference instants
+use one-minute steps in a stated +/-30-minute local-time window. A +/-60-minute
+expansion requires disclosed coverage and weekday/date-transfer assumptions.
+
+Missing future vehicles at the recording edge or capture gaps are censored/
+unsupported, not automatically late or successful trips. M defines eligible
+reference intervals and reports excluded replay support.
+
+`n_trips` counts distinct usable canonical run segments supporting the query,
+not rows, replay steps or a vehicle ID assumed unique forever. Report distinct
+vehicles and replay-step counts separately; overlapping subsegments of one run
+cannot multiply the independent sample count.
+
+| Usable runs | API evidence status | Behaviour |
+| --- | --- | --- |
+| 0-4 | `insufficient_data` | Real samples/counts only; no probability, interval or recommendation |
+| 5-14 | `low_data` (UI: Preliminary estimate) | Descriptive empirical distribution with prominent warning; no risk-threshold departure recommendation; uncertainty may be null |
+| 15+ | `ok` (empirical estimate) | Empirical curve and justified sampling band/departure choices; the count threshold does not establish calibration |
+
+These are MVP display policies accepted in this review, not statistical proof.
+M owns implementation and B/F coordinate contract/UI. At an eight-minute headway,
+a 60-minute window may contain only about 7-8 runs; more overnight recording does
+not necessarily fix the same-time-of-day limit.
+
+Resample canonical trips or contiguous operating-time blocks, not minute query
+points. If using 200 bootstrap resamples and a 90% band, label it conditional
+sampling variability in this inferred dataset. It does not establish actual ETA
+truth, cross-day validity or calibration. Default `calibration_status` is
+`not_validated` until suitable held-out evidence exists.
+
+The advisor chooses the latest eligible departure satisfying empirical P(late)
+within tolerance; a conservative variant can use the lower band edge. Compute
+up to 90 minutes of departures and client-side +5/+10/+15 comparisons, leaving
+unsupported points unavailable. Suppress recommendations below 15 usable runs.
+
+Calibration is P1 only with disjoint held-out runs/time blocks and a documented
+reference standard. Scores against inferred events are labelled accordingly,
+not actual-arrival validation. Live correction is P2 unless its reference/error
+claims can be justified.
+
+## 5. Ask DelayLens (B/F, after P0)
+
+Retain Gemini as optional input parsing for supported route, deadline, walks and
+tolerance. Function boundaries remain `list_routes`, `get_departure_curve`,
+`compare_departures` and `get_live`; our model supplies numbers. Resolve ambiguous
+dates/times explicitly, especially the clock change.
+
+B validates arguments; F shows editable chips. Unsupported places list supported
+routes. Three-second timeout -> prefilled form fallback. Keys stay server-side;
+confirm current Google model/API against official docs during implementation.
+Preserve evidence labels and insufficient/preliminary output. A templated answer
+is sufficient; generative rephrasing is not a P0 requirement. Run about 20
+phrasing/error cases if retained; hide Ask if it threatens the core form.
+
+## 6. Architecture and interfaces
+
+```mermaid
+flowchart LR
+  T[TfL predictions] --> P[30-second poller]
+  P --> R[Durable JSONL and gzip archive]
+  R --> I[Retryable database importer]
+  R --> D[Canonical event and segment derivation]
+  I --> DB[Tiger Data]
+  D --> DB
+  D --> S[CSV and real-data snapshot]
+  DB --> C[Backend segment cache]
+  S --> C
+  C --> M[NumPy model]
+  M --> A[FastAPI]
+  A --> U[React form and evidence UI]
 ```
 
-`POST /api/ask`
-```json
-// request
-{"question": "I need to be at Oxford Circus around 2, ten minutes late is fine"}
-// response
-{"interpretation": {"route_id": "…", "deadline": "…", "walk_to_min": 5,
-                    "walk_from_min": 5, "tolerance": 0.10, "compare": null},
- "curve": { /* same shape as /api/departure-curve */ },
- "answer": "Leave by 13:12 for a 90% chance of arriving by 14:10.",
- "status": "ok | unsupported_route | unclear | gemini_unavailable"}
-```
+### 6.1 Files and ownership
 
-`GET /api/live?route_id=…` returns next arrivals, or `{"error": "tfl_unavailable"}`.
-`GET /api/stats` returns row count, chunks, compression ratio and coverage.
-`GET /api/calibration` returns reliability bins and the Brier score.
+| Owner | Planned files |
+| --- | --- |
+| D | `backend/ingest/poller.py`, `backend/ingest/derive.py`, `backend/sql/001_schema.sql`, `backend/config/routes.json`, `deploy/` |
+| M | `backend/app/model.py`, `backend/tests/test_model.py`, calibration outputs, demo scenario, README and submission |
+| B | `main.py`, `schemas.py`, `tfl.py`, `db.py`, `ask.py` under `backend/app/`; API tests/fixtures, `backend/pyproject.toml`, `backend/uv.lock`, `.env.example` |
+| F | `frontend/`, demo images/video and table script |
 
-### 6.4 Configuration (`.env.example`, names only)
+B owns dependency/lockfile edits. D/B agree importer/helper/test paths before
+adding them. Snapshot locations are agreed with B; credentials/raw archives stay
+ignored. This document does not claim those planned files already exist.
 
-```
-TFL_APP_KEY=your-tfl-app-key
-DATABASE_URL=postgres://user:password@host:port/tsdb?sslmode=require
-GEMINI_API_KEY=your-gemini-api-key
-POLL_LINE_IDS=XX,victoria
-POLL_STOP_IDS=490000000A,940GZZLUXXX
-POLL_INTERVAL_SECONDS=30
-RAW_BACKUP_DIR=.local/raw
-FRONTEND_ORIGIN=http://localhost:5173
-```
+### 6.2 Storage stages
 
-Python ≥ 3.11 with `uv`; Node ≥ 20 with `npm`. API on port 8000, frontend on 5173.
+P0 logical tables: raw poll/import identity, `arrival_predictions`, `stop_events`
+and `segments`, with provenance and uniqueness constraints. Stop events include
+`inference_method`, categorical `confidence`, `last_seen_at`, `prediction_count`
+and `inferred_at`; this feed does not justify an `actual_arrival` field.
 
-### 6.5 Performance (30% of the score)
+Use ordinary SQL for poll coverage and usable segment coverage initially. Add a
+hypertable early only if it is a quick verified step, otherwise continue the
+plain-table handoff. Record PostgreSQL/Timescale versions before applying DDL.
 
-- No database call on the hot path: segments are cached per route and
-  refreshed each minute, and common deadlines are precomputed.
-- The model is vectorised (`searchsorted`); budget < 50 ms per curve including
-  the bootstrap.
-- One request returns the whole curve. The advisor slider and what-if run in
-  the browser.
-- The frontend uses a single SVG component with no chart library, skeleton
-  loaders, and prefetches routes and the default curve.
-- The Ask flow shows the interpretation chips as soon as parsing returns.
-- "Computed in N ms" appears on screen.
+Continuous aggregates and Hypercore/columnstore follow the working data handoff.
+Current Tiger Data docs distinguish `DISTINCT` inside an aggregate from query-level
+`SELECT DISTINCT`; documented aggregate support includes 2.7-2.9, not only 2.10+.
+Run the actual migration/query on the installed version. Do not assume legacy
+compression syntax fits a current instance. Full benchmarks are P2. Sources are
+linked in section 10.
 
----
+### 6.3 API reconciliation (B)
+
+Endpoint names stay below. Intended behaviour is not proof that application
+schemas already implement the new nullable fields, metadata or thresholds. B
+publishes fixtures and coordinates M/F before the Saturday 17:00 contract gate;
+after freeze B approves and announces changes.
+
+| Endpoint | Intended behaviour |
+| --- | --- |
+| `GET /api/routes` | Verified route/endpoints, actual usable coverage and source dates; any compatibility alias `trips_observed` explicitly counts inferred segments |
+| `POST /api/departure-curve` | Route/deadline/walks/tolerance/window -> supported points, nullable interval/recommendation, comparisons and evidence metadata |
+| `GET /api/live?route_id=...` | Current TfL predictions or `tfl_unavailable`; never present a snapshot as live |
+| `GET /api/stats` | Separate poll/prediction/run-segment/vehicle/exclusion counts; optional optimisation stats may be unavailable |
+| `GET /api/calibration` (P1) | Held-out results/reference standard or an explicit unavailable/not-validated state |
+| `POST /api/ask` (P1) | Validated interpretation, model result and grounded answer with all evidence restrictions |
+
+Retain `ok`, `low_data`, `insufficient_data` where possible: `low_data` now maps
+to the 5-14 Preliminary estimate tier. B reconciles null/empty outputs for low
+support/suppressed recommendations. Metadata includes usable run and vehicle
+counts, inference/source, source dates/hours, pooling assumptions, snapshot
+capture/mode where applicable and calibration status. Synthetic fixtures are
+clearly labelled. No nullable/status change is silently assumed already merged.
+
+### 6.4 Runtime and performance
+
+Planned stack remains Python >=3.11, uv, FastAPI, NumPy, psycopg/httpx; React,
+Vite/TypeScript with Node >=20/npm; Tiger Data/PostgreSQL; Vultr/Linux systemd.
+B/F pin versions and publish actual setup/check commands when source/lockfiles
+land. Local ports: API 8000, frontend 5173.
+
+Config names: `TFL_APP_KEY`, `DATABASE_URL`, `GEMINI_API_KEY`, `POLL_LINE_IDS`,
+`POLL_STOP_IDS`, `POLL_INTERVAL_SECONDS`, `RAW_BACKUP_DIR`, `FRONTEND_ORIGIN`.
+B owns safe examples. Missing DB must not block raw capture; missing Gemini must
+not block the form. B caches route segments, refreshing each minute. One request
+returns the curve; slider/what-if work client-side. Measure latency with actual
+environment, sample size and request mix after the real-data slice works.
 
 ## 7. Team and ownership
 
-Four roles, referred to by code. Each file, account and deliverable has
-**exactly one owner**. Others review or request changes; only the owner edits.
+| Code | Responsibility | Branch | Task record |
+| --- | --- | --- | --- |
+| D — Jintian-JTST | Collection, inference, schema/routes, snapshots and infra | `feat/data` | [data-ingestion](tasks/data-ingestion.md) |
+| M — person not recorded | Model, evaluation, scenario, README and Devpost | `feat/model` | `tasks/model.md` — owner to create |
+| B — person not recorded | API/fixtures, Gemini, caching, shared docs and integration | `feat/api` | `tasks/backend-api.md` — owner to create |
+| F — person not recorded | Frontend, evidence UI, pitch and video | `feat/frontend` | `tasks/frontend-demo.md` — owner to create |
 
-| Code | Role | Owns | Accounts | Task file |
-| --- | --- | --- | --- | --- |
-| **D** | Data & infra | Recorder, `derive.py`, schema, `routes.json`, Vultr deploy, fallback snapshot, hotspot backup | TfL key, Tiger Data, Vultr, HSP sign-up | [tasks/data-ingestion.md](tasks/data-ingestion.md) |
-| **M** | Model & submission | `model.py`, model tests, calibration, demo scenario, README, Devpost write-up and submission | Devpost | [tasks/model.md](tasks/model.md) |
-| **B** | Backend, Gemini & integration | API contract, all endpoints, `ask.py` (Gemini), caching/performance, API tests, merging branches | Gemini API key | [tasks/backend-api.md](tasks/backend-api.md) |
-| **F** | Frontend & pitch | Whole `frontend/` incl. Ask box, Methodology tab, Devpost images, backup video, table script, lead presenter | — | [tasks/frontend-demo.md](tasks/frontend-demo.md) |
+One owner per file; shared interfaces go through B. This owner-requested review
+revision synchronises shared documentation; B maintains summaries/contracts in
+subsequent integration. No teammates' application files change in this revision.
+Use separate worktrees/clones for concurrent work; task records are under
+`tasks/` using [the template](tasks/TEMPLATE.md).
 
-**Working rules**
+B integrates D -> M -> B -> F in small handoffs. Fixtures remain labelled; real
+integration is a separate gate. If blocked over 20 minutes, report in the role's
+Delta thread and tell B. Planned threads remain D data / M model / B API / F
+frontend plus ideation and contract; M collects links. This rewrite itself does
+not send messages or create those threads.
 
-- One branch per role: `feat/data`, `feat/model`, `feat/api`, `feat/frontend`.
-  B merges in the order D → M → B → F.
-- After 17:00 the contract changes only with B's approval, announced to all.
-- M and F build against B's fixtures until real data flows. Fixtures are
-  labelled and removed before judging.
-- Finished early? Take your next row in §8 or ask B. Never start in someone
-  else's area.
-- Blocked for more than 20 minutes? Post in your Delta thread and tell B.
-- **Delta:** threads `D · data`, `M · model`, `B · api`, `F · frontend`, plus a
-  team thread `ideation & contract`. Review each other's agent output
-  in-thread. M collects the best thread links for Devpost.
+This documentation revision uses `codex/revise-ingestion-plan`, independently of
+the ongoing `feat/data` implementation. B preserves the concurrent D evidence
+when integrating and consolidates its legacy task record into the canonical
+`tasks/data-ingestion.md` rather than maintaining competing task records.
 
----
+## 8. Schedule and gates
 
-## 8. Schedule
+Times use **Europe/London**, Saturday 24 to Sunday 25 October. Original kickoff
+14:00 and recorder 15:00 are targets, not completion claims. If starting late,
+begin G0 now; use elapsed capture time for the 90-minute cut and preserve Sunday's
+deadline.
 
-Official fixed points:
-
-| Time | Event |
-| --- | --- |
-| Sat 12:00 | Hacking began |
-| Sat 18:00–19:00 | Dinner |
-| Sun 00:00 | Pizza |
-| Sun 08:00–09:00 | Breakfast |
-| Sun 09:00–10:00 | Devpost workshop |
-| **Sun 12:00** | **Hacking ends** |
-| **Sun 13:00–15:45** | **Judging at our table** |
-| Sun 16:00 | Closing ceremony |
-
-**The team sleeps 00:00–07:00**, so the recorder must run unattended on the
-server from 23:45. Clocks go back at 02:00; data is UTC, so nothing to do.
-Talks and workshops are skipped except the Devpost workshop, which M attends.
-
-★ rows are **all-team gates**: everyone stops, meets for 5–15 minutes, and
-leaves with the exit check met or the stated cut made.
-
-### Saturday 24 Oct
-
-| Time | Owner | Task | Tools | Exit check |
-| --- | --- | --- | --- | --- |
-| **14:00–14:15** | **all** | **★ Kickoff:** confirm who is D/M/B/F; D picks routes (others advise); B reads the API contract aloud; create Delta threads; share secrets privately (never in repo or public chat) | Delta | Routes listed; contract agreed |
-| 14:15–15:00 | D | TfL key; Tiger Data via `mlh.link/tigerdata` + service; `001_schema.sql` (UTC hypertable); minimal `poller.py` + JSONL backup | TfL Unified API, Tiger Data, psycopg | Rows land every 30 s |
-| 14:15–15:00 | M | Synthetic timetable generator; hand-checked tests (bus every 10 min, fixed 20-min ride → step-shaped curve) | NumPy, pytest | Tests written |
-| 14:15–15:00 | B | `uv` + FastAPI skeleton; `schemas.py`; `/api/departure-curve` serving a fixture; `.env.example` | FastAPI, Pydantic, uv | F can call the fixture |
-| 14:15–15:00 | F | Vite + React + TS scaffold; layout and tokens; route form (route, deadline, walk times, tolerance) | Vite, React, TypeScript | Form renders, keyboard-usable |
-| **15:00** | **all** | **★ Recorder gate:** rows arriving every 30 s. **If not, M stops and helps D** until they are | — | — |
-| 15:00–16:30 | D | Harden poller: backoff on 429/5xx/timeouts, restart loop, logging; stop IDs both directions; submit National Rail HSP sign-up | TfL `Route/Sequence` | Survives a Wi-Fi drop |
-| 15:00–16:30 | M | Vectorised empirical replay: `p_on_time`, `arrive_p50/p90`, `n_trips` | NumPy (`searchsorted`) | Synthetic tests pass |
-| 15:00–16:30 | B | `tfl.py` (timeouts, explicit errors); real `/api/live`; `/api/routes` from `routes.json`; add `/api/ask` shape to the contract | httpx, FastAPI | Real live arrivals returned |
-| 15:00–16:30 | F | `DepartureCurve` SVG on the fixture: curve, band, recommended marker | SVG | Fixture renders correctly |
-| 16:30–18:00 | D | `derive.py`: stop events + trip segments every minute; sanity-check ride times | SQL, TimescaleDB | Plausible ride times per route |
-| 16:30–18:00 | M | Bootstrap 90% band; `low_data` / `insufficient_data` thresholds; benchmark | NumPy | < 50 ms per curve |
-| 16:30–17:00 | B | Finalise contract + fixtures (curve, ask, live, stats, calibration) on `main` | Pydantic | Merged |
-| 16:30–17:00 | F | `api.ts` typed client mirroring `schemas.py` | TypeScript | Compiles against fixtures |
-| **17:00** | **all** | **★ Contract freeze:** later changes need B's approval and are announced | — | — |
-| 17:00–18:00 | B | `db.py` pool + in-memory segment cache refreshed each minute | psycopg | Cache refreshes |
-| 17:00–18:00 | F | Client-side advisor (tolerance slider) + what-if chips | React | Sliders never call the API |
-| 18:00–18:30 | all | Dinner | — | — |
-| 18:30 | D | **Hand-off:** segment CSV → M; `get_segments` + coverage SQL → B | — | — |
-| 18:30–19:30 | D | Provision Vultr VM (`mlh.link/vultr`); install runtime | Vultr | SSH works |
-| 18:30–19:15 | M | Run the model on real segments; sanity-check; merge `model.py` → B by 19:15 | — | Numbers make sense to a commuter |
-| 18:30–19:30 | B | Wire D's SQL and M's model into the curve endpoint | — | Curve from real data |
-| 18:30–19:30 | F | `LivePanel`; switch from fixture to the real API | — | Real curve on screen |
-| **19:30** | **all** | **★ End-to-end gate:** real data → model → API → screen. **If not, cut Gemini and calibration;** everyone closes the gap on the bus route only | — | — |
-| 19:30–21:30 | D | Recorder + `derive.py` on the VM under `systemd`; laptop recorder keeps running as backup | Vultr, systemd | VM and laptop row counts match |
-| 19:30–21:30 | M | Time-of-day window in UTC; edge cases (no next vehicle, end of data, repeated 01:00 hour); tests | pytest | Edge-case tests pass |
-| 19:30–21:30 | B | `ask.py`: Gemini function calling (`list_routes`, `get_departure_curve`, `compare_departures`, `get_live`), argument validation, 3 s timeout, templated answer | Gemini API | 10 sample questions parse correctly |
-| 19:30–21:30 | F | Loading, empty and error states; `low_data` badge; phone layout; focus styles | CSS | Every state reachable |
-| 21:30–22:30 | D | `coverage_hourly` continuous aggregate; compression policy; `stats` SQL → B | TimescaleDB | Queries < 100 ms |
-| 21:30–23:00 | M | Calibration backtest v1 on ~8 h of data → JSON | NumPy | Calibration JSON committed |
-| 21:30–22:30 | B | `/api/stats`, `/api/calibration`; precompute common deadlines; `server_ms`; API tests; package the API → D | FastAPI, pytest | p95 < 300 ms locally |
-| 21:30–22:30 | F | **Ask box:** free text → editable interpretation chips → curve; "computed in N ms"; "Powered by TfL Open Data" footer; production build → D | React | Ask flow works on the dev server |
-| 22:30–23:00 | D | Deploy API + frontend build to the VM | Vultr | Public URL works |
-| 22:30–23:00 | B | Merge branches D → M → B → F; smoke-test the public URL with D | git | `main` = deployed build |
-| 22:30–23:00 | F | Table demo script v1 (2-minute core) | — | Script in repo |
-| **23:00** | **all** | **★ P0 + deploy gate:** five core features + Ask work on the public URL. **If Ask is flaky, hide it behind the form;** the form stays the main path | — | — |
-| 23:00–23:45 | D | Overnight readiness: kill the recorder and confirm `systemd` restarts it; check disk space; laptop backup plugged in with sleep disabled | systemd | Recorder survives a forced kill |
-| 23:00–23:45 | M | Shortlist demo scenarios inside recorded hours; methodology notes | — | Shortlist in PROGRESS.md |
-| 23:00–23:45 | B | Ask test set (`ask_cases.json`, ~20 phrasings) written; handover notes in PROGRESS.md | pytest | Test set committed |
-| 23:00–23:45 | F | Devpost screenshots + architecture diagram | — | Images in repo |
-| **23:45** | **all** | **★ Overnight gate:** recorder confirmed on the server; laptops plugged in; everyone logs off by 00:00 | — | — |
-| 00:00–07:00 | all | **Sleep.** Grab pizza on the way if you want it | — | — |
-
-### Sunday 25 Oct
-
-| Time | Owner | Task | Tools | Exit check |
-| --- | --- | --- | --- | --- |
-| **07:00–07:15** | **all** | **★ Wake-up gate:** D shows overnight rows and gaps across the clock change. **If gaps, D reloads from the JSONL backup** before anything else | — | — |
-| 07:15–08:30 | D | Data QA across the clock change; build the demo **fallback snapshot** (API serves without Tiger Data) | — | Snapshot serves offline |
-| 07:15–08:30 | M | Re-run calibration with overnight data; live correction (P1), dropped at 08:15 if unconvincing | NumPy | Merged, or written up as future work |
-| 07:15–08:30 | B | Run and fix the Ask test set: vague times, "a bit late is fine", comparisons, off-topic, unsupported places; overnight bugs | Gemini API, pytest | ≥ 18/20 cases pass; failures handled gracefully |
-| 07:15–08:30 | F | Methodology tab: coverage heatmap, calibration chart, Tiger stats | SVG | Works on the deployed build |
-| **08:30–08:45** | **all** | **★ Morning sync (at breakfast):** P1s in or out; demo scenario fixed | — | — |
-| 08:45–09:30 | D | Load-test the deployed API; set up phone hotspot as network backup | — | p95 < 300 ms on the VM |
-| 08:45–09:00 | M | Lock the demo scenario; final threshold check | — | Recorded in PROGRESS.md |
-| 08:45–09:30 | B | Merge M's P1 work; redeploy with D | git | Stable deployed build |
-| 08:45–09:30 | F | UI polish from team feedback; check first load on a phone | — | Feels instant on a phone |
-| 09:00–09:45 | M | **Devpost workshop:** exact cut-off and required fields | Devpost | Requirements noted |
-| **09:30** | **all** | **★ Feature freeze** (M is told in the team thread): bug fixes only; the deployed build is the demo build | — | — |
-| 09:30–10:00 | D | Write the data/infra section → M | — | Sent |
-| 09:30–10:00 | B | Write the backend + Gemini section → M | — | Sent |
-| 09:30–10:00 | F | Record the backup demo video → M | — | Video with M |
-| 09:45–10:30 | M | Assemble Devpost + README (what, how to run, architecture, TfL attribution, Delta links) | Devpost | Draft complete |
-| 10:00–10:30 | D | Final infra checklist: VM, recorder, snapshot, hotspot | — | All ticked |
-| 10:00–10:30 | B | Regression check of every endpoint on the VM, incl. Ask | — | All pass |
-| 10:00–10:30 | F | Final table script + speaking parts (F hook + demo; M data story; B Ask; D pipeline) | — | Script in repo |
-| **10:30–11:00** | **all** | **★ Dress rehearsal:** timed table demo + mock Q&A on the deployed site; fixes assigned to owners | — | Under 3 min |
-| 11:00–11:15 | M | **Submit on Devpost** | Devpost | Confirmation received |
-| **11:15** | **all** | **★ Submitted** | — | — |
-| 11:15–12:00 | B | Approves demo-breaking fixes only; D redeploys if approved | — | — |
-| 11:15–12:00 | M | Judge Q&A cheat sheet (why empirical replay, calibration, limits, next steps) | — | One page |
-| 11:15–12:00 | F | Backup video and fallback ready on a second device | — | — |
-| **12:00** | **all** | **★ Hacking ends:** hands off keyboards | — | — |
-| 12:00–13:00 | all | Lunch; set up the table; two timed rehearsals | — | — |
-| **13:00–15:45** | **all** | **★ Judging at our table** (rota below) | — | — |
-
-### Judging rota
-
-At least two of us at the table at all times. F presents; a technical answerer
-backs them up.
-
-| Time | At the table | Free |
+| Gate / target | D | M / B / F and exit condition |
 | --- | --- | --- |
-| 13:00–13:45 | All four | — |
-| 13:45–14:30 | F, M, D | B |
-| 14:30–15:15 | F, M, B | D |
-| 15:15–15:45 | All four | — |
+| G0 immediately; original Sat 15:00 | Check five polls, short bus pattern and durable full JSONL | M specifies inputs; B/F use labelled fixtures. Exit: real capture independent of DB. |
+| G1 first 90 minutes | Initialise DB/import when available; inspect inferred O->D | No credible segment -> shorten/change route. Exit: traceable sample or explicit route cut. |
+| G2 first usable segments | Deliver CSV, query/schema/quality contract and first snapshot | M reads CSV; B reads same segments and tests snapshot without DB immediately. |
+| Sat 17:00 contract gate | Agree identity/route/quality fields with B/M | B publishes revised schemas/fixtures; M/F acknowledge tiers/nullability. Unresolved changes stay explicit. |
+| Sat 18:30 handoff | Refresh samples, queries, coverage/exclusions and snapshot | M/B connect real model/cache; M/F pick genuinely covered scenario time. |
+| Sat 19:30 core gate | Diagnose matching/data gaps | Real data -> model -> API -> screen; apply cuts if absent. A fixture is not a pass. |
+| Evening, target Sat 21:30 | Supervised VM; one active writer | Prove restart, DB-down raw saving and idempotent replay before unattended use. |
+| Sat 21:30-23:00 after core | Ordinary coverage/stats, then optional optimisation; deploy B/F packages | Verify public form, evidence states/live panel and deployed revision; Ask optional. |
+| Sat 23:45 overnight gate | Recorder/disk/raw backup and snapshot refreshed | Unattended collection confirmed; team sleep target 00:00-07:00. |
+| Sun 07:00-08:30 | Gaps/clock-change QA; recover and refresh snapshot | M checks support/evaluation; B/F verify real/low-data/unavailable states. |
+| Sun 08:30-09:30 | Final redeploy support, latency measurement, hotspot if time | Lock supported demo scenario and optional cuts; feature freeze 09:30. |
+| Sun 09:30-10:30 | Data/infra notes to M by 10:00; VM/recorder/snapshot check | M submission draft; B endpoints; F backup video/script. |
+| Sun 10:30-11:15 | Support rehearsal/fixes | Under-three-minute rehearsal; M targets submission 11:00-11:15 with confirmation. |
+| Sun 11:15-12:00 | Only B-approved demo-breaking redeploys | Verify submission; hacking ends 12:00. |
 
-### Hand-offs at a glance
+Inherited event notes: dinner Sat 18:00-19:00, breakfast Sun 08:00-09:00,
+Devpost workshop Sun 09:00-10:00 (M), judging 13:00-15:45, closing 16:00. M
+confirms exact submission rules. Judging rota retained: all four 13:00-13:45;
+F/M/D 13:45-14:30; F/M/B 14:30-15:15; all four 15:15-15:45. F presents with a
+technical answerer present.
 
-| Time | From → To | What |
-| --- | --- | --- |
-| Sat 15:00 | D → M, B | Schema + `routes.json` |
-| Sat 17:00 | B → M, F | Frozen contract + fixtures |
-| Sat 18:30 | D → M / B | Segment CSV / `get_segments` + coverage SQL |
-| Sat 19:15 | M → B | `model.py` merged |
-| Sat 22:30 | B, F → D | API package, frontend build |
-| Sat 22:30 | D → B | `stats` SQL |
-| Sat 23:00 | M → B | Calibration JSON |
-| Sun 10:00 | D, B, F → M | Devpost sections and backup video |
+## 9. Demo and fallback
 
----
+1. Show actual route/reference date/time, coverage, usable count and inferred
+   evidence limitation before quoting probabilities.
+2. Show form, empirical curve and eligible advisor/what-if. With 5-14 runs show
+   Preliminary estimate and no risk-based recommendation; below five show real
+   samples and explain the unmet prediction target.
+3. Show current TfL predictions separately from the historical replay.
+4. If retained, Ask selects the same supported scenario. Do not hard-code a
+   14:00 example without evidence for that reference period.
+5. Trace raw evidence -> inferred segment; show separate poll/journey counts.
+   Add optimisation/evaluation evidence only when implemented and checked.
 
-## 9. Table demo (2-minute core, repeatable)
+Fallback: refreshed real snapshot through B's API, then F's video. Snapshot mode
+needs no Tiger Data, but still needs a local/hosted API unless an offline bundle
+is separately verified. Keep live data unavailable/stale explicitly labelled.
+Test the first snapshot at G2; never substitute synthetic judged probabilities.
 
-1. **Hook (15 s):** "You must be there by 2. Leave at 1:10 or 1:20? Journey
-   planners give one number; reality is a distribution."
-2. **Ask (25 s):** type *"I need to be at [stop] around 2, I can't be late"*.
-   The interpretation chips appear, then the curve.
-3. **Curve (40 s):** P(on time) falls as departure gets later; the band and
-   "N trips" show how sure we are. "1:10 gives 93%, 1:20 gives 71%."
-4. **Advisor + what-if (20 s):** tolerance slider gives "leave by 1:13"; tap
-   +5/+10/+15. Note the "computed in N ms".
-5. **Extended (if asked):** Tube contrast (flat curve, "either is fine"); data
-   story (TfL has no archive, so we built one in Tiger Data since Saturday,
-   with N rows, compression and coverage); the calibration chart; limitations
-   (weekend data, single-leg routes).
+## 10. Risks, rules and sources
 
-Close: *"Data turned into a prediction, turned into a decision."*
-**Fallback:** the snapshot-backed API, then the backup video on a second device.
-
----
-
-## 10. Risks and checklist
-
-### Risks
-
-| Risk | Mitigation |
+| Risk | Response |
 | --- | --- |
-| **Recorder dies overnight while we sleep** | `systemd` auto-restart on the VM, tested by a forced kill at 23:00; laptop backup recorder; JSONL backup; first thing at 07:00 is the gap check |
-| Not enough history | Recorder first; dense routes only; `n_trips` shown; `insufficient_data` instead of guesses |
-| Gemini misreads a question | Editable interpretation chips; argument validation; 20-case test set; the form always works |
-| Gemini slow or down | 3 s timeout; prefilled form fallback; Ask is never the only path |
-| UI feels slow | Cache + client-side advisor; measure `server_ms` from the first slice |
-| `vehicleId` noise (Tube) | Lead with the bus; Tube is the contrast only |
-| TfL outage | Backoff; UI error state; never fake live data |
-| Demo deadline outside recorded hours | Choose from `hours_covered` (M locks it at 08:45) |
+| Disappearance or ambiguous identity | Keep uncertain evidence, exclude mismatches and preserve raw provenance |
+| Too few runs / long segment fails | Short route, 90-minute cut and evidence tiers |
+| DB unavailable | Raw saving continues; retry import; CSV/snapshot handoff proceeds |
+| Duplicate backups | One canonical writer; stable keys and overlap/replay count checks |
+| Clock change / date transfer | UTC plus local date/offset/fold; explicit supported replay/transfer assumption |
+| Overnight process exit | Prove systemd restart before absence; laptop raw backup |
+| Optional work delays core | Defer Tube/HSP, benchmarks, complex drills, Gemini and optimisation as needed |
 
-### Hackathon checklist
+Initial notes record teams <=4, MLH/Hackathons UK conduct rules, hacking Sat 12:00
+-> Sun 12:00 and Devpost/table judging. M confirms exact fields/cut-off,
+multi-prize eligibility, pre-existing-code/AI-use rules and attribution before
+representing them as settled requirements.
 
-Confirmed (opening slides and official schedule, read 2026-10-24):
+Technical sources checked 2026-10-24:
 
-- [x] Hacking Sat 12:00 → **Sun 12:00**; Devpost submission; judging 13:00–15:45 at tables; closing 16:00.
-- [x] Teams ≤ 4; MLH + Hackathons UK codes of conduct.
-- [x] Judging: Speed & Performance 30%, Technical 25%, Innovation 25%, Polish 20%.
-- [x] Tracks: HRT data track; Tiger Data, Gemini API and Vultr (MLH); Built with Delta.
+- [TfL feeds](https://tfl.gov.uk/info-for/open-data-users/our-open-data): bus-feed refresh, prediction semantics and feed-specific attribution. The bus guidance says "Data provided by Transport for London"; M/F verify applicable terms rather than assuming the earlier proposed footer suffices.
+- [TfL API portal](https://api-portal.tfl.gov.uk/): current registration/access documentation; verify endpoint limits during setup.
+- [Tiger Data continuous aggregates](https://www.tigerdata.com/docs/build/tips-and-tricks/troubleshoot-continuous-aggregates): version-dependent query/aggregate support.
+- [Tiger Data Hypercore](https://www.tigerdata.com/docs/learn/columnar-storage/understand-hypercore): rowstore/columnstore behaviour; our instance migration remains untested.
 
-To confirm (M at the Sun 09:00 Devpost workshop, or on Discord):
-
-- [ ] Exact Devpost cut-off and required fields (video? track selection?).
-- [ ] Whether one project can enter several sponsor prizes.
-- [ ] Rules on pre-existing code and AI tools. The repo scaffold (docs only)
-      pre-dates the event.
-- [ ] TfL attribution ("Powered by TfL Open Data") in the UI and README.
+The owner supplied the review in chat and a [shared copy](https://chatgpt.com/share/6adcb335-0514-83eb-977c-0a7678ce4b3b).
+The shared page could not be fetched; this rewrite uses the pasted review, not
+assumed extra content. No live collection, migration or deployment is established
+by this documentation revision.

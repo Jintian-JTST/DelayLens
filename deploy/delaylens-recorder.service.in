@@ -7,7 +7,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=simple
 WorkingDirectory=@BACKEND@
-ExecStart=@PYTHON@ -u -m ingest.poller
+ExecStart=@PYTHON@ -u -m ingest.database_poller
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONUNBUFFERED=1
 Restart=on-failure

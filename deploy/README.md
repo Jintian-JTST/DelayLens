@@ -7,11 +7,18 @@ needed for this recorder; outbound HTTPS and the database connection are needed.
 
 ## Local recorder (Windows, macOS, Linux)
 
+This document operates `ingest.database_poller`, the imported database pipeline.
+Main's separate `backend.ingest.poller` retains complete HTTP responses for short
+bus recording. That raw archive is not accepted by `ingest.admin replay`; their
+formats and derivation paths are different. Keep one canonical database writer.
+The imported SQL inference has not yet been reconciled with the revised PLAN's
+canonical identity, quality and provenance requirements. Do not treat its view
+rows as approved model evidence merely because this branch has been integrated.
+
 Python >=3.11. From `backend/`, use B's uv environment with the separate D driver:
 
 ```text
-uv sync
-uv pip install -r ingest/requirements.txt
+uv sync --locked
 ```
 
 Or create a dedicated environment with `python -m venv .venv`, activate it using
@@ -28,7 +35,7 @@ Run from `backend/`, using the configured environment's Python:
 ```text
 python -m ingest.admin init
 python -m ingest.admin replay
-python -m ingest.poller
+python -m ingest.database_poller
 ```
 
 `--once` records one poll for a smoke check. `--backup-only` explicitly skips the
@@ -103,7 +110,7 @@ retained raw database rows. No raw-data retention policy deletes this archive.
 Refresh old continuous-aggregate buckets manually if replaying data older than
 the seven-day automatic refresh window. For this hackathon all data fits inside it.
 
-Read `docs/tasks/data-ingestion.md` for the exact SQL contract. Run checks from
+Read `tasks/data-ingestion.md` for the exact SQL contract. Run checks from
 the repository root using an environment with `pytest` and `ruff` installed:
 
 ```text

@@ -8,7 +8,7 @@ absence for >=90s. These estimates are not ground-truth vehicle telemetry.
 import json
 from datetime import timedelta
 
-from .poller import utc
+from .database_poller import utc
 
 EPISODE_GAP = timedelta(minutes=20)
 ABSENCE = timedelta(seconds=90)

@@ -1,64 +1,69 @@
-# OxHack 2026 — Progress and Handoff
+# DelayLens — Progress and Handoff
 
-Updated: 2026-10-23 (Europe/London).
+Updated: 2026-10-24 (Europe/London).
 
 ## Current milestone
 
-Repository preparation. Product requirements and technology decisions await the
-team's brief in [PROJECT.md](PROJECT.md).
+Branch integration is prepared on `codex/integrate-branches` for owner review.
+Main is not advanced by this task. A branch merge and passing unit tests do not
+establish the real-data end-to-end demo.
 
-## Completed
+## Repository integration
 
-- Initialized the repository with shared AI instructions and project documents.
-- Added canonical AI coding rules in root `AGENTS.md` and thin entry points for
-  Copilot, Claude Code, Gemini CLI and Cursor.
-- Added a project brief, decision log and this progress/handoff document.
-- Extended the README and inherited Python `.gitignore`; preserved `LICENSE`.
-- Added cross-platform onboarding, local/shared configuration boundaries, independent
-  task workspaces, a per-task handoff template and shared text-file conventions.
-- Corrected inherited ignore rules that hid library source directories.
+- Main baseline `4da089c` already contains PRs #1/#2, the revised PLAN and the
+  complete-response bus 24 raw recorder. Preserve that recorder and short routes.
+- `feat/api` at `ab9012c` includes `feat/data` at `82ae093`; import that history
+  once, retain the corrected bus 29 origin and all four configured routes.
+- `feat/model` at `f12e4de` contributes NumPy replay and its synthetic tests.
+  Add its requested NumPy dependency and update the existing uv lockfile.
+- Keep the imported database pipeline at `ingest.database_poller`, updating its
+  imports and service template. It uses a different archive from main's raw
+  recorder. No interchange/replay bridge is implemented.
+- Consolidate D/B records under `tasks/`, preserving D's historical live evidence
+  and distinguishing it from checks actually rerun for this integration.
+- Source branches and existing checkouts remain intact. Full inventory and
+  conflict decisions: [branch integration](../tasks/branch-integration.md).
 
-## Verification
+## Verification for this integration
 
-- Passed: expected file inventory, UTF-8 content, local Markdown links and imports,
-  and Cursor rule frontmatter.
-- Passed at initialization: original README and Python ignore rules retained; MIT
-  license unchanged. The later portability update removes broad library ignores.
-- Passed: ignore checks for 13 local credential/generated paths and retention checks
-  for 17 example, lockfile and project paths.
-- Passed: `git diff --check`.
+Windows / PowerShell 7.6.5 / Python 3.11.9; isolated uv environment and lockfile.
 
-There is no application tooling yet; application tests, lint and builds are not
-configured. Instruction files were checked structurally against the linked official
-formats; individual AI clients have not been launched to test automatic loading.
+- `uv sync --project backend --locked --group dev`: passed.
+- From `backend/`, `python -m pytest -q --strict-markers`: **93 passed, 7 skipped**.
+  All seven skips are explicitly opt-in real-database tests; no credentials used.
+  One existing Starlette/httpx deprecation warning remains.
+- Ruff over `backend/app`, `backend/tests`, `backend/ingest`, `deploy`: passed.
+- Added regression coverage for merged route/poll defaults, complete raw saving
+  without a database, both recorder imports and actual-config API responses with
+  no synthetic probabilities.
+- UTF-8/JSON/conflict-marker/path/whitespace and 45 exact-case local Markdown
+  links passed across 54 versioned/new files. Git whitespace checks passed.
+- First restricted test invocation stalled; stopped only that integration test
+  process and reran with normal process access and a 55-second bound. The complete
+  suite passed in 2.32 seconds. This is not a live integration/service check.
 
-Portability review completed:
+## Remaining product gates
 
-- Passed: 14 intended files, UTF-8, exact-case local links/imports and no personal
-  absolute paths in shared files.
-- Passed: 12 local/generated paths ignored; 30 source, template, portable configuration
-  and lockfile paths retained, including nested `src/lib/` directories.
-- Passed: fresh offline clones in paths containing spaces and Unicode, with both
-  `core.autocrlf=true` and `false`; LF text/shell scripts, CRLF Windows command
-  scripts and unchanged binary fixture bytes.
-- Passed: documented worktree commands and isolation of task working files/staging.
-
-These checks ran on Windows. macOS/Linux execution and each AI client's automatic
-rule loading remain unverified; use the explicit `AGENTS.md` reading fallback.
-
-## Open decisions and next actions
-
-1. Confirm organizer rules for preparation, existing code, AI use and submission.
-2. Agree on target users, the problem and one core user journey in `PROJECT.md`.
-3. Select the minimum stack and define component boundaries and file ownership.
-4. Implement and verify one complete MVP journey, then prepare the demo.
+| Gate | Status / next action |
+| --- | --- |
+| Raw collection | Main recorder preserved; no live collection started or restarted in this task |
+| Credible bus segments / snapshot | D's historical evidence retained; revised canonical identity/quality/provenance still needs reconciliation |
+| Model evidence policy | M implements 0-4 / 5-14 / 15+ handling, uncertainty and explicit local-date/clock-change/pooling assumptions |
+| Real API data wiring | B implements DB/snapshot adapter and connects the model; configured routes currently return insufficient_data |
+| Stats / calibration | Explicit 503 responses remain; no fabricated results |
+| Frontend / demo | No frontend branch/source found; real data -> model -> API -> UI remains unverified |
+| VM / submission | No deployment or submission performed; existing live services not changed |
 
 ## Active handoffs
 
-No implementation task is assigned yet. Create a separate file per task using
-[tasks/TEMPLATE.md](tasks/TEMPLATE.md); the integrator lists those files here and
-maintains the milestone summary after integration.
+| Task | Owner recorded by source task | Next action |
+| --- | --- | --- |
+| [Branch integration](../tasks/branch-integration.md) | Jintian-JTST / Codex | Owner reviews PR targeting main |
+| [D: data-ingestion](../tasks/data-ingestion.md) | Jintian-JTST / Codex | Reconcile revised P0 and produce raw-linked bus evidence |
+| [M: model](../tasks/model.md) | Olivia Guo / Claude Code | Revised evidence policy and B adapter contract |
+| [B: backend-api](../tasks/backend-api.md) | David / Codex | DB/snapshot cache and model adapter |
+| F: frontend-demo | Not recorded | Create task/branch and implement core evidence UI |
 
-| Task record | Owner | Status | Next action |
-| --- | --- | --- | --- |
-| Not assigned | TBD | Awaiting product brief | Agree on an MVP and task ownership |
+Earlier setup/docs verification is retained in Git history and the source task
+records. D/B's external-service results are dated source reports, not new checks
+of live collection, Tiger Data, Gemini or TfL during this integration.

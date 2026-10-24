@@ -4,9 +4,11 @@
 
 Build a reliable, demo-ready MVP with clear user value. Follow the event's coding,
 reuse, attribution and submission rules; verify those rules before development.
-This repository is currently in preparation: the product idea and technology stack
-are undecided. Do not select a stack, install dependencies or generate application
-code until a product task is agreed with the user or team.
+The product is DelayLens, using London TfL bus predictions. The intended stack,
+MVP priorities and data-quality policy are recorded in `PLAN.md` and
+`docs/PROJECT.md`. Read them before implementation; distinguish planned work from
+actual verification in `docs/PROGRESS.md` and the role's task record. Do not change
+the agreed city, source, architecture or scope without coordinating the contract.
 
 ## Tool and skill discovery
 
@@ -24,8 +26,9 @@ code until a product task is agreed with the user or team.
 
 - Treat this file as the canonical project-wide coding guidance. Tool-specific
   entry points must refer here rather than maintain competing rule sets.
-- Check repository state before editing. Read `README.md`, then relevant parts of
-  `docs/PROJECT.md` and `docs/PROGRESS.md` for requirements, decisions and handoffs.
+- Check repository state before editing. Read `README.md`, `PLAN.md`, then relevant
+  parts of `docs/PROJECT.md`, `docs/PROGRESS.md` and your task record for
+  requirements, decisions and handoffs.
 - Do not invent requirements, completed work, test results or technical decisions.
 - Follow the agreed architecture, existing conventions and committed lockfiles.
   The inherited Python `.gitignore` does not determine the technology stack.
@@ -95,6 +98,22 @@ code until a product task is agreed with the user or team.
   success and error states. Clearly label fixtures and demonstration data.
 - Prioritize a polished core interaction and reliable demo over unfinished screens.
 
+## DelayLens data and MVP boundaries
+
+- Save recoverable raw polls before database writes; database setup must not block
+  collection. Begin with one 10-20-minute, 4-8-stop London bus segment. After
+  90 minutes of capture without a manually checkable segment, shorten/change it.
+- TfL arrivals are predictions. Preserve inference method, quality and raw
+  provenance; disappearance alone is uncertain, never measured actual arrival.
+- Use one canonical derivation writer, stable identities and replay checks.
+  Count usable vehicle-run segments, not prediction rows or minute replay points.
+- Apply the PLAN's insufficient/preliminary/empirical tiers; no sample-count
+  threshold alone proves calibration. B owns API changes and M owns model logic.
+- Export a real-data snapshot at the first usable-segment handoff. Keep source
+  dates, coverage, snapshot mode and local-time/clock-change assumptions visible.
+- Defer Tube, HSP, full benchmarks and complex drills until the single-bus core
+  works. Do not let optional optimisation block real samples and model handoff.
+
 ## Git collaboration and handoffs
 
 - Keep changes scoped; preserve the existing README content, MIT license and
@@ -106,7 +125,7 @@ code until a product task is agreed with the user or team.
 - Give each concurrent task its own branch and clone or worktree. Two branches in the
   same working directory are not isolation; do not share staging, commits or branch
   switches across running agents. Coordinate lockfiles and shared API/schema edits.
-- Use one file per task in `docs/tasks/`, based on `docs/tasks/TEMPLATE.md`, for the
+- Use one file per task in `tasks/`, based on `tasks/TEMPLATE.md`, for the
   owner, branch, affected files, interface decisions, checks and next action. Reference
   those files from `docs/PROGRESS.md`; let the integrator update shared summaries.
 

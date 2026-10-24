@@ -3,8 +3,15 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+from ingest.database_poller import (
+    FetchFailure,
+    backup,
+    fetch,
+    normalize,
+    read_batch,
+    utc,
+)
 from ingest.derive import advance
-from ingest.poller import FetchFailure, backup, fetch, normalize, read_batch, utc
 from ingest.settings import Settings, load_routes
 
 T = datetime(2026, 10, 25, 0, 59, tzinfo=UTC)
@@ -38,10 +45,10 @@ def row(seconds=0, **changes):
 
 def test_route_contract():
     routes = load_routes()
-    assert len(routes) == 2
+    assert len(routes) == 4
     assert {r["mode"] for r in routes} == {"bus", "tube"}
-    assert len({r["route_id"] for r in routes}) == 2
-    assert all(r["direction"] == "outbound" for r in routes)
+    assert len({r["route_id"] for r in routes}) == 4
+    assert {r["direction"] for r in routes} == {"inbound", "outbound"}
 
 
 @pytest.mark.parametrize("change", [

@@ -75,7 +75,7 @@ def test_real_model_curve_on_hand_checkable_timetable():
     assert by_time["2026-10-24T16:50:00Z"] == 0.0
     assert data["recommended"] is not None
     assert data["recommended"]["p_on_time"] >= 0.9
-    assert "recorded trips" in data["data_quality"]["basis"]
+    assert "trips recorded on this route" in data["data_quality"]["basis"]
     for p in data["points"]:
         lo, hi = p["ci"]
         assert lo <= p["p_on_time"] <= hi

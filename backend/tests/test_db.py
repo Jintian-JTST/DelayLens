@@ -104,7 +104,7 @@ def test_curve_without_recorded_trips_gives_no_probability(monkeypatch):
     assert data["points"] == []
     assert data["recommended"] is None
     assert data["data_quality"]["status"] == "insufficient_data"
-    assert "3 recorded trips" in data["data_quality"]["basis"]
+    assert "3 trips recorded on this route" in data["data_quality"]["basis"]
 
 
 def test_database_url_placeholder_is_ignored(monkeypatch):

@@ -104,7 +104,11 @@ def backtest(segments: model.Segments) -> tuple[list[Outcome], int]:
             for off in DEADLINE_OFFSETS_MIN:
                 deadline = d + median_ride + off * SECONDS_PER_MIN
                 curve = model.replay_curve(
-                    train, np.array([d]), deadline, tod_window_min=curves.TOD_WINDOW_MIN
+                    train,
+                    np.array([d]),
+                    deadline,
+                    tod_window_min=curves.TOD_WINDOW_MIN,
+                    n_boot=0,  # the backtest scores p_on_time only; skip the unused band
                 )
                 p = float(curve.p_on_time[0])
                 if np.isnan(p):

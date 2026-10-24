@@ -1,7 +1,7 @@
 # Task: Backend API, Gemini and integration (role B)
 
 - Task ID: backend-api
-- Owner (person / AI tool): B (David) / Claude Code
+- Owner (person / AI tool): B (David) / Codex (continuing the Claude Code scaffold)
 - Branch: feat/api
 - Status: in progress
 - Integrator / reviewer: B merges in order D → M → B → F
@@ -24,7 +24,37 @@ Real data replaces fixtures at the Sat 18:30 gate; failures are explicit, never 
 
 ## Handoff
 
-- Changes: uv project, schemas, fixture-backed `/api/departure-curve`, stubs that fail honestly
-- Checks run (macOS, Python 3.14, uv 0.13.5): `uv run pytest` 7 passed; `uv run ruff check`
-- Unverified: real TfL, Tiger Data and Gemini integration (not built yet)
-- Next action (B): `tfl.py` + real `/api/live`, `/api/routes` from D's `routes.json`
+Updated: 2026-10-24 (Europe/London).
+
+- Existing scaffold: uv project, schemas, labelled fixture-backed departure curve,
+  and explicit unavailable responses for integrations that are not connected.
+- Added `tfl.py` and wired `/api/live`: three-second HTTP timeouts, validation,
+  origin/line/direction filtering, UTC timestamps and sorted arrivals. Failures
+  return HTTP 503 with `{"error":"tfl_unavailable"}` as specified in PLAN.md;
+  provider errors and API keys are never forwarded to callers. An empty valid
+  provider list remains a successful response.
+- `/api/routes` loads D's `backend/config/routes.json` once present. It expects a
+  JSON array with the route/stop fields in PLAN.md; `direction` can be `inbound`
+  or `outbound` and is required for Tube live calls. Until the DB coverage is
+  wired, missing `trips_observed` and `hours_covered` default to `0` and `[]`.
+  Invalid configuration returns 503 instead of silently loading fixtures.
+- The existing fixture route remains available while the real configuration is
+  absent. Once real routes are configured, departure curves return
+  `insufficient_data` with no probabilities until M's model is connected.
+- Checked the arrivals endpoint and field names against the
+  [official TfL API schema](https://api.tfl.gov.uk/swagger/docs/v1).
+- Checks run on macOS/zsh with the existing Python 3.14.7 environment (commands
+  from `backend/`): `.venv/bin/python -m pytest -q` — **34 passed**;
+  `.venv/bin/ruff check app tests` — passed;
+  `.venv/bin/ruff format --check app/main.py app/tfl.py tests/test_api.py` — passed;
+  `git diff --check` — passed. Windows uses `.venv/Scripts/python.exe` and
+  `.venv/Scripts/ruff.exe` for the equivalent commands. No dependencies changed.
+- Existing check limitations: pytest emits a Starlette/httpx deprecation warning;
+  a broader formatting check also flags unchanged `app/fixtures.py`.
+- Unverified: a real TfL request. This checkout has neither `TFL_APP_KEY` nor
+  D's route configuration; tests use HTTPX's mock transport. Tiger Data, the
+  recorded-trip model and Gemini remain unconnected.
+- Next actions: D supplies the route configuration and local TfL credentials;
+  B verifies live arrivals against those routes. Then implement `db.py`'s pool
+  and minute-refreshed segment cache against D's SQL contract and connect M's
+  model. Do not invent the missing database or model interfaces.

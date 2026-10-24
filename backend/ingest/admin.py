@@ -7,8 +7,8 @@ import logging
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .derive import derive_database
 from .database_poller import flush_pending, read_batch
+from .derive import derive_database
 from .settings import BACKEND, PROJECT, Settings, load_env, load_routes
 from .store import connect, database_errors, ingest_batch, sync_routes
 

@@ -54,11 +54,28 @@ connectors are optional unless a specific task needs them. Open the repository r
 in your chosen tool; if it does not load rules automatically, explicitly ask it to
 read `AGENTS.md` and the relevant project/task documents.
 
-The intended stack is Python/FastAPI/NumPy with uv, React/Vite/TypeScript with
-npm, Tiger Data and Vultr. The inspected main baseline currently contains
-planning documents rather than runnable application tooling. Owners will add
-actual setup/run/check commands with source and lockfiles; do not infer a working
-app from this plan. The inherited ignore rules do not define the stack.
+The backend now contains FastAPI, NumPy replay, TfL live/Ask handlers and ingestion
+tooling. From the repository root, with Python >=3.11 and uv installed:
+
+```text
+cd backend
+uv sync --locked
+uv run --locked pytest -q
+uv run --locked ruff check app tests ingest ../deploy
+uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Configure an ignored `backend/.env` using `backend/.env.example` if external
+services are needed. Ordinary tests require no credentials or network services.
+Real routes return `insufficient_data` until the database/snapshot adapter and
+model are connected; stats and calibration are explicitly unavailable. A passing
+test suite does not establish a real-data demo. Frontend source has not landed.
+
+Main's full-response short-bus recorder remains `backend.ingest.poller` (run from
+the repository root). The imported database recorder is `ingest.database_poller`
+(run from `backend/`); see [recorder operations](deploy/README.md). Their archive
+formats differ. Do not replay one format through the other recorder or start
+multiple canonical database writers.
 
 ## Development workflow
 

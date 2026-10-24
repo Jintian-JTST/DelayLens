@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,18 +16,18 @@ USER_AGENT = "DelayLens-OxHack/0.1 (public transport research)"
 
 
 def utc_now() -> str:
-    return iso(datetime.now(timezone.utc))
+    return iso(datetime.now(UTC))
 
 
 def timestamp(value: str) -> datetime:
-    result = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    result = datetime.fromisoformat(value)
     if result.tzinfo is None:
         raise ValueError("UTC offset required")
-    return result.astimezone(timezone.utc)
+    return result.astimezone(UTC)
 
 
 def iso(value: datetime) -> str:
-    return value.astimezone(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+    return value.astimezone(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
 
 
 def stable_id(kind: str, *parts: Any) -> str:

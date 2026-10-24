@@ -22,6 +22,7 @@ import {
 import DepartureCurve from "./components/DepartureCurve";
 import Icon from "./components/Icon";
 import LivePanel from "./components/LivePanel";
+import { isOfflineSnapshot } from "./live";
 import Methodology from "./components/Methodology";
 
 const ACCESS_CODE_KEY = "delaylens.askAccessCode";
@@ -1068,6 +1069,9 @@ export default function App() {
                       key={result.route.route_id}
                       route={result.route}
                       demo={demo || result.route.line_id === "fixture"}
+                      offline={isOfflineSnapshot(
+                        result.curve.data_quality.basis,
+                      )}
                       clock={clock}
                     />
                   ) : (

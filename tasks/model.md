@@ -52,6 +52,20 @@ backtests.
   it in chat #208 without rerunning it):
   - Method: the API's loaders, `calibration.backtest`, ±60 and `n_boot=0`, applied to
     both snapshots.
+  - Reproduce it with one command, run from `backend/`. Pass the old folder first;
+    paths are relative to the repo root:
+
+    ```text
+    uv run --locked python -m tools.rerun_t10 docs/evidence/bus29-db-final-20261024T202558Z [NEW_FOLDER] --standalone docs/evidence/<standalone handoff>
+    ```
+
+    On the 20:25Z snapshot it prints:
+    - Brier 0.1296 for Mornington Crescent (1104 outcomes, 49 runs);
+    - Brier 0.1318 for Finsbury Park (760 outcomes, 42 runs);
+    - Sat 17:00 → leave 16:22, p=0.9174;
+    - Sat 15:30 → `no_departure_meets_tolerance`.
+
+    Checked by dry run on main `7895e83` (T29).
   - All data is from Saturday 24 Oct. Standalone recording counts and database
     counts are reported separately.
 

@@ -147,7 +147,7 @@ export default function DepartureCurve({
           );
         }}
       >
-        <title>Departure time and probability of arriving on time</title>
+        <title>Departure time and estimated probability of arriving on time</title>
         <desc id="chart-description">
           The shaded area is the 90% uncertainty band. Use left and right arrow
           keys to explore each departure. Exact values are available in the data
@@ -286,7 +286,7 @@ export default function DepartureCurve({
       <div className="chart-key">
         <span>
           <i className="key-line" />
-          On-time probability
+          Estimated on-time probability
         </span>
         <span>
           <i className="key-band" />

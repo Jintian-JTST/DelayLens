@@ -40,8 +40,8 @@ export default function Methodology({
         <h2>Confidence should come with context.</h2>
         <p>
           DelayLens is designed to replay recorded journeys, including the wait
-          at your stop. Each departure time gets an on-time probability and a
-          90% uncertainty band.
+          at your stop. Each departure time gets an estimated on-time probability
+          and a 90% uncertainty band, inferred from TfL predictions.
         </p>
         <div className="method-steps">
           <div>
@@ -70,8 +70,9 @@ export default function Methodology({
         <div className="notice">
           <Icon name="info" />
           <span>
-            Single-leg London routes and weekend observations only. An arrival
-            prediction is an estimate, not a guarantee. Fixture results are
+            Single-leg London routes and weekend observations only. Arrivals are
+            inferred from TfL predictions, not measured, so every figure is an
+            estimate, not a guarantee. Fixture results are
             synthetic and do not validate this method.
           </span>
         </div>

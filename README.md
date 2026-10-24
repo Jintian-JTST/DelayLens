@@ -16,8 +16,9 @@ Built by a team at OxHack 2026, University of Oxford.
 
 | What you want | What to run | Requirements |
 | --- | --- | --- |
-| Explore the interactive UI | Frontend only, then click **Try demo** | Node.js/npm; no API keys or database |
-| Use recorded journeys and the real API | Frontend + backend, then **Real routes** | Python/uv and a configured database with recorded segments |
+| Run the stage demo on recorded bus 29 data | `./scripts/demo.sh` (macOS/Linux) or `.\scripts\demo.cmd` (Windows): offline snapshot API + frontend | Node.js/npm; uv (on macOS/Linux an existing `backend/.venv` also works); no API keys or database |
+| Explore the interactive UI with synthetic data | Frontend only, then open <http://127.0.0.1:5173/?demo=1> and click **Try demo** | Node.js/npm; no API keys or database |
+| Use recorded journeys and the real API | Frontend + backend (database or offline snapshot) | Python/uv and a configured database, or `SNAPSHOT_DIR` (see [Run the API](#run-the-api)) |
 | See current TfL predictions | Real mode's **Next to arrive** panel | Backend, network access and `TFL_APP_KEY` |
 | Ask in natural language | **Ask DelayLens** in real mode | Backend and `GEMINI_API_KEY`; optional |
 
@@ -30,9 +31,10 @@ npm ci
 npm run dev
 ```
 
-Open [the demo](http://127.0.0.1:5173), then click **Try demo** in the top
-navigation. If the backend is offline, **Try labelled demo** in the connection
-panel does the same thing. This explicitly selects synthetic data; the page
+Open [the demo with synthetic data](http://127.0.0.1:5173/?demo=1), then click
+**Try demo** in the top navigation; without `?demo=1` that button is hidden, so it
+cannot be pressed by accident on stage. If the backend is offline, **Try labelled
+demo** in the connection panel does the same thing. This explicitly selects synthetic data; the page
 keeps an **Interactive demo / Fixture data** label. Ask is disabled and live
 vehicles are not simulated. Click **Real routes** to return to the API.
 
@@ -67,7 +69,8 @@ Real mode currently lists bus **29** (Finsbury Park or Mornington Crescent →
 Tottenham Court Road), bus **24** (Warren Street → Leicester Square or Tottenham
 Court Road), and **Victoria** (Brixton → Oxford Circus). Bus 29 remains the agreed
 main demo route; the presence of another option does not prove sample coverage.
-The frontend initially selects the route with the most reported trips.
+The frontend opens on bus 29 from Mornington Crescent when the API lists it;
+otherwise it selects the route with the most reported trips.
 
 If a route reports coverage, click **Try a recorded-hour example**, then
 **Find my departure / Update my journey**. This fills a historical deadline;
@@ -85,7 +88,7 @@ it is not a measured arrival or the historical probability curve.
 
 | Symptom | Next step |
 | --- | --- |
-| Service offline / cannot load routes | Start the backend on port 8000 and retry, or explicitly choose **Try demo**. |
+| Service offline / cannot load routes | Start the backend on port 8000 and retry, or choose **Try labelled demo** (or open `/?demo=1`). |
 | Connected but no curve | Check recorded coverage, try the recorded-hour example and submit; check database configuration. Insufficient data is a valid result. |
 | Curve but no recommended time | Check sample counts and risk target; sparse data or no qualifying departure can suppress advice. |
 | Ask or live arrivals unavailable | Configure the relevant backend key/network; the regular form and labelled demo remain available. |
@@ -102,9 +105,11 @@ configured route is outbound from Finsbury Park (Blackstock Road) towards
 Tottenham Court Road Station (`bus-29-outbound-finsbury-park-tottenham-court-road`
 in [backend/config/routes.json](backend/config/routes.json)).
 
-The configuration also includes a short bus 29 subsegment, Mornington Crescent
-to Tottenham Court Road. Its presence does not establish usable sample coverage
-or manual validation. The **bus 24 validation segment** is already verified;
+The demo uses the short bus 29 subsegment, **Mornington Crescent to Tottenham
+Court Road**: the final read-only database snapshot
+([bus29-db-final-20261024T202558Z](docs/evidence/bus29-db-final-20261024T202558Z/README.md))
+holds 56 usable runs there and 48 on the longer Finsbury Park segment, all on
+Sat 24 Oct 2026. These are inferred runs, not measured arrivals or manual validation. The **bus 24 validation segment** is already verified;
 the Victoria line remains optional. A working bus 24 pipeline does not establish
 bus 29 sample coverage.
 
@@ -180,7 +185,7 @@ Code: [backend/app/model.py](backend/app/model.py), with hand-checked tests in
 
 | Part | State |
 | --- | --- |
-| Data validation | Bus 24: 60-minute capture completed, 121 successful polls, 4 traceable inferred trips; CSV and snapshots exported |
+| Data validation | Bus 29: final database snapshot 20:25 UTC, 56 short-segment and 48 long-segment usable runs; standalone 180-minute recording 5 runs (below the 15-run target). Bus 24: 60-minute capture, 121 successful polls, 4 traceable inferred trips |
 | Database recorder | Separate recorder and SQL tooling retained; its archive/derivation contract differs from the standalone validator |
 | Backend API | FastAPI health, routes, departure-curve and Ask endpoints |
 | Model | Replay with censoring, evidence tiers, run-bootstrap band and advisor, served by `/api/departure-curve` with a ±60-minute window (PR #20) |
@@ -202,8 +207,9 @@ are included for M/B to inspect and load. Complete raw/source ZIPs are delivered
 separately; credentials and local recording archives are not committed.
 
 Frontend setup and its own checks are documented in
-[frontend/README.md](frontend/README.md). This data validation does not claim a
-verified browser journey through the model and live API.
+[frontend/README.md](frontend/README.md). The bus 24 validation alone does not
+claim a browser journey; the bus 29 snapshot journey was checked in a browser on
+Sat 24 Oct (17:00 deadline: leave by 16:22, about 92%).
 
 ## Getting started
 
@@ -360,7 +366,8 @@ DelayLens 帮你回答「为了准时到达，我应该几点出门？」。输�
 
 | 模式 | 可以体验什么 | 需要什么 |
 | --- | --- | --- |
-| **Try demo：交互演示** | 表单、概率曲线、风险滑块、保守估计、晚出发对比 | 只启动前端；不需要后端、数据库或密钥 |
+| **一键演示（舞台用）** | 巴士 29 录制数据的离线快照：周六 17:00 截止 → 16:22 出发，约 92% | `./scripts/demo.sh`（macOS/Linux）或 `.\scripts\demo.cmd`（Windows）；不需要数据库或密钥 |
+| **Try demo：交互演示** | 表单、概率曲线、风险滑块、保守估计、晚出发对比 | 只启动前端，打开带 `?demo=1` 的地址；不需要后端、数据库或密钥 |
 | **Real routes：真实数据** | API 提供的路线、录制时段和历史行程曲线 | 前端 + 后端；数据库里有对应路线、时段的可用行程 |
 | **Next to arrive：实时到站预测** | 起点站下一班车的 TfL 预测 | 后端、网络和 `TFL_APP_KEY`；独立于历史曲线 |
 | **Ask DelayLens：自然语言输入** | 用一句话描述行程，再检查和修改识别结果 | 后端和 `GEMINI_API_KEY`；可选功能 |
@@ -386,8 +393,8 @@ npm ci
 npm run dev
 ```
 
-终端保持打开。在浏览器访问 [本地 demo](http://127.0.0.1:5173)，点击顶部
-**Try demo**。如果先看到连接失败提示，也可以点 **Try labelled demo**。
+终端保持打开。在浏览器访问 [本地 demo](http://127.0.0.1:5173/?demo=1)，点击顶部
+**Try demo**（不带 `?demo=1` 时该按钮隐藏，避免台上误点出合成数据）。如果先看到连接失败提示，也可以点 **Try labelled demo**。
 出现演示标识和曲线后，就能操作下面介绍的控件。
 
 推荐第一次这样试：保持两段步行时间各 5 分钟 → 选一个到达日期和时间 →
@@ -454,13 +461,13 @@ uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
 | 线路 | 起点 → 终点 | 用途 |
 | --- | --- | --- |
 | 巴士 29 | Finsbury Park / Blackstock Road → Tottenham Court Road Station | 团队确认的主线路 |
-| 巴士 29 短路段 | Mornington Crescent Station → Tottenham Court Road Station | 已配置的短路段，需检查其数据覆盖 |
+| 巴士 29 短路段 | Mornington Crescent Station → Tottenham Court Road Station | 演示路段；最终快照有 56 条可用行程（均为 10 月 24 日周六） |
 | 巴士 24 | Warren Street Station / Euston Road → Leicester Square Station | 已完成独立采集验证的路段 |
 | 巴士 24 短路段 | Warren Street Station / Euston Road → Tottenham Court Road Station | 备用短路段 |
 | Victoria 地铁线 | Brixton Underground Station → Oxford Circus Underground Station | 已配置的可选线路，主 MVP 仍以巴士 29 为准 |
 
-交互演示模式只有一条 **Camden Town → Oxford Circus** 合成路线。真实模式初始优先选
-API 报告行程数最多的路线，不一定是巴士 29。
+交互演示模式只有一条 **Camden Town → Oxford Circus** 合成路线。真实模式打开时默认选
+巴士 29 Mornington Crescent 路段（API 列出时）；否则选行程数最多的路线。
 
 ### 5. 怎么查看真实数据，以及为什么没有曲线
 
@@ -501,7 +508,7 @@ API 报告行程数最多的路线，不一定是巴士 29。
 | 遇到的情况 | 怎么处理 |
 | --- | --- |
 | `npm`、`python` 或 `uv` 找不到 | 安装对应运行时/工具后重新打开终端；uv 安装见上方官方链接 |
-| 网页显示 **Service offline** / 连接不上 | 确认后端终端仍在运行，检查 8000 的健康接口；只体验界面可点 **Try demo** |
+| 网页显示 **Service offline** / 连接不上 | 确认后端终端仍在运行，检查 8000 的健康接口；只体验界面可点 **Try labelled demo** 或打开 `/?demo=1` |
 | 已连接但没有曲线 | 检查数据库、录制覆盖和样本数，试录制时段示例后提交；连接成功不代表数据足够 |
 | 有曲线但没有出发建议 | 检查可用行程数和风险目标；数据不足不能靠调整滑块绕过 |
 | Ask / 实时到站不可用 | 检查对应后端配置和网络；可以继续使用普通表单或合成演示 |

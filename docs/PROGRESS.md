@@ -12,7 +12,7 @@ remote CI, public deployment or overnight availability.
 | Independent bus 29 | Earlier90-minute run:7 journeys with separate three-example source review. New180-minute run completed:5 journeys/251 events, low_data, source-trace acceptance pending. The15-run target is explicitly unmet; three usable UTC hours are present. |
 | Offline data/model/API/UI | Actual frozen data through API and Chrome: UTC 16:00 deadline, walks 5/5, 91 points, recommendation 15:25 UTC with estimated probability 0.90. UTC 14:30: 77 points and no qualifying advice. No synthetic successful API payload was substituted. |
 | Presentation | Desktop and 390/320px states, risk/conservative/what-if controls and methodology checked. Frozen date/source labels remain visible. Physical devices remain unverified. |
-| CI | Offline backend tests/Ruff and frontend tests/build passed locally and in GitHub PR/main runs. Main cb06b69 has [successful push CI](https://github.com/Jintian-JTST/OxHack/actions/runs/40128498142). Inspect actual checks for subsequent heads. |
+| CI | Offline backend tests/Ruff and frontend tests/build passed locally and in GitHub PR/main runs. Main b8d6f0a (PR #47, after default-route 459ac72) has [successful push CI](https://github.com/Jintian-JTST/OxHack/actions/runs/40131596242); frontend now has 16 tests. Inspect actual checks for subsequent heads. |
 | Current capture | The180-minute standalone recorder normally finished20:21:55 UTC; final packages appeared20:23:09 and its process exited. Database/area recorders were left untouched. No overnight continuity claim is made. |
 
 ## Delivery records
@@ -35,7 +35,7 @@ They are dated reports, not newly rerun external checks.
 | Gate | Next action / owner |
 | --- | --- |
 | 180-minute export | Final archives and SHA256 are verified in the new dated handoff. Standalone5<15 remains below target; separate database56/48 counts must not replace it. |
-| Refreshed model/backtest | M reruns M3/T10 against the final handoff and new20:25:58 UTC database snapshot; inferred outcomes are not independent measured arrivals. New calibration is not claimed by D. |
+| Refreshed model/backtest | **Done (T10/M3, reviewer-checked, chat #280).** Final snapshot `bus29-db-final-20261024T202558Z`: Mornington Brier 0.1296 (1104 outcomes, 49 runs), Finsbury Park 0.1318; Sat 17:00 → 16:22, p=0.9174. Standalone 5 runs give no advice. Preliminary: one Saturday, scored against inferred events. See [tasks/model.md](../tasks/model.md). |
 | Network-backed demo / recovery | Network UI evidence is on main (PR44); B's local recovery checklist is recorded separately. Physical disconnection and overnight survival are not implied. |
 | Remote CI / integration | PR39/44 and their main CI were observed successful; integrator checks the current head and reviews final data handoff changes. |
 | Unattended collection / deployment | D supplies timestamped polls over the claimed interval and verifies restart/recovery on the actual host. No overnight or VM success is claimed. |

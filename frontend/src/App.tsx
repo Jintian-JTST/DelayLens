@@ -9,6 +9,7 @@ import {
 } from "./api";
 import { recommend, delayedPoint, MIN_RECOMMENDATION_TRIPS } from "./advisor";
 import { demoCurve, demoRoutes } from "./demo";
+import { demoRequested } from "./demoFlag";
 import { exampleDeadline, isCovered, pickInitialRoute } from "./defaults";
 import {
   browserZone,
@@ -61,6 +62,9 @@ const requestFor = (
 
 export default function App() {
   const [mode, setMode] = useState<"api" | "demo">("api");
+  const [demoFlag] = useState(() =>
+    demoRequested(window.location.search, window.location.hash),
+  );
   const [tab, setTab] = useState<"plan" | "method">("plan");
   const [clock, setClock] = useState<Clock>("local");
   const clockRef = useRef(clock);
@@ -366,18 +370,19 @@ export default function App() {
           >
             Our methodology
           </button>
-          <button
-            type="button"
-            className="nav-link"
-            aria-label={demo ? "Use real route data" : "Try labelled demo"}
-            aria-pressed={demo}
-            onClick={() => {
-              setTab("plan");
-              setMode(demo ? "api" : "demo");
-            }}
-          >
-            {demo ? "Real routes" : "Try demo"}
-          </button>
+          {(demoFlag || demo) && (
+            <button
+              type="button"
+              className="nav-link"
+              aria-label={demo ? "Use real route data" : "Try labelled demo"}
+              onClick={() => {
+                setTab("plan");
+                setMode(demo ? "api" : "demo");
+              }}
+            >
+              {demo ? "Real routes" : "Try demo"}
+            </button>
+          )}
         </nav>
         <div className="header-right">
           <span className="region">LONDON, UK</span>

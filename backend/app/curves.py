@@ -128,7 +128,7 @@ def _basis(segments: model.Segments) -> str:
     last = datetime.fromtimestamp(int(segments.t_origin[-1]), LONDON)
     span = f"{first:%a %d %b %H:%M} - {last:%a %d %b %H:%M}"
     return (
-        f"Based on {n} recorded trips ({span}, London time), replaying "
+        f"Based on {n} trips recorded on this route ({span}, London time), replaying "
         f"±{TOD_WINDOW_MIN} min around each departure. Arrivals are estimated "
         "from TfL predictions, not measured; not yet calibrated."
     )

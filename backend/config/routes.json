@@ -4,7 +4,7 @@
     "line_id": "29",
     "direction": "outbound",
     "mode": "bus",
-    "origin": {"naptan_id": "490000083S", "name": "Finsbury Park Station"},
+    "origin": {"naptan_id": "490015078M", "name": "Finsbury Park / Blackstock Road"},
     "destination": {"naptan_id": "490000235GX", "name": "Tottenham Court Road Station"}
   },
   {

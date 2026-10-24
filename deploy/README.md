@@ -102,10 +102,33 @@ a plain hostname. Review both files, then (needs authorization) install the unit
 service like the recorder (`systemctl --user enable --now delaylens-api`, plus lingering)
 and give Caddy the Caddyfile (Caddy needs permission to bind ports 80 and 443).
 
+Firewall: allow inbound 80 and 443 (the cloud provider's firewall group, and `ufw` if it
+is enabled). Port 8000 stays closed to the outside; only Caddy reaches it on loopback.
+
+Caddy usually runs as its own `caddy` user. If `frontend/dist` sits under a home directory
+whose mode is 700, Caddy cannot read it and static files return 403. Either copy the build
+to a shared path and render with it:
+
+```sh
+sudo mkdir -p /srv/delaylens && sudo cp -r frontend/dist /srv/delaylens/dist
+python deploy/render_web.py --site <site> --dist /srv/delaylens/dist
+```
+
+or give the path's directories `o+x` (search only, not listing). Copy again after each rebuild.
+
 `backend/.env` on the VM must be created privately (`chmod 600`) and set `DATABASE_URL`,
 `TFL_APP_KEY`, `GEMINI_API_KEY` and `ASK_ACCESS_CODE`. **Set `ASK_ACCESS_CODE`: when it is
 unset, `/api/ask` is open to anyone and spends the Gemini key.** Never put these values in
 chat, commands or committed files.
+
+Redeploying a change (needs the same authorization as the first deploy):
+
+```sh
+git pull --ff-only
+cd backend && uv sync --locked
+cd ../frontend && npm ci && npm run build   # then copy dist again if serving from /srv/delaylens
+systemctl --user restart delaylens-api
+```
 
 Checks after it is up (run from outside the VM):
 

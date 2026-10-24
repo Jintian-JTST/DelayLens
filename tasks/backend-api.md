@@ -211,3 +211,22 @@ Updated: 2026-10-24 (Europe/London).
 
 Caveats for the submission: the passcode sentence holds only when `ASK_ACCESS_CODE` is set on the deployed
 server (unset leaves Ask open); the Brier score and status will move as recording continues.
+
+### Final backend acceptance (T25, 24 Oct 2026; main `fe86f9c`, fix in #57 -> `5cfe07b`)
+
+- Baseline on `fe86f9c`: `pytest` 196 passed, 28 skipped (live DB/Gemini); `ruff check` clean; `deploy/smoke_check.py`
+  ALL CHECKS PASSED on the offline snapshot `bus29-db-final-20261024T202558Z` (56 trips, 17:00 London -> 16:22,
+  p=0.9174, 15:30 `low_data`) and against the live database.
+- Bad input: 44 hand-written requests to `/api/departure-curve`, `/api/ask`, `/api/calibration`, `/api/live` and
+  `/api/stats` (missing or wrong-typed fields, naive / year 1 / year 9999 deadlines, huge or `1e400` numbers, wrong
+  content types, invalid JSON, a 5000-deep JSON body, a 300,000-character Ask question). Three returned 500:
+  a deadline with no timezone, `walk_to_min=1e400` (the default 422 body echoed the infinity and failed JSON
+  encoding) and the deeply nested body (same cause).
+- Fix (#57): `deadline` is now `AwareDatetime`, and a `RequestValidationError` handler returns `loc`/`msg`/`type`
+  only. Three regression tests were added and fail without the fix. After the fix: 199 passed, 28 skipped; the same
+  44 requests give no 5xx on the snapshot and on the live database (only `/api/stats` 503, expected offline).
+  The deeply nested body is 422 on Python 3.14 and 400 on 3.11 (CI), so the test accepts either.
+- Not tested: a valid `/api/ask` question (needs Gemini and spends calls; the 300,000-character one was rejected by
+  the 500-character limit before any call), the `live_db`/`live_gemini` tests, load beyond one machine, Linux.
+  The fuzz script was run from a scratch directory and is not committed.
+

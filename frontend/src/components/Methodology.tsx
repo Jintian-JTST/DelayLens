@@ -40,8 +40,8 @@ export default function Methodology({
         <h2>Confidence should come with context.</h2>
         <p>
           DelayLens is designed to replay recorded journeys, including the wait
-          at your stop. Supported departure times get an estimated on-time probability
-          and a 90% uncertainty band, inferred from TfL predictions.
+          at your stop. Supported departure times get an estimated on-time
+          probability and a 90% uncertainty band, inferred from TfL predictions.
         </p>
         <p>
           At each departure time, 5–14 usable trips use a 90% Wilson interval;
@@ -53,9 +53,7 @@ export default function Methodology({
           <div>
             <b>01</b>
             <h3>Record TfL predictions</h3>
-            <p>
-              Capture TfL predictions over time and infer journey samples.
-            </p>
+            <p>Capture TfL predictions over time and infer journey samples.</p>
           </div>
           <div>
             <b>02</b>
@@ -76,10 +74,10 @@ export default function Methodology({
         <div className="notice">
           <Icon name="info" />
           <span>
-            Single-leg London routes and weekend observations only. Arrivals are
-            inferred from TfL predictions, not measured, so every figure is an
-            estimate, not a guarantee. Fixture results are
-            synthetic and do not validate this method.
+            Single-leg London routes and one Saturday (24 Oct 2026) of
+            observations only. Arrivals are inferred from TfL predictions, not
+            measured, so every figure is an estimate, not a guarantee. Fixture
+            results are synthetic and do not validate this method.
           </span>
         </div>
       </section>
@@ -212,7 +210,8 @@ export default function Methodology({
                     : "Calibration not validated"}
                 </strong>
                 <p>
-                  {(calibration.n_outcomes ?? 0).toLocaleString()} scored outcomes
+                  {(calibration.n_outcomes ?? 0).toLocaleString()} scored
+                  outcomes
                   {" · "}
                   {(calibration.n_runs ?? 0).toLocaleString()} distinct runs
                 </p>

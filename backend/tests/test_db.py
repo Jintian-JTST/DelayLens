@@ -21,6 +21,8 @@ def _snapshot(trips=2):
     return db.Snapshot(
         segments={ROUTE: segments},
         coverage={ROUTE: db.Coverage(trips, [T0])},
+        origin_events={},
+        poll_times=[],
         stats=Stats(rows=10335, chunks=2, compression_ratio=None,
                     first_polled_at=T0, last_polled_at=T0.replace(minute=30)),
         refreshed_at=T0,

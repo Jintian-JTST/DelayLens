@@ -1,10 +1,14 @@
-"""Rolling-origin backtest of M's model (PLAN.md section 4, calibration policy).
+"""Blocked hold-out backtest of M's model (PLAN.md section 4, calibration policy).
 
-At each forecast origin T the model sees only runs that had already arrived by T,
-and is scored on departures in [T, T + BLOCK): test blocks are disjoint and always
-after their training data. The reference standard is D's inferred stop events,
-estimated from TfL predictions, so scores are against inferred events, not measured
-arrivals, and never establish validated calibration.
+The recording is cut into 30-min blocks. Each block is held out in turn: the
+model sees every run, unconfirmed departure and coverage outside it (both sides,
+so bus headways still give it enough runs), and is scored on departures inside
+it. A departure is scored only when its outcome is known from a run inside the
+block: outcomes that fall in a recording gap, behind an unconfirmed bus, or on a
+run after the block (which the model may have seen) are set aside. The reference
+standard is D's inferred stop events, estimated from TfL predictions, so scores
+are against inferred events, not measured arrivals, and never establish validated
+calibration.
 """
 
 from dataclasses import dataclass
@@ -16,14 +20,11 @@ from app.schemas import Calibration, ReliabilityBin
 
 BLOCK_MIN = 30
 DEPART_STEP_MIN = 2
-# Deadlines relative to the training median ride, so outcomes span likely and unlikely.
-DEADLINE_OFFSETS_MIN = (-2, 0, 2, 4, 6, 8, 12)
+# Deadlines relative to the training median ride, wide enough to cover bus waits.
+DEADLINE_OFFSETS_MIN = (-2, 0, 2, 4, 6, 8, 12, 16)
 N_BINS = 5
 MIN_RUNS_PRELIMINARY = 15
 MIN_BLOCKS_PRELIMINARY = 2
-# A wait this many times the usual headway is treated as a capture gap: unknown, not late.
-# Placeholder until D supplies recording coverage intervals (tasks/model.md).
-SUSPECT_GAP_FACTOR = 4
 SECONDS_PER_MIN = 60
 
 
@@ -35,72 +36,93 @@ class Outcome:
     block: int
 
 
-def _training_view(segments: model.Segments, t: int) -> model.Segments | None:
-    """Runs knowable at time t: every run up to the first one still travelling at t."""
-    unfinished = np.nonzero(segments.t_dest >= t)[0]
-    k = int(unfinished[0]) if len(unfinished) else len(segments)
-    if k < model.LOW_DATA_MIN_RUNS:
+def _without(cov: np.ndarray, a: int, b: int) -> np.ndarray:
+    """Coverage intervals with [a, b) removed."""
+    out = []
+    for start, end in cov:
+        if end < a or start >= b:
+            out.append((start, end))
+            continue
+        if start < a:
+            out.append((start, a - 1))
+        if end >= b:
+            out.append((b, end))
+    return np.array(out, dtype=np.int64).reshape(-1, 2)
+
+
+def _held_out_training(segments: model.Segments, a: int, b: int) -> model.Segments | None:
+    keep = (segments.t_origin < a) | (segments.t_origin >= b)
+    if int(keep.sum()) < model.LOW_DATA_MIN_RUNS:
         return None
-    # Recording counts as complete only until the first unfinished run leaves.
-    cov_end = int(segments.t_origin[k]) - 1 if k < len(segments) else t
+    unconf = segments.unconfirmed_departures
     return model.Segments(
-        segment_id=segments.segment_id[:k],
-        vehicle_id=segments.vehicle_id[:k],
-        t_origin=segments.t_origin[:k],
-        t_dest=segments.t_dest[:k],
-        coverage=np.array([[int(segments.t_origin[0]), max(cov_end, int(segments.t_origin[k - 1]))]]),
+        segment_id=segments.segment_id[keep],
+        vehicle_id=segments.vehicle_id[keep],
+        t_origin=segments.t_origin[keep],
+        t_dest=segments.t_dest[keep],
+        coverage=_without(segments.coverage, a, b),
+        unconfirmed_departures=unconf[(unconf < a) | (unconf >= b)],
     )
 
 
+def _known_outcome(segments: model.Segments, board: int, b: int) -> int | None:
+    """Index of the run actually caught after `board`, if that is knowable in-block."""
+    cov = segments.coverage
+    ci = int(np.searchsorted(cov[:, 0], board, side="right")) - 1
+    if ci < 0 or board > cov[ci, 1]:
+        return None  # left during a recording gap
+    i = int(np.searchsorted(segments.t_origin, board, side="left"))
+    if i >= len(segments) or segments.t_origin[i] > cov[ci, 1] or segments.t_origin[i] >= b:
+        return None  # next run is in a gap or after the held-out block
+    unconf = segments.unconfirmed_departures
+    j = int(np.searchsorted(unconf, board, side="left"))
+    if j < len(unconf) and unconf[j] < segments.t_origin[i]:
+        return None  # an unconfirmed bus came first: the outcome is unknown
+    return i
+
+
 def backtest(segments: model.Segments) -> tuple[list[Outcome], int]:
-    """Scored outcomes, plus how many were censored as suspected capture gaps."""
-    n = len(segments)
-    censored = 0
-    if n < 2 * model.LOW_DATA_MIN_RUNS:
+    """Scored outcomes, plus how many were set aside as unknowable."""
+    if len(segments) < 2 * model.LOW_DATA_MIN_RUNS:
         return [], 0
     block_s = BLOCK_MIN * SECONDS_PER_MIN
     buffer_s = round(model.BOARD_BUFFER_MIN * SECONDS_PER_MIN)
-    last_origin = int(segments.t_origin[-1])
+    start, end = int(segments.coverage[0, 0]), int(segments.coverage[-1, 1])
     outcomes: list[Outcome] = []
-    origin = int(segments.t_origin[0]) + block_s
-    block = 0
-    while origin + block_s <= last_origin:
-        train = _training_view(segments, origin)
-        if train is not None:
-            median_ride = int(np.median(train.t_dest - train.t_origin))
-            headways = np.diff(train.t_origin)
-            max_wait = SUSPECT_GAP_FACTOR * float(np.median(headways)) if len(headways) else 0.0
-            departs = np.arange(origin, origin + block_s, DEPART_STEP_MIN * SECONDS_PER_MIN)
-            # What actually happened: the first recorded run catchable after leaving.
-            idx = np.searchsorted(segments.t_origin, departs + buffer_s, side="left")
-            for d, i in zip(departs, idx, strict=True):
-                if i >= n:
-                    continue
-                if segments.t_origin[i] - (d + buffer_s) > max_wait:
-                    censored += len(DEADLINE_OFFSETS_MIN)
-                    continue
-                for off in DEADLINE_OFFSETS_MIN:
-                    deadline = int(d) + median_ride + off * SECONDS_PER_MIN
-                    curve = model.replay_curve(train, np.array([d]), deadline)
-                    p = float(curve.p_on_time[0])
-                    if np.isnan(p):
-                        continue  # insufficient_data: the model made no prediction
-                    outcomes.append(
-                        Outcome(
-                            p=p,
-                            on_time=bool(segments.t_dest[i] <= deadline),
-                            run_id=str(segments.segment_id[i]),
-                            block=block,
-                        )
+    set_aside = 0
+    for block, a in enumerate(range(start, end - block_s + 1, block_s)):
+        b = a + block_s
+        train = _held_out_training(segments, a, b)
+        if train is None:
+            continue
+        median_ride = int(np.median(train.t_dest - train.t_origin))
+        for d in range(a, b, DEPART_STEP_MIN * SECONDS_PER_MIN):
+            i = _known_outcome(segments, d + buffer_s, b)
+            if i is None:
+                set_aside += len(DEADLINE_OFFSETS_MIN)
+                continue
+            for off in DEADLINE_OFFSETS_MIN:
+                deadline = d + median_ride + off * SECONDS_PER_MIN
+                p = float(model.replay_curve(train, np.array([d]), deadline).p_on_time[0])
+                if np.isnan(p):
+                    continue  # insufficient_data: the model made no prediction
+                outcomes.append(
+                    Outcome(
+                        p=p,
+                        on_time=bool(segments.t_dest[i] <= deadline),
+                        run_id=str(segments.segment_id[i]),
+                        block=block,
                     )
-        origin += block_s
-        block += 1
-    return outcomes, censored
+                )
+    return outcomes, set_aside
 
 
-def summarise(outcomes: list[Outcome], censored: int = 0) -> Calibration:
-    gap_note = (
-        f" {censored} outcomes were set aside as suspected recording gaps." if censored else ""
+def summarise(outcomes: list[Outcome], set_aside: int = 0) -> Calibration:
+    note = (
+        f" {set_aside} outcomes were set aside as unknowable (recording gaps, "
+        "unconfirmed buses, or runs outside the held-out block)."
+        if set_aside
+        else ""
     )
     if not outcomes:
         return Calibration(
@@ -109,7 +131,7 @@ def summarise(outcomes: list[Outcome], censored: int = 0) -> Calibration:
             calibration_status="not_validated",
             n_outcomes=0,
             n_runs=0,
-            basis="Not enough recorded trips for a held-out backtest yet." + gap_note,
+            basis="Not enough recorded trips for a held-out backtest yet." + note,
         )
     p = np.array([o.p for o in outcomes])
     y = np.array([o.on_time for o in outcomes], dtype=float)
@@ -133,8 +155,9 @@ def summarise(outcomes: list[Outcome], censored: int = 0) -> Calibration:
         n_outcomes=len(outcomes),
         n_runs=n_runs,
         basis=(
-            f"Rolling backtest: {n_blocks} held-out {BLOCK_MIN}-min blocks, {n_runs} distinct "
-            "later runs, scored against stop events inferred from TfL predictions (not measured "
-            "arrivals). Outcomes overlap, so they are not independent samples." + gap_note
+            f"Blocked hold-out: {n_blocks} held-out {BLOCK_MIN}-min blocks, {n_runs} distinct "
+            "runs, each scored by a model trained on the other blocks. Scored against stop "
+            "events inferred from TfL predictions (not measured arrivals). Outcomes overlap, "
+            "so they are not independent samples." + note
         ),
     )

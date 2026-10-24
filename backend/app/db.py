@@ -20,7 +20,8 @@ REFRESH_SECONDS = 60
 CONNECT_TIMEOUT_S = 10
 
 SEGMENTS_SQL = """
-SELECT route_id, vehicle_id, origin_observed_at, destination_observed_at, ride_seconds
+SELECT route_id, vehicle_id, origin_observed_at, destination_observed_at, ride_seconds,
+       origin_episode_started_at
 FROM get_segments ORDER BY route_id, origin_observed_at
 """
 COVERAGE_SQL = "SELECT route_id, trips_observed, hours_covered FROM route_coverage"
@@ -41,6 +42,8 @@ class Segment:
     origin_observed_at: datetime
     destination_observed_at: datetime
     ride_seconds: float
+    # With route_id and vehicle_id, the stable trip key D documents.
+    origin_episode_started_at: datetime
 
 
 @dataclass(frozen=True)
@@ -65,9 +68,9 @@ def load_snapshot(database_url: str) -> Snapshot:
 
             cur.execute(SEGMENTS_SQL)
             segments: dict[str, list[Segment]] = {}
-            for route_id, vehicle_id, origin, destination, ride in cur.fetchall():
+            for route_id, vehicle_id, origin, destination, ride, episode in cur.fetchall():
                 segments.setdefault(route_id, []).append(
-                    Segment(vehicle_id, origin, destination, float(ride))
+                    Segment(vehicle_id, origin, destination, float(ride), episode)
                 )
 
             cur.execute(COVERAGE_SQL)

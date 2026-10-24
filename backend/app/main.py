@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from pydantic import Field, TypeAdapter, ValidationError
 
 from app import ask as ask_module
-from app import db, fixtures, tfl
+from app import curves, db, fixtures, model, tfl
 from app.schemas import (
     AskRequest,
     AskResponse,
@@ -115,27 +115,42 @@ def routes() -> list[Route]:
     return result
 
 
-def _no_model_basis(route_id: str) -> str:
-    snapshot = _snapshot()
-    if snapshot is None:
-        return "Recorded-trip data not connected; no probability available."
-    trips = len(snapshot.segments.get(route_id, []))
-    return f"{trips} trips recorded so far; prediction model not connected yet."
+_segments_memo: dict[tuple[datetime, str], model.Segments] = {}
+
+
+def _segments_for(snapshot: db.Snapshot, route_id: str) -> model.Segments:
+    key = (snapshot.refreshed_at, route_id)
+    if key not in _segments_memo:
+        _segments_memo.clear()  # keep only the current snapshot's conversions
+        _segments_memo[key] = curves.to_segments(snapshot.segments.get(route_id, []))
+    return _segments_memo[key]
 
 
 def _compute_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
     started = time.perf_counter()
     if ROUTES_PATH.exists():
-        result = DepartureCurveResponse(
-            points=[],
-            recommended=None,
-            what_if=[],
-            server_ms=0,
-            data_quality=DataQuality(
-                status="insufficient_data",
-                basis=_no_model_basis(req.route_id),
-            ),
-        )
+        snapshot = _snapshot()
+        if snapshot is None:
+            result = DepartureCurveResponse(
+                points=[],
+                recommended=None,
+                what_if=[],
+                server_ms=0,
+                data_quality=DataQuality(
+                    status="insufficient_data",
+                    basis="Recorded-trip data not connected; no probability available.",
+                ),
+            )
+        else:
+            segments = _segments_for(snapshot, req.route_id)
+            curve = model.departure_curve(
+                segments,
+                req.deadline,
+                walk_to_min=req.walk_to_min,
+                walk_from_min=req.walk_from_min,
+                window_min=req.window_min,
+            )
+            result = curves.build_response(curve, req, segments)
     else:
         result = fixtures.fixture_curve(req)
     result.server_ms = round((time.perf_counter() - started) * 1000, 2)

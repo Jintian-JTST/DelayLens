@@ -16,7 +16,7 @@ T0 = datetime(2026, 10, 24, 14, 0, tzinfo=UTC)
 
 def _snapshot(trips=2):
     segments = [
-        db.Segment(f"v{i}", T0, T0.replace(minute=11), 660.0) for i in range(trips)
+        db.Segment(f"v{i}", T0, T0.replace(minute=11), 660.0, T0) for i in range(trips)
     ]
     return db.Snapshot(
         segments={ROUTE: segments},
@@ -94,14 +94,15 @@ def test_stats_without_database_is_503():
     assert client.get("/api/stats").status_code == 503
 
 
-def test_curve_reports_trip_count_but_no_fake_probability(monkeypatch):
-    monkeypatch.setattr(main, "_cache", _cache_with(_snapshot(trips=13)))
+def test_curve_without_recorded_trips_gives_no_probability(monkeypatch):
+    monkeypatch.setattr(main, "_cache", _cache_with(_snapshot(trips=3)))
     data = client.post("/api/departure-curve", json={
         "route_id": ROUTE, "deadline": "2026-10-25T11:00:00Z",
     }).json()
     assert data["points"] == []
+    assert data["recommended"] is None
     assert data["data_quality"]["status"] == "insufficient_data"
-    assert data["data_quality"]["basis"].startswith("13 trips recorded")
+    assert "3 recorded trips" in data["data_quality"]["basis"]
 
 
 def test_database_url_placeholder_is_ignored(monkeypatch):

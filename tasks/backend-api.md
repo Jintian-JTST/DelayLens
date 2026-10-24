@@ -99,3 +99,19 @@ Updated: 2026-10-24 (Europe/London).
   Tiger Data at ~14:34 UTC: cache loaded with no error; routes 11 ms (bus 29: 0 trips, Victoria: 14
   trips over 2 hours); stats 2 ms (10,674 rows, 2 chunks, no compression yet).
 - Open: bus 29 has 0 matched trips so far (D to check); `/api/calibration` still a 503 stub.
+
+## Update: M's model connected
+
+- Merged `feat/model` (which already contains `main` and PR #5) into `feat/api`; no conflicts. `uv sync` added numpy.
+- Added `backend/app/curves.py`: D's segments -> `model.Segments` (deduplicated on vehicle + origin episode),
+  `model.departure_curve` -> contract. NaN/`insufficient_data` rows are omitted; overall status is
+  `insufficient_data` (no points), `low_data` (any low row) or `ok`. Recommendation and what-if only from `ok`
+  rows (M's advisor policy). `ci` is a provisional 90% Wilson interval over distinct runs until M's bootstrap.
+- `db.py` now also reads `origin_episode_started_at` (D's stable trip key).
+- Checks (macOS, Python 3.14): `pytest -q` 111 passed, 7 skipped (live DB); `ruff check app tests` passed.
+  Real Tiger Data, Victoria Brixton -> Oxford Circus, 15 trips: `low_data`, 62 points, P falls 1.00 -> 0.81 -> 0.00
+  as departure moves later; server 40 ms. All three bus routes: 0 trips.
+- For M: (1) replay uses only the deadline's date +/- 30 min, so a 10-min bus shows ~7 runs and can never reach `ok`
+  (no recommendation) - see `tests/test_curves.py`; (2) bootstrap band to replace the Wilson placeholder;
+  (3) coverage intervals still default to first..last departure (needs D).
+- For D: bus 29 and both bus 24 routes have 0 matched trips; the bus is the core demo route.

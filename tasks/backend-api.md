@@ -159,3 +159,20 @@ Updated: 2026-10-24 (Europe/London).
   segments 14 and 22 trips: `low_data`, no recommendation, 4-10 ms. Calibration 24 ms, 21 outcomes, Brier 0.042,
   `not_validated`.
 - Not checked in the browser (the running localhost servers are another checkout's).
+
+## Update: M's calibration feedback (blocked hold-out, coverage, unconfirmed departures)
+
+- Live curves now pass M's `coverage` and `unconfirmed_departures` to the model (previously dropped).
+  `db.py` loads every origin `stop_events` row per active route and the `poll_runs` ledger;
+  `curves.poll_coverage` splits recording at polls > 1.5x the median interval (D's exporter rule) and clips
+  each route's coverage to its first origin event. Origin events without a usable run are unconfirmed.
+- `calibration.py` is now a blocked hold-out (M's proposal, PLAN section 4): each 30-min block is held out
+  and the model is trained on runs, coverage and unconfirmed departures outside it. An outcome is scored
+  only if the caught run is inside the block, in coverage, and no unconfirmed bus came first; others are set
+  aside and counted. The `SUSPECT_GAP_FACTOR` placeholder is removed.
+- Checks: `pytest -q` 165 passed, 28 skipped. New tests: bus timetable (8-min headway, 18-min ride: 568
+  outcomes, previously 0), disjoint held-out training, gap set aside, unconfirmed bus makes outcome unknown,
+  poll-gap coverage and unconfirmed detection.
+- Real Tiger Data (~16:25 UTC): bus 29 Finsbury Park 15 runs + 11 unconfirmed; calibration per route 25-36 ms;
+  all routes 69 ms, 744 outcomes, 52 runs, 5 blocks, Brier 0.144, `preliminary`. Top bin predicted 0.96 vs
+  observed 0.83 (overconfident at the top). Curves 2-12 ms; Victoria recommendation 15:48 UTC.

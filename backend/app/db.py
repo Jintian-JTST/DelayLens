@@ -25,6 +25,15 @@ SELECT route_id, vehicle_id, origin_observed_at, destination_observed_at, ride_s
 FROM get_segments ORDER BY route_id, origin_observed_at
 """
 COVERAGE_SQL = "SELECT route_id, trips_observed, hours_covered FROM route_coverage"
+# Every departure seen at a route's origin, usable or not (D's stop_events).
+ORIGIN_EVENTS_SQL = """
+SELECT r.route_id, o.vehicle_id, o.episode_started_at, o.observed_at
+FROM route_config r
+JOIN stop_events o ON o.line_id = r.line_id AND o.direction = r.direction
+                  AND o.naptan_id = r.origin_naptan_id
+WHERE r.active ORDER BY r.route_id, o.observed_at
+"""
+POLLS_SQL = "SELECT polled_at FROM poll_runs ORDER BY polled_at"
 ROWS_SQL = "SELECT count(*), min(polled_at), max(polled_at) FROM arrival_predictions"
 CHUNKS_SQL = """
 SELECT count(*) FROM timescaledb_information.chunks
@@ -53,9 +62,18 @@ class Coverage:
 
 
 @dataclass(frozen=True)
+class OriginEvent:
+    vehicle_id: str
+    episode_started_at: datetime
+    observed_at: datetime
+
+
+@dataclass(frozen=True)
 class Snapshot:
     segments: dict[str, list[Segment]]
     coverage: dict[str, Coverage]
+    origin_events: dict[str, list[OriginEvent]]
+    poll_times: list[datetime]
     stats: Stats
     refreshed_at: datetime
 
@@ -79,6 +97,16 @@ def load_snapshot(database_url: str) -> Snapshot:
                 for route_id, trips, hours in cur.fetchall()
             }
 
+            cur.execute(ORIGIN_EVENTS_SQL)
+            origin_events: dict[str, list[OriginEvent]] = {}
+            for route_id, vehicle_id, episode, observed in cur.fetchall():
+                origin_events.setdefault(route_id, []).append(
+                    OriginEvent(vehicle_id, episode, observed)
+                )
+
+            cur.execute(POLLS_SQL)
+            poll_times = [row[0] for row in cur.fetchall()]
+
             cur.execute(ROWS_SQL)
             rows, first_polled, last_polled = cur.fetchone()
             cur.execute(CHUNKS_SQL)
@@ -90,6 +118,8 @@ def load_snapshot(database_url: str) -> Snapshot:
     return Snapshot(
         segments=segments,
         coverage=coverage,
+        origin_events=origin_events,
+        poll_times=poll_times,
         stats=Stats(
             rows=rows,
             chunks=chunks,

@@ -124,7 +124,11 @@ def _segments_for(snapshot: db.Snapshot, route_id: str) -> model.Segments:
     key = (snapshot.refreshed_at, route_id)
     if key not in _segments_memo:
         _segments_memo.clear()  # keep only the current snapshot's conversions
-        _segments_memo[key] = curves.to_segments(snapshot.segments.get(route_id, []))
+        _segments_memo[key] = curves.to_segments(
+            snapshot.segments.get(route_id, []),
+            snapshot.origin_events.get(route_id, []),
+            snapshot.poll_times,
+        )
     return _segments_memo[key]
 
 

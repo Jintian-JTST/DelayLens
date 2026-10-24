@@ -44,6 +44,8 @@ def isolate(monkeypatch, tmp_path, request):
     snapshot = db.Snapshot(
         segments={ROUTE: rows},
         coverage={ROUTE: db.Coverage(len(rows), [])},
+        origin_events={},
+        poll_times=[],
         stats=Stats(rows=0, chunks=0, compression_ratio=None,
                     first_polled_at=None, last_polled_at=None),
         refreshed_at=START,
@@ -149,3 +151,18 @@ def test_recommendation_matches_model_advisor(monkeypatch):
     assert advice.reason == "ok"
     expected = curves._utc(advice.depart_at).isoformat().replace("+00:00", "Z")
     assert data["recommended"]["depart_at"] == expected
+
+
+def test_poll_gaps_split_coverage_and_unmatched_departures_are_unconfirmed():
+    polls = [START + timedelta(seconds=30 * k) for k in range(20)]
+    polls += [polls[-1] + timedelta(minutes=10) + timedelta(seconds=30 * k) for k in range(20)]
+    cov = curves.poll_coverage(polls)
+    assert len(cov) == 2
+    t = START + timedelta(minutes=1)
+    used = db.Segment("v1", t, t + timedelta(minutes=20), 1200.0, t)
+    unmatched = db.OriginEvent("v2", t + timedelta(minutes=2), t + timedelta(minutes=2))
+    segments = curves.to_segments(
+        [used], [db.OriginEvent("v1", t, t), unmatched], polls
+    )
+    assert list(segments.unconfirmed_departures) == [model.to_epoch(unmatched.observed_at)]
+    assert segments.coverage.shape == (2, 2)

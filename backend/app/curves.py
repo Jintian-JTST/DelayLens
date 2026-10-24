@@ -27,8 +27,34 @@ Z_90 = 1.645
 WHAT_IF_MIN = (5, 10, 15)
 
 
-def to_segments(rows: list[db.Segment]) -> model.Segments:
-    """Usable runs for one route in the model's input format, deduplicated."""
+# Polls further apart than this many typical intervals split the coverage,
+# matching D's exporter (tasks/model.md, load_handoff).
+POLL_GAP_FACTOR = 1.5
+
+
+def poll_coverage(poll_times: list[datetime]) -> np.ndarray | None:
+    """Closed UTC intervals of continuous recording, split at missed polls."""
+    if len(poll_times) < 2:
+        return None
+    t = np.array([model.to_epoch(x) for x in sorted(poll_times)], dtype=np.int64)
+    gaps = np.diff(t)
+    split = np.flatnonzero(gaps > POLL_GAP_FACTOR * float(np.median(gaps)))
+    starts = np.concatenate(([t[0]], t[split + 1]))
+    ends = np.concatenate((t[split], [t[-1]]))
+    return np.column_stack((starts, ends))
+
+
+def to_segments(
+    rows: list[db.Segment],
+    origin_events: list[db.OriginEvent] | None = None,
+    poll_times: list[datetime] | None = None,
+) -> model.Segments:
+    """One route's usable runs in the model's input format, deduplicated.
+
+    Origin departures with no usable run become unconfirmed departures, and
+    coverage comes from the poll ledger, clipped to when this route was first
+    seen (routes can be added after recording started).
+    """
     seen: set[str] = set()
     kept: list[tuple[str, str, int, int]] = []
     for row in sorted(rows, key=lambda r: r.origin_observed_at):
@@ -39,11 +65,34 @@ def to_segments(rows: list[db.Segment]) -> model.Segments:
             continue
         seen.add(key)
         kept.append((key, row.vehicle_id, t_o, t_d))
+
+    events = origin_events or []
+    unconfirmed = np.sort(np.array(
+        [
+            model.to_epoch(e.observed_at)
+            for e in events
+            if f"{e.vehicle_id}|{e.episode_started_at.isoformat()}" not in seen
+        ],
+        dtype=np.int64,
+    ))
+
+    coverage = poll_coverage(poll_times or [])
+    first_seen = [model.to_epoch(e.observed_at) for e in events] + [k[2] for k in kept]
+    if coverage is not None and first_seen:
+        start = min(first_seen)
+        coverage = coverage[coverage[:, 1] >= start]
+        if len(coverage):
+            coverage[0, 0] = max(coverage[0, 0], start)
+        else:
+            coverage = None
+
     return model.Segments(
         segment_id=np.array([k[0] for k in kept], dtype=str),
         vehicle_id=np.array([k[1] for k in kept], dtype=str),
         t_origin=np.array([k[2] for k in kept], dtype=np.int64),
         t_dest=np.array([k[3] for k in kept], dtype=np.int64),
+        coverage=coverage,
+        unconfirmed_departures=unconfirmed,
     )
 
 

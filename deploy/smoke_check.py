@@ -42,6 +42,8 @@ def call(base: str, path: str, body: dict | None = None, timeout: float = 15.0):
             status, text = response.status, response.read().decode()
     except urllib.error.HTTPError as error:
         status, text = error.code, error.read().decode()
+    except (urllib.error.URLError, OSError):  # includes timeouts: report, do not crash
+        return None, None, (time.perf_counter() - started) * 1000
     ms = (time.perf_counter() - started) * 1000
     try:
         payload = json.loads(text)
@@ -62,17 +64,17 @@ def main() -> int:
     if parsed.scheme not in ("http", "https") or not parsed.hostname:
         parser.error("url must start with http:// or https://")
 
-    try:
-        status, payload, _ = call(base, "/api/health")
-    except (urllib.error.URLError, OSError) as error:
-        report(False, "site reachable", type(error).__name__)
+    status, payload, _ = call(base, "/api/health")
+    if status is None:
+        report(False, "site reachable", "no response (connection error or timeout)")
         return 1
     report(status == 200 and payload == {"status": "ok"}, "/api/health", f"status {status}")
     if parsed.scheme == "http" and parsed.hostname not in ("127.0.0.1", "localhost"):
         report(False, "HTTPS", "the public site is served over plain http")
 
     status, routes, _ = call(base, "/api/routes")
-    bus29 = next((r for r in routes or [] if r.get("route_id") == ROUTE), None)
+    route_list = routes if isinstance(routes, list) else []
+    bus29 = next((r for r in route_list if isinstance(r, dict) and r.get("route_id") == ROUTE), None)
     report(status == 200 and bool(bus29 and bus29.get("trips_observed")), "/api/routes lists bus 29 with trips",
            f"trips_observed {bus29.get('trips_observed') if bus29 else 'missing'}")
 
@@ -100,8 +102,14 @@ def main() -> int:
         except OSError:
             report(True, "port 8000 is not publicly reachable")
 
-    samples = [call(base, "/api/departure-curve", {**CURVE, "deadline": "2026-10-24T16:00:00Z"})[2]
+    results = [call(base, "/api/departure-curve", {**CURVE, "deadline": "2026-10-24T16:00:00Z"})
                for _ in range(args.requests)]
+    failed = sum(1 for status, _, _ in results if status != 200)
+    report(failed == 0, f"{len(results)} latency requests all returned 200", f"{failed} failed")
+    samples = [ms for status, _, ms in results if status == 200]
+    if not samples:
+        print("FAILED", f"({failures} failing)")
+        return 1
     ordered = sorted(samples)
     p95 = ordered[min(len(ordered) - 1, round(0.95 * (len(ordered) - 1)))]
     print(f"INFO  latency of /api/departure-curve from this machine over this network, {len(samples)} requests: "

@@ -184,7 +184,7 @@ Code: [backend/app/model.py](backend/app/model.py), with hand-checked tests in
 | Database recorder | Separate recorder and SQL tooling retained; its archive/derivation contract differs from the standalone validator |
 | Backend API | FastAPI health, routes, departure-curve and Ask endpoints |
 | Model | Replay with censoring, evidence tiers, run-bootstrap band and advisor, served by `/api/departure-curve` with a ±60-minute window (PR #20) |
-| Frontend | React/Vite planner; checked locally against real bus 29 data and the offline snapshot on Sat 24 Oct (Sat 17:00 deadline: about 16:22, 92% live; 16:25, 90% snapshot) |
+| Frontend | React/Vite planner; checked locally against real bus 29 data and the offline snapshot on Sat 24 Oct (Sat 17:00 deadline: 16:22, 92% both live and in the final offline snapshot; the page opens on bus 29) |
 
 The bus 24 validation ran on **24 October 2026, 14:53-15:53 Europe/London**
 (13:53-14:53 UTC), stopping after 60 minutes at the owner's request. Three
@@ -252,17 +252,17 @@ frozen bus 29 data; a relative path is resolved from the repository root:
 
 ```text
 # macOS / Linux (bash, zsh)
-SNAPSHOT_DIR=docs/evidence/bus29-db-snapshot-20261024T1655Z uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
+SNAPSHOT_DIR=docs/evidence/bus29-db-final-20261024T202558Z uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 # Windows PowerShell
-$env:SNAPSHOT_DIR = "docs/evidence/bus29-db-snapshot-20261024T1655Z"
+$env:SNAPSHOT_DIR = "docs/evidence/bus29-db-final-20261024T202558Z"
 uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Without uv, use the backend virtual environment's Python:
 `.venv/bin/python -m uvicorn app.main:app --port 8000` (Windows:
 `.venv\Scripts\python.exe`). The basis text then ends with "Offline snapshot
-frozen 24 Oct 16:55 UTC; not live data"; `/api/stats` is unavailable, and live
+frozen 24 Oct 20:25 UTC; not live data"; `/api/stats` is unavailable, and live
 arrivals and Ask still need the network.
 
 ### Run a recorder

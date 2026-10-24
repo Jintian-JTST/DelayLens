@@ -26,8 +26,10 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 When working in separate role worktrees, use B's backend checkout to preview its
 latest integration; do not copy or overwrite another role's uncommitted changes.
 No real credentials are needed to use the backend's clearly labelled fixtures.
-If the backend is offline, select **Try labelled demo** explicitly to explore
-the interface. Offline failures never automatically become synthetic success.
+Select **Try demo** in the navigation to explore the full interface while the
+recorded-trip model is being connected. If the backend is offline, the connection
+panel also offers **Try labelled demo**. Demo mode is always explicitly selected
+and prominently labelled; real service failures never become synthetic success.
 
 For another backend port, copy `.env.example` to `.env` and change `API_TARGET`.
 For concurrent frontends, use `npm run dev -- --port 5174` and configure the

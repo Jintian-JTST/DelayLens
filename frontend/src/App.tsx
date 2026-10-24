@@ -327,6 +327,18 @@ export default function App() {
           >
             Our methodology
           </button>
+          <button
+            type="button"
+            className="nav-link"
+            aria-label={demo ? "Use real route data" : "Try labelled demo"}
+            aria-pressed={demo}
+            onClick={() => {
+              setTab("plan");
+              setMode(demo ? "api" : "demo");
+            }}
+          >
+            {demo ? "Real routes" : "Try demo"}
+          </button>
         </nav>
         <div className="header-right">
           <span className="region">LONDON, UK</span>

@@ -81,3 +81,15 @@ macOS/zsh, Node 24.22.1, npm 12.2.1, Chrome 151.0.7922.172:
 - F runs the real-data end-to-end check, rehearses the script, records the backup
   video and captures Devpost screenshots once the real-data gate passes.
 - Physical phones, Safari, Firefox and screen readers remain unverified.
+
+### Preview follow-up (2026-10-24)
+
+- Restarted the local frontend/backend preview after the user reported an empty
+  website. The API now lists real bus and Tube routes, but their departure
+  responses report that the prediction model is not connected yet.
+- Added a navigation-level **Try demo** control so the labelled interactive curve
+  can be explored even while the API is reachable but cannot predict. **Real
+  routes** returns to the actual service; data is never silently substituted.
+- Passed the production build and all seven unit tests. Targeted Chrome checks
+  passed for the real-route empty state, explicit 91-point demo, switching back,
+  390px/320px layouts and absence of uncaught browser errors.

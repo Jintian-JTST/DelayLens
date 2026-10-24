@@ -93,8 +93,9 @@ means at least one matched trip, not a complete hour of continuous recording.
 2026-10-25 UK clock change. B should serialize timezone-aware values as ISO 8601.
 
 Stop events follow PLAN 3.2: latest ETA while <=60 seconds from the stop, otherwise
-last observed poll. Events finalize after >=90 seconds of absence measured against
-successful polls. IDs, line and direction scope episodes; >20-minute gaps or
+last observed poll. Disappearance-based events finalize after >=90 seconds of
+absence measured against successful polls; an explicit trip-ID change can close
+the preceding episode sooner. IDs, line and direction scope episodes; >20-minute gaps or
 explicit trip-ID changes start another episode. Unknown vehicle IDs, missing
 directions, stale/invalid timestamps and negative horizons are rejected for SQL
 but kept in the filtered raw backup. Missing directions are never guessed.
@@ -190,3 +191,26 @@ Portable Linux systemd rendering and operations are in `deploy/README.md`.
 - Next action: B integrates the latest routes, driver and SQL views; M consumes
   inferred segments and checks sample independence/coverage. D continues collecting
   locally; move the recorder to an authorized VM before the laptop sleeps.
+
+### Follow-up audit, 2026-10-24 14:17 UTC
+
+- Continued with the existing database and independent feat/data checkout; no new
+  database or service was created. Implementation commit: `36838c2`.
+- Exactly one recorder process tree was found: the Windows virtual-environment
+  launcher and its child Python process. Updated that tree to the latest tested
+  code; the first new poll at 14:16:53Z backed up and committed successfully.
+- At 14:14:29Z, live readback showed **6,310 arrival_predictions, 174 stop_events,
+  5 get_segments rows**. Route coverage: bus 0; tube 5 with UTC origin hours 13:00
+  and 14:00. Counts are a dated snapshot and continue changing.
+- Queried information_schema.columns: every documented get_segments and
+  route_coverage column and type matches the deployed views. Corrected wording
+  above to distinguish disappearance finalization from explicit trip-ID changes.
+- Latest complete ingest suite: **30 passed in 11.58 seconds**, including seven
+  real-database rollback tests. Ruff passed; PostgreSQL parser accepted all 26
+  statements across the two SQL files. No committed test rows remained.
+- All 35 tracked files and both implementation branch-only commits were checked
+  against actual local credentials: **zero matches**. `.env` and raw backups are
+  ignored; only the safe `.env.example` is tracked. No secret values were printed.
+- No application code or other branch was changed. Server deployment remains
+  optional until these local checks are complete; prioritize one small existing
+  authorized Linux VM and the supplied systemd template over extra infrastructure.

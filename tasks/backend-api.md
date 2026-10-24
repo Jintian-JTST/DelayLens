@@ -115,3 +115,17 @@ Updated: 2026-10-24 (Europe/London).
   (no recommendation) - see `tests/test_curves.py`; (2) bootstrap band to replace the Wilson placeholder;
   (3) coverage intervals still default to first..last departure (needs D).
 - For D: bus 29 and both bus 24 routes have 0 matched trips; the bus is the core demo route.
+
+## Update: Ask test set (21 phrasings)
+
+- `backend/tests/ask_cases.json` + `tests/test_ask_cases.py`: vague times, tolerance words, comparisons, walking,
+  live, route list, off-topic, unsupported places, missing deadline, slang and Chinese, against a fixed
+  "now" (Sat 24 Oct 15:00 London). Structure check always runs; Gemini checks are opt-in:
+  `DELAYLENS_RUN_GEMINI_TESTS=1 uv run pytest tests/test_ask_cases.py` (paced 5 s per case; costs quota).
+- Prompt fix: "a bit late is fine" without a number now relaxes tolerance instead of moving the deadline.
+- Results (real Gemini, 2026-10-24): best run 17/21. After the prompt fix no case returned a wrong
+  interpretation; every failure was `gemini_unavailable`. 19 cases are confirmed passing; `walk-time` and
+  `no-deadline` are unconfirmed (Gemini unavailable in the runs where they were identified). Logged causes:
+  `gemini-3.1-flash-lite` ReadTimeout (>4 s) and `gemini-3-flash-preview` HTTP 429 (free-tier rate limit
+  exhausted by repeated test runs). Ask now logs model + HTTP status/error type on failure (never the key).
+- Risk for the demo: free-tier Gemini quota and latency. Consider a paid/credit key and avoid bulk test runs before judging.

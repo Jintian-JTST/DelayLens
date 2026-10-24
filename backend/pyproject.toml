@@ -19,4 +19,7 @@ dev = ["pytest>=8", "ruff>=0.6"]
 [tool.pytest.ini_options]
 testpaths = ["tests", "ingest/tests"]
 pythonpath = ["."]
-markers = ["live_db: explicitly opted-in real Tiger Data transaction rollback tests"]
+markers = [
+    "live_db: explicitly opted-in real Tiger Data transaction rollback tests",
+    "live_gemini: explicitly opted-in real Gemini API calls (costs quota)",
+]

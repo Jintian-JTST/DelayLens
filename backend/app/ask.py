@@ -4,6 +4,7 @@ Gemini never produces numbers. Our model computes them and the answer sentence
 is a template over those numbers (PLAN.md section 5).
 """
 
+import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Annotated
@@ -21,6 +22,8 @@ from app.schemas import (
     LiveResponse,
     Route,
 )
+
+log = logging.getLogger(__name__)
 
 LONDON = ZoneInfo("Europe/London")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
@@ -149,6 +152,7 @@ def _system_prompt(now: datetime, routes: list[Route]) -> str:
         "Never answer in prose and never invent route ids.\n"
         f"Current time: {local.isoformat()} (Europe/London). 'Around 2' means the next 14:00 "
         "after now; 'ten minutes late is OK' moves the deadline 10 minutes later. "
+        "'A bit late is fine' with no number keeps the deadline and sets tolerance 0.20. "
         "Send times as London local time without a UTC offset. "
         "If the user names a place that matches none of the supported routes, call "
         "get_departure_curve with route_id 'none'.\n"
@@ -191,8 +195,11 @@ def _call_gemini(
                     if not isinstance(call["name"], str) or not isinstance(args, dict):
                         raise TypeError
                     return call["name"], args
-        except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, AttributeError):
-            continue  # Never forward exception text: it can contain the URL or key.
+        except httpx.HTTPStatusError as exc:
+            log.warning("Gemini %s failed: HTTP %s", model, exc.response.status_code)
+        except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, AttributeError) as exc:
+            # Never log exception text: it can contain the URL or key.
+            log.warning("Gemini %s failed: %s", model, type(exc).__name__)
     raise GeminiUnavailable
 
 

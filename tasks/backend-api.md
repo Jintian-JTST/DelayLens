@@ -129,3 +129,21 @@ Updated: 2026-10-24 (Europe/London).
   `gemini-3.1-flash-lite` ReadTimeout (>4 s) and `gemini-3-flash-preview` HTTP 429 (free-tier rate limit
   exhausted by repeated test runs). Ask now logs model + HTTP status/error type on failure (never the key).
 - Risk for the demo: free-tier Gemini quota and latency. Consider a paid/credit key and avoid bulk test runs before judging.
+
+## Update: /api/calibration (rolling-origin backtest)
+
+- `backend/app/calibration.py` (B, built at the user's request; M owns calibration policy and may take it over):
+  forecast origins every 30 min; the model sees only runs that had arrived by the origin (coverage ends
+  before the first unfinished run), and is scored on departures in the next disjoint 30-min block against
+  the first recorded catchable run. Deadlines = training median ride + (-2..12) min. 5 reliability bins
+  and a Brier score; uses only M's public `model.replay_curve`.
+- Waits over 4x the training median headway are censored as suspected capture gaps (unknown, not late)
+  and counted in `basis`; placeholder until D supplies coverage intervals.
+- Contract change (B-approved, additive with defaults): `Calibration` gains `calibration_status`
+  (`not_validated` | `preliminary`; never "validated"), `n_outcomes`, `n_runs`, `basis`.
+  `GET /api/calibration?route_id=` optional; 503 without the database; memoised per cache refresh.
+- Checks: `pytest -q` 120 passed, 28 skipped. Real data at ~15:10 UTC: 23 ms; `not_validated` with 0 scored
+  outcomes, because the only held-out block fell on a 16.7-min hole in recorded Victoria runs
+  (35 outcomes censored). Before censoring, that hole produced a misleading Brier score of 0.63.
+- For D: Victoria has a 16.7-min gap between recorded departures (trains run every 2-3 min) - likely
+  unmatched runs; coverage intervals would let the model and backtest handle this properly.

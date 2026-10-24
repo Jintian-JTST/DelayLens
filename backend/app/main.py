@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from pydantic import Field, TypeAdapter, ValidationError
 
 from app import ask as ask_module
+from app import calibration as calibration_module
 from app import curves, db, fixtures, model, tfl
 from app.schemas import (
     AskRequest,
@@ -116,6 +117,7 @@ def routes() -> list[Route]:
 
 
 _segments_memo: dict[tuple[datetime, str], model.Segments] = {}
+_calibration_memo: dict[tuple[datetime, tuple[str, ...]], Calibration] = {}
 
 
 def _segments_for(snapshot: db.Snapshot, route_id: str) -> model.Segments:
@@ -205,5 +207,24 @@ def stats() -> Stats:
 
 
 @app.get("/api/calibration", response_model=Calibration)
-def calibration() -> Calibration:
-    raise HTTPException(status_code=503, detail="calibration_not_available")
+def calibration(route_id: str | None = None) -> Calibration:
+    snapshot = _snapshot()
+    if snapshot is None:
+        raise HTTPException(status_code=503, detail="database_not_connected")
+    route_ids = (
+        (_route_or_404(route_id).route_id,)
+        if route_id
+        else tuple(r.route_id for r in _load_routes())
+    )
+    key = (snapshot.refreshed_at, route_ids)
+    if key not in _calibration_memo:
+        _calibration_memo.clear()
+        outcomes, censored = [], 0
+        for rid in route_ids:
+            route_outcomes, route_censored = calibration_module.backtest(
+                _segments_for(snapshot, rid)
+            )
+            outcomes += route_outcomes
+            censored += route_censored
+        _calibration_memo[key] = calibration_module.summarise(outcomes, censored)
+    return _calibration_memo[key]

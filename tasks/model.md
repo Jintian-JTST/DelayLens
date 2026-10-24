@@ -36,21 +36,36 @@ Budget < 50 ms per curve.
 - Needed from D: complete-recording intervals per route (start/end UTC) for
   censoring. Without them, coverage defaults to first..last departure, so
   mid-recording gaps would be missed.
-- Needed from B: add `numpy` to `backend/pyproject.toml`; map NaN or
+- Needed from B (`numpy` is now in `pyproject.toml`): map NaN or
   `insufficient_data` to the contract's status with no probability, and expose
   `calibration_status: not_validated`.
 
 ## Handoff
 
-- Changes: merged `main` (revised plan) into `feat/model`. Added the §3.5 CSV
-  loader with an exclusion report, local-time reference dates (repeated 01:00 hour
-  kept distinct), coverage-based censoring, the 0–4 / 5–14 / 15+ evidence status,
-  and separate run, vehicle, step and censored counts.
-- Checks run (macOS, Python 3.14.6, numpy 2.5.4, pytest 9.1.1, local venv; `uv`
-  not installed): `pytest tests/test_model.py` from `backend/`: 17 passed.
-  These include hand-checked step, ramp, walking, gap-censoring (37 eligible / 24
-  censored) and end-of-recording cases. Curve over 2 days of noisy synthetic data
-  (630 runs, 91 departures, 2 reference dates): median 1.6 ms.
-- Unverified: no real segment CSV yet; all results use labelled synthetic data.
-- Next action (M): bootstrap 90% band by resampling runs, and an advisor that
-  suppresses recommendations below 15 runs (Sat 16:30–18:00)
+- Changes (uncommitted, on `feat/model`):
+  - **Unconfirmed departures:** a bus seen leaving O with no usable segment now
+    censors replay instants that would board it, instead of skipping to the next
+    usable run (which overstated waits).
+  - **`load_handoff(folder)`:** reads D's export (segments.csv, stop_events.json,
+    quality.json, route.json). Coverage is the capture window, split at each
+    `successful_poll_gaps` entry (`from`/`to`, format read from D's exporter).
+  - **90% band:** Poisson bootstrap over whole runs (200 resamples), `ok` rows only.
+  - **Advisor and what-if:** `recommend()` returns the latest departure with
+    P(late) <= tolerance (ok rows only, plus a conservative variant from the band
+    edge) or a reason (`too_few_runs`, `no_departure_meets_tolerance`).
+    `what_if()` returns +5/+10/+15 min results, with None where unsupported.
+- Real data (D's bus 24 checkpoint, 14:53–15:23 BST Sat 24 Oct): 62/62 polls,
+  2 usable runs, 3 unconfirmed origin departures (1 inside coverage) →
+  `insufficient_data` and `too_few_runs` everywhere, as expected.
+- Checks run (macOS, `uv run --locked`): `pytest`: 139 passed, 7 skipped
+  (opt-in DB tests); `ruff check` on model files: clean. Curve + band +
+  advisor on 630 synthetic runs: median 8.5 ms (budget 50 ms).
+- B's `app/curves.py` maps `Curve` onto the API (insufficient points are
+  omitted, with a provisional Wilson `ci`). The run-bootstrap band
+  (`Curve.ci_low/ci_high`, `ok` rows only) and `recommend()`/`what_if()` are
+  ready for B to switch to.
+- Real data on `main` (60-min bus 24 evidence, 4 runs): `insufficient_data`
+  everywhere. That evidence has no `stop_events.json`, so unconfirmed departures
+  can't be censored: ask D to include it in handoffs.
+- Next action (M): re-run on D's next handoff (5+ runs for `low_data`); ask B to use
+  the bootstrap band and `recommend()` in `curves.py`.

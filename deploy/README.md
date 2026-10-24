@@ -140,6 +140,13 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST https://<site>/api/ask \
   -H 'content-type: application/json' -d '{"question":"hello"}'   # 401 without the passcode
 ```
 
+Or run all of this at once from any machine (standard library only; see the script's docstring
+for flags, and note it measures latency from that machine over that network):
+
+```sh
+python deploy/smoke_check.py https://<site>
+```
+
 Then open `https://<site>/` on mobile data and confirm the bus 29 form shows the expected
 advice. If uv is not available, create `backend/.venv` and install the dependencies listed in
 `backend/pyproject.toml` by hand (the project has no build backend, so `pip install -e .`

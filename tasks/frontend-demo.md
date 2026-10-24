@@ -3,7 +3,7 @@
 - Task ID: frontend-demo
 - Owner (person / AI tool): F / Codex
 - Branch: feat/frontend
-- Status: visual refinement and real Victoria curves verified; ready for integration review
+- Status: updated from main after #12; real Victoria curve and calibration UI verified
 - Integrator / reviewer: B; integration order D → M → B → F
 
 ## Outcome and acceptance criteria
@@ -154,3 +154,34 @@ macOS/zsh, Node 24.22.1, npm 12.2.1, Chrome 151.0.7922.172:
   zoom-equivalent QA screenshots. These artifacts and the temporary QA runner
   are ignored. Only the stylesheet and this handoff changed; there are no API,
   model, recommendation-threshold or dependency changes.
+
+### Integration after #12 (2026-10-24)
+
+- Confirmed #12 merged, fetched `main` and merged it into `feat/frontend` without
+  conflicts (`ed484dc`). Visual refinement remains a separate commit (`c3c993e`).
+- Added the four B-approved calibration fields to the TypeScript contract:
+  `calibration_status`, `n_outcomes`, `n_runs`, `basis`. Methodology shows the
+  status, scored outcomes, distinct runs and API explanation even with no bins.
+  Preliminary backtests remain explicitly not validated; the description names
+  inferred stop events rather than measured arrivals. Unavailable service and
+  an available backtest with no scored outcomes have distinct empty states.
+- Updated the local preview to run the merged backend with the existing backend
+  environment. Real Victoria recorded-hour submission rendered **91 points**, a
+  varying probability curve and `low_data`. Counts change as recording continues;
+  the inspected response had 12–25 trips per point. No synthetic fallback was used.
+- The actual calibration endpoint returned `not_validated`, zero outcomes/runs,
+  and its explanation that 35 outcomes were excluded as suspected recording gaps.
+  Verified those values and the basis text in the rendered Methodology tab.
+- Passed production build, all **11 unit tests**, the **9 grouped visual/browser
+  acceptance checks**, and targeted merged-API browser checks. The latter cover
+  actual Victoria/Methodology at 1440px, 390px and 320px, chart keyboard control,
+  no additional curve calls for risk/what-if controls, and no browser errors.
+  Separate intercepted cases verify populated `preliminary`/`not_validated` and
+  unavailable calibration responses; these are not real backtest outcomes.
+- Fixed a 320px overflow exposed by actual multi-route coverage: positioned hidden
+  cell labels within their cells so they stay inside the scrollable table.
+- Updated real screenshots in ignored `frontend/.local/qa/merged-real-*.png` and
+  `merged-methodology-*.png`. Moved this handoff to `tasks/frontend-demo.md` to
+  match the merged repository instructions. Preview remains available on port 5173.
+- Next: B reviews/integrates `feat/frontend`; D deploys the combined build. Native
+  browser zoom, physical devices, Safari/Firefox and screen readers remain unverified.

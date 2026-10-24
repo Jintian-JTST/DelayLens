@@ -1360,6 +1360,13 @@ footer button {
   max-height: 220px;
   margin-top: 15px;
 }
+.calibration-status {
+  align-items: flex-start;
+  margin-top: 16px;
+}
+.calibration-status p {
+  margin: 8px 0 0;
+}
 .planner-card .input-with-icon input[type="datetime-local"] {
   padding-left: 36px;
   font-size: var(--text-body);
@@ -1412,6 +1419,7 @@ footer button {
   min-width: 130px;
 }
 .coverage-hours .coverage-cell {
+  position: relative;
   display: block;
   height: 28px;
   min-width: 35px;

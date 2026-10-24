@@ -3,7 +3,7 @@
 - Task ID: branch-integration
 - Owner (person / AI tool): Jintian-JTST / Codex
 - Branch: `codex/integrate-branches`
-- Status: local integration verified; preparing review PR
+- Status: verified; ready for owner PR review
 - Integrator / reviewer: Codex prepares; repository owner reviews PR to main
 - Plan / contract reference: PLAN.md sections 3, 4, 6; AGENTS.md
 
@@ -41,7 +41,7 @@ targeting main. Do not merge the PR or delete source branches before review.
   one Starlette/httpx warning. Ruff passed after small lint-only fixes (imports,
   UTC aliases, literals, explicit subprocess check and equivalent gzip contexts).
   Added three integration regressions. UTF-8/JSON/paths/conflicts/whitespace and
-  44 exact-case Markdown links across 54 files passed; Git whitespace passed.
+  45 exact-case Markdown links across 54 files passed; Git whitespace passed.
   No live service/database/recorder/deployment checks were performed.
 - Next action: finish integration, verify, commit and push the integration branch,
   then create the review PR. Preserve main and all source branches.
@@ -62,3 +62,8 @@ targeting main. Do not merge the PR or delete source branches before review.
 No frontend branch was exposed by Git fetch/GitHub inventory. No branch deletion,
 force push, main update, production deployment or automatic PR merge is part of
 this task. Review the imported inference limitations before approving model use.
+
+Final refetch showed unchanged source tips. Ancestry checks confirmed all seven
+local/remote source refs in the table are included in the integration HEAD.
+Final tracked-file validation: 54 files, 45 exact-case local Markdown links,
+valid JSON/UTF-8, no conflict markers, machine paths or credential signatures.

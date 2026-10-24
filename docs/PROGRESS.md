@@ -36,7 +36,7 @@ Windows / PowerShell 7.6.5 / Python 3.11.9; isolated uv environment and lockfile
 - Added regression coverage for merged route/poll defaults, complete raw saving
   without a database, both recorder imports and actual-config API responses with
   no synthetic probabilities.
-- UTF-8/JSON/conflict-marker/path/whitespace and 44 exact-case local Markdown
+- UTF-8/JSON/conflict-marker/path/whitespace and 45 exact-case local Markdown
   links passed across 54 versioned/new files. Git whitespace checks passed.
 - First restricted test invocation stalled; stopped only that integration test
   process and reran with normal process access and a 55-second bound. The complete

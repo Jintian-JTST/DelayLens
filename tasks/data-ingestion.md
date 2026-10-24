@@ -1,12 +1,13 @@
 # Task: Data ingestion and infrastructure (Code D)
 
 - Task ID: `data-ingestion` / D
-- Owner (person / AI tool): Jintian-JTST (D) / Codex
-- Branches: `feat/data` (database history); `codex/data-validation-60min` (standalone validation and README)
+- Owner (person / AI tool): Jintian-JTST (D) / Codex, with Claude Code for the bus 29 route record
+- Branches: `feat/data` (database history); `codex/data-validation-60min` (standalone validation and README);
+  `claude/project-thread-fuvrvr` (bus 29 short route and live database status)
 - Documentation revision branch: `codex/revise-ingestion-plan`
-- Status: standalone 60-minute chain verified; four estimated trips; real-data API adapter pending
+- Status: standalone 60-minute chain verified on bus 24; bus 29 short route configured for it; real-data API adapter pending
 - Integrator / reviewer: B for API/schema integration; M for usable segment evidence
-- Updated: 2026-10-24 (Europe/London)
+- Updated: 2026-10-24 16:30 (Europe/London)
 - Source: [PLAN.md](../PLAN.md), especially sections 1, 3, 4, 6 and 8
 - Record structure: [task template](TEMPLATE.md)
 
@@ -252,6 +253,58 @@ B approves demo-breaking redeploys. D explains the evidence/inference pipeline.
   under this canonical path; this docs branch does not overwrite their code.
 - Next action: B reviews/integrates plan and contract changes; D begins G0 raw
   capture/route evidence, then delivers the first inspectable segments.
+
+## Bus 29: database recorder status and short route, 2026-10-24 15:30 UTC
+
+The database recorder (`database_poller`, separate from the standalone validator
+above) has run continuously since 13:49Z from a separate, ignored local workspace
+with its own `.env` and raw backups. D ran the checks below on the recording
+laptop (Windows, PowerShell, the recorder's own virtual environment) and reported
+them in the project thread; Claude, which has no TfL or database access, did not
+rerun them. `ingest.admin` must be run from that workspace with that Python; the
+main checkout has no `.env` and sees zero backups.
+
+- `verify-backups`, 15:17Z: 178 backup files, 21,998 normalized rows, 13:49:34Z
+  to 15:17:22Z; about 176 polls were expected at 30 s, so no gap.
+- `health`, 15:19Z: 22,513 prediction rows, 619 stop events, last poll 21 s old,
+  TimescaleDB 2.31.0. Bus 29 full route: **3** matched trips (UTC origin hour 14:00);
+  Victoria 27.
+
+| Bus 29 vehicle | Origin -> destination (UTC) | Seconds | Endpoint methods |
+| --- | --- | --- | --- |
+| LJ13FCY | 14:06:14 -> 14:47:05 | 2451 | near_stop / near_stop |
+| LJ13FBO | 14:12:01 -> 14:48:23 | 2182 | near_stop / near_stop |
+| LK66HCO | 14:26:51 -> 15:09:49 | 2578 | last_poll / near_stop (disappearance, uncertain) |
+
+- Raw trace of LJ13FCY: at Finsbury Park / Blackstock Road `timeToStation` fell
+  201 -> 171 -> 77 -> 17 s with expected arrival settling at 14:06:14; at Tottenham
+  Court Road it settled at 14:47:05, matching the view row. The TCR countdown
+  alternated between 45 and 15 s on consecutive polls (different cached TfL
+  copies), so endpoint times carry roughly +/-1 minute of uncertainty.
+- These rows come from the database view's rules, not the standalone validator's
+  stricter quality contract, and are not model evidence. The full route also
+  exceeds the 2400-second maximum the validator accepts.
+
+### Short P0 route for bus 29
+
+Full-route rides were 36-43 minutes against a 33-minute timetable, outside the
+10-20 minute P0 limit. `backend/config/routes.json` now adds
+`bus-29-outbound-mornington-crescent-tottenham-court-road`: eight consecutive
+stops from the TfL 29 outbound sequence that D fetched at about 15:25Z, in the
+ordered-stop format the standalone recorder requires. Its preflight re-checks the
+contiguous pattern and line status before recording:
+
+```text
+python -m backend.ingest record --run .local/runs/<new-run> --route-id bus-29-outbound-mornington-crescent-tottenham-court-road --minutes 90
+```
+
+Live durations on this route are not yet observed. If they are clearly under 10
+minutes, start at Camden Town Station `490000036S` instead. Both endpoints are
+also in the database recorder's polling list, so that recorder's view yields this
+route from existing stop events once its local `routes.json` includes it.
+
+Checks run by Claude on the merged branch (Linux, Python 3.13, `uv sync --locked
+--group dev`) are listed in the pull request; no live recording was run.
 
 ## Imported feat/data evidence (historical handoff)
 

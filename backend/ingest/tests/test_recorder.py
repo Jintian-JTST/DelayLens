@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
+from ingest.common import load_route
 from ingest.database_derive import advance
 from ingest.database_poller import (
     FetchFailure,
@@ -46,10 +47,22 @@ def row(seconds=0, **changes):
 
 def test_route_contract():
     routes = load_routes()
-    assert len(routes) == 4
+    assert len(routes) == 5
     assert {r["mode"] for r in routes} == {"bus", "tube"}
-    assert len({r["route_id"] for r in routes}) == 4
+    assert len({r["route_id"] for r in routes}) == 5
     assert {r["direction"] for r in routes} == {"inbound", "outbound"}
+
+
+def test_bus_29_short_segment_is_recordable(monkeypatch):
+    for name in ("POLL_LINE_IDS", "POLL_STOP_IDS"):
+        monkeypatch.delenv(name, raising=False)
+    short = load_route("bus-29-outbound-mornington-crescent-tottenham-court-road")
+    assert 4 <= len(short["stops"]) <= 8
+    # Fields the standalone derivation and export read for every segment.
+    for field in ("route_version", "route_pattern_id", "min_travel_seconds", "max_travel_seconds"):
+        assert short[field]
+    settings = Settings.read()
+    assert {short["origin"]["naptan_id"], short["destination"]["naptan_id"]} <= settings.stop_ids
 
 
 @pytest.mark.parametrize("change", [

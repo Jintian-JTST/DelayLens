@@ -14,6 +14,60 @@
     }
   },
   {
+    "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+    "route_version": "2026-10-24.1",
+    "route_pattern_id": "29-outbound-branch-0",
+    "line_id": "29",
+    "direction": "outbound",
+    "mode": "bus",
+    "towards": "Trafalgar Square",
+    "origin": {
+      "naptan_id": "490000152C",
+      "name": "Mornington Crescent Station"
+    },
+    "destination": {
+      "naptan_id": "490000235GX",
+      "name": "Tottenham Court Road Station"
+    },
+    "stops": [
+      {
+        "naptan_id": "490000152C",
+        "name": "Mornington Crescent Station"
+      },
+      {
+        "naptan_id": "490012158S",
+        "name": "Silverdale"
+      },
+      {
+        "naptan_id": "490010158S",
+        "name": "William Road"
+      },
+      {
+        "naptan_id": "490015042U",
+        "name": "Warren Street Station / Euston Road"
+      },
+      {
+        "naptan_id": "490002121ZT",
+        "name": "Capper Street"
+      },
+      {
+        "naptan_id": "490005084Z",
+        "name": "Goodge Street Station"
+      },
+      {
+        "naptan_id": "490002124ZZ",
+        "name": "Stephen Street"
+      },
+      {
+        "naptan_id": "490000235GX",
+        "name": "Tottenham Court Road Station"
+      }
+    ],
+    "min_travel_seconds": 120,
+    "max_travel_seconds": 2400,
+    "preflight_evidence": "Eight consecutive stops from TfL Line/29/Route/Sequence/outbound, fetched by D on 2026-10-24 around 15:25Z. The standalone recorder re-checks the contiguous pattern before recording. Live segment durations not yet observed."
+  },
+  {
     "route_id": "tube-victoria-outbound-brixton-oxford-circus",
     "line_id": "victoria",
     "direction": "outbound",

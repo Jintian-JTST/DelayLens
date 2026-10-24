@@ -472,12 +472,13 @@ def _run_bootstrap(
     """90% band from resampling whole runs, not replay minutes (PLAN.md section 4).
 
     Poisson(1) weights per run approximate resampling runs with replacement and
-    are shared across rows, so the band is consistent along the curve.
+    are shared across rows, so the band is consistent along the curve. With
+    n_boot=0 no band is computed (e.g. a backtest that only needs p_on_time).
     """
     m = valid.shape[0]
     low = np.full(m, np.nan)
     high = np.full(m, np.nan)
-    if not rows.any() or n_runs == 0:
+    if n_boot <= 0 or not rows.any() or n_runs == 0:
         return low, high
 
     sel = np.flatnonzero(rows)

@@ -1,0 +1,18 @@
+[
+  {
+    "route_id": "bus-29-outbound-finsbury-park-tottenham-court-road",
+    "line_id": "29",
+    "direction": "outbound",
+    "mode": "bus",
+    "origin": {"naptan_id": "490000083S", "name": "Finsbury Park Station"},
+    "destination": {"naptan_id": "490000235GX", "name": "Tottenham Court Road Station"}
+  },
+  {
+    "route_id": "tube-victoria-outbound-brixton-oxford-circus",
+    "line_id": "victoria",
+    "direction": "outbound",
+    "mode": "tube",
+    "origin": {"naptan_id": "940GZZLUBXN", "name": "Brixton Underground Station"},
+    "destination": {"naptan_id": "940GZZLUOXC", "name": "Oxford Circus Underground Station"}
+  }
+]

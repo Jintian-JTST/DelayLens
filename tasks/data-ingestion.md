@@ -1,12 +1,13 @@
 # Task: Data ingestion and infrastructure (Code D)
 
 - Task ID: `data-ingestion` / D
-- Owner (person / AI tool): Jintian-JTST (D) / Codex
-- Branch: `feat/data`
+- Owner (person / AI tool): Jintian-JTST (D) / Codex (live recorder, deployment) and
+  Claude Code (export, routes, this record); split in [live status](#live-status-and-parallel-split-2026-10-24-1530-utc)
+- Branch: `feat/data` (merged); current work on `claude/project-thread-fuvrvr` and `codex/d-live-ops`
 - Documentation revision branch: `codex/revise-ingestion-plan`
-- Status: claimed; plan revised after review; implementation not verified
+- Status: collecting; first bus 29 segments traced to raw records; CSV/snapshot handoff in progress
 - Integrator / reviewer: B for API/schema integration; M for usable segment evidence
-- Updated: 2026-10-24 (Europe/London)
+- Updated: 2026-10-24 16:30 (Europe/London)
 - Source: [PLAN.md](../PLAN.md), especially sections 1, 3, 4, 6 and 8
 - Record structure: [task template](TEMPLATE.md)
 
@@ -199,6 +200,84 @@ B approves demo-breaking redeploys. D explains the evidence/inference pipeline.
   under this canonical path; this docs branch does not overwrite their code.
 - Next action: B reviews/integrates plan and contract changes; D begins G0 raw
   capture/route evidence, then delivers the first inspectable segments.
+
+## Live status and parallel split, 2026-10-24 15:30 UTC
+
+Live checks below were run by D on the recording laptop (Windows, PowerShell, the
+recorder's own virtual environment) and reported in the project thread. They were
+not rerun by Claude, which has no TfL or database access.
+
+- One `database_poller` recorder runs from a separate, ignored local workspace with
+  its own `.env` and raw backup directory. `ingest.admin` must be run from that
+  workspace with the recorder's Python; the main checkout has no `.env` and sees
+  zero backups. Only one recorder process tree (venv launcher plus child) exists.
+- `verify-backups`, 15:17Z: **178 backup files, 21,998 normalized rows**, first poll
+  13:49:34Z, last 15:17:22Z; about 176 polls were expected at 30 s, so no gap.
+- `health`, 15:19Z: **22,513 prediction rows, 619 stop events**, last poll 21 s old,
+  TimescaleDB 2.31.0. Route coverage: bus 29 full route **3** matched trips (UTC
+  origin hour 14:00 only); Victoria 27 (13:00-15:00).
+- `snapshot`, 15:21Z: 30 segments written to the workspace's `.local/delaylens-snapshot.json.gz`.
+
+| Bus 29 vehicle | Origin -> destination (UTC) | Seconds | Endpoint methods | Use |
+| --- | --- | --- | --- | --- |
+| LJ13FCY | 14:06:14 -> 14:47:05 | 2451 | near_stop / near_stop | estimated |
+| LJ13FBO | 14:12:01 -> 14:48:23 | 2182 | near_stop / near_stop | estimated |
+| LK66HCO | 14:26:51 -> 15:09:49 | 2578 | last_poll / near_stop | uncertain, not model evidence |
+
+- Raw trace of LJ13FCY: at Finsbury Park / Blackstock Road `timeToStation` fell
+  201 -> 171 -> 77 -> 17 s with expected arrival settling at 14:06:14; at Tottenham
+  Court Road it settled at 14:47:05, matching the segment. The TCR countdown
+  alternated between 45 and 15 s on consecutive polls (different TfL cached
+  copies), so inferred endpoint times carry roughly +/-1 minute of uncertainty.
+- Full-route rides were 36-43 minutes against a 33-minute timetable, and only 3 of
+  the runs that left the origin after 14:04Z matched. Per the cut rule the P0
+  segment is shortened to **Mornington Crescent -> Tottenham Court Road**, eight
+  consecutive stops from the TfL 29 outbound sequence that D fetched at about
+  15:25Z. Both endpoints were already polled, so the `get_segments` view yields
+  this route from existing stop events once it is configured. Its live durations
+  are not yet checked; if they are clearly under 10 minutes, start at Camden Town
+  Station `490000036S` instead. The full route stays configured and its archive
+  is kept.
+
+### Parallel split (no shared files)
+
+| Owner | Files / scope | Next action |
+| --- | --- | --- |
+| Claude Code, `claude/project-thread-fuvrvr` | `backend/ingest/export.py` and its tests, `backend/config/routes.json`, the route-count test, this record | Snapshot -> section 3.5 CSV, coverage intervals and hourly support; short route in the repository |
+| Codex, `codex/d-live-ops` | the live workspace, `deploy/`, recorder/derivation/SQL fixes, `tasks/d-live-ops.md` | Configure and check the short route live; run the export on real data; VM, recovery checks, overnight and clock-change QA |
+
+Neither edits `backend/app/`, `pyproject.toml`, `uv.lock` or `docs/PROGRESS.md`.
+
+### Handoff export (no database needed)
+
+`python -m ingest.export` reads the snapshot (and optionally the raw backup
+directory) and writes `segments.csv`, `coverage.json` and `summary.json`:
+
+- CSV columns begin with the section 3.5 fields M's `load_segments_csv` requires,
+  followed by trace columns (line, direction, both endpoint methods and episodes).
+- `segment_id` is a hash of the documented trip key `(route_id, vehicle_id,
+  origin_episode_started_at)`, independent of timestamp spelling.
+- `quality` is `estimated` only when both endpoints are `near_stop_prediction`;
+  any `last_poll` endpoint is `uncertain` and stays in the CSV for inspection.
+- `coverage.json` lists closed UTC intervals of successful polls, split where the
+  gap exceeds 90 s, for M's `coverage` argument.
+- `summary.json` counts estimated/uncertain runs per route and per Europe/London
+  clock hour of origin with the 0-4 / 5-14 / 15+ label. Hours keep their UTC
+  offset, so the repeated 01:00 on 2026-10-25 stays two hours. Per-hour labels are
+  indicative; M's query window decides the actual tier.
+
+Run it from the main checkout's `backend/` with B's uv environment, which provides
+time zone data on Windows, pointing at the live workspace's files:
+
+```text
+uv run python -m ingest.export --snapshot <workspace>/.local/delaylens-snapshot.json.gz --backups <workspace>/.local/raw --out-dir <workspace>/.local/handoff
+```
+
+Checks run by Claude (Linux, Python 3.13, `uv sync --locked --group dev`): from
+`backend/`, `python -m pytest -q --strict-markers` gave 107 passed, 7 skipped
+(opt-in database tests); ruff from the repository root reports only the existing
+import-order finding in `backend/tests/test_model.py` (M-owned, unchanged). The
+export has not yet been run on the real snapshot.
 
 ## Imported feat/data evidence (historical handoff)
 

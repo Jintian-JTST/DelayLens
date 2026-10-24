@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+from ingest.common import load_route
 from ingest.database_poller import (
     FetchFailure,
     backup,
@@ -45,10 +46,19 @@ def row(seconds=0, **changes):
 
 def test_route_contract():
     routes = load_routes()
-    assert len(routes) == 4
+    assert len(routes) == 5
     assert {r["mode"] for r in routes} == {"bus", "tube"}
-    assert len({r["route_id"] for r in routes}) == 4
+    assert len({r["route_id"] for r in routes}) == 5
     assert {r["direction"] for r in routes} == {"inbound", "outbound"}
+
+
+def test_bus_29_short_segment_is_recordable(monkeypatch):
+    for name in ("POLL_LINE_IDS", "POLL_STOP_IDS"):
+        monkeypatch.delenv(name, raising=False)
+    short = load_route("bus-29-outbound-mornington-crescent-tottenham-court-road")
+    assert 4 <= len(short["stops"]) <= 8
+    settings = Settings.read()
+    assert {short["origin"]["naptan_id"], short["destination"]["naptan_id"]} <= settings.stop_ids
 
 
 @pytest.mark.parametrize("change", [

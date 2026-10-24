@@ -13,6 +13,9 @@ this run from 90 to 60 minutes. Capture: 13:53:05-14:53:10 UTC (14:53-15:53 BST)
 
 [segments.csv](segments.csv) is the M/B handoff: one inferred journey per row.
 [quality.json](quality.json) records coverage, exclusion reasons and count units.
+[stop_events.json](stop_events.json) lists every inferred stop event (any quality)
+and [route.json](route.json) the stop pattern; `model.load_handoff` needs both to
+censor origin departures without a usable segment.
 [audit_review.json](audit_review.json) identifies the reviewed source-derived IDs.
 [export-verification.json](export-verification.json) records final ZIP checksums,
 31 passing checks in a clean source extraction and an identical offline replay.

@@ -4,9 +4,35 @@ Updated: 2026-10-24 (Europe/London).
 
 ## Current milestone
 
-Branch integration is prepared on `codex/integrate-branches` for owner review.
-Main is not advanced by this task. A branch merge and passing unit tests do not
-establish the real-data end-to-end demo.
+The standalone bus 24 data chain has completed a real 60-minute validation:
+capture -> conservative inference -> CSV/snapshot -> independent offline replay.
+There are four usable estimated trips, so probability output remains insufficient.
+The next product gate is B's real-data adapter; the API/UI demo is not yet proven.
+
+## 60-minute validation and README checkpoint
+
+- The owner shortened the running 90-minute recording to 60 minutes. Capture
+  13:53:05-14:53:10 UTC / 14:53-15:53 BST on 24 October: 121 successful polls,
+  24,465 prediction rows, zero failed polls or missing capture slots, four complete
+  independent estimated trips. Three examples were source-traced by the agent;
+  no human signoff or independent actual-arrival measurement is claimed.
+- CSV, snapshot, event provenance, quality report and separate SHA256-verified
+  data/source ZIPs were generated. [Evidence and CSV](evidence/bus24-validation-20261024/README.md)
+  are committed for M/B; complete raw/local archives remain outside Git.
+- Added the dependency-free record/replay/export CLI, durable raw-first handling,
+  canonical replay, inference quality, one-writer locking and portable exports.
+  The database pipeline is preserved separately as `database_poller` /
+  `database_derive`; their archive/quality contracts are not interchangeable.
+- Reviewed the README and documentation patch supplied from Claude Code. Retained
+  bus 29 as the team demo route, labelled bus 24 as the completed validation,
+  corrected commands/current status and moved AI-entry references into AGENTS.md.
+- Checks: 31 standalone regression tests; combined backend **128 passed, 7
+  explicitly opt-in database tests skipped**; Ruff passed. The existing
+  Starlette/httpx deprecation warning remains. Final source/data archive readback
+  and clean offline reproduction are recorded in the D task handoff.
+
+The historical branch-integration checks below describe their own earlier
+revision. PRs #5/#6/#7 are already in the inspected main baseline `a42fb30`.
 
 ## Repository integration
 
@@ -51,7 +77,7 @@ Windows / PowerShell 7.6.5 / Python 3.11.9; isolated uv environment and lockfile
 | Model evidence policy | M implements 0-4 / 5-14 / 15+ handling, uncertainty and explicit local-date/clock-change/pooling assumptions |
 | Real API data wiring | B implements DB/snapshot adapter and connects the model; configured routes currently return insufficient_data |
 | Stats / calibration | Explicit 503 responses remain; no fabricated results |
-| Frontend / demo | No frontend branch/source found; real data -> model -> API -> UI remains unverified |
+| Frontend / demo | PR #8 added React/Vite source; the real data -> model -> API -> UI journey remains unverified by this data validation |
 | VM / submission | No deployment or submission performed; existing live services not changed |
 
 ## Active handoffs

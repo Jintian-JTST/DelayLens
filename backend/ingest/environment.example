@@ -1,0 +1,4 @@
+# Optional: use --env-file with a copy stored under ignored .local/.
+# Existing process environment takes precedence. Never put real credentials here.
+TFL_APP_KEY=
+POLL_INTERVAL_SECONDS=30

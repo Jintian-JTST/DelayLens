@@ -1,0 +1,18 @@
+{
+  "checked_at_utc": "2026-10-24T15:12:57.285885Z",
+  "kind": "final clean extracted real-data/source QA",
+  "tests_passed": 31,
+  "test_result": "----------------------------------------------------------------------\nRan 31 tests in 0.672s\n\nOK",
+  "offline_replay_network_forbidden": true,
+  "snapshot_identical": true,
+  "real_independent_trips": 4,
+  "captured_polls": 121,
+  "source_trace_examples": 3,
+  "recording_minutes": 60,
+  "raw_gzip_identical": true,
+  "unicode_and_spaces_path": true,
+  "source_zip_sha256": "d18b5d8d1f5e2cf8f14774fd7c02763edba778747fc303ffb134cd6e8362c94d",
+  "data_zip_sha256": "114d0adbe0fe07bf6ca85528100306db94fd88b5a2379094007f8cb53ee646c3",
+  "source_zip_name": "delaylens-bus-24-inbound-warren-leicester-final-source.zip",
+  "data_zip_name": "delaylens-bus-24-inbound-warren-leicester-final-data.zip"
+}

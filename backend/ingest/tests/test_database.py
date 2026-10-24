@@ -5,7 +5,8 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from ingest.derive import derive_database
+
+from ingest.database_derive import derive_database
 from ingest.settings import load_env
 from ingest.store import connect, ingest_batch
 

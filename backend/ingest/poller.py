@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import http.client
 import json
 import os
 import shutil
@@ -19,6 +20,10 @@ from pathlib import Path
 from .common import DEFAULT_ROUTE_ID, ROOT, USER_AGENT, atomic_json, load_route, utc_now
 
 
+def reject_nonfinite_json(value: str):
+    raise ValueError("Non-finite JSON constants are not valid source data")
+
+
 def fetch_json(path: str, key: str = "", timeout: float = 10) -> dict:
     url = "https://api.tfl.gov.uk" + path
     if key:
@@ -27,11 +32,21 @@ def fetch_json(path: str, key: str = "", timeout: float = 10) -> dict:
     result = {"requested_at": utc_now(), "http_status": None, "payload": None, "error": None}
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            body = response.read().decode("utf-8", errors="replace")
             result.update(http_status=response.status, server_date=response.headers.get("Date"))
+            body = response.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
         result.update(http_status=exc.code, error=f"http_{exc.code}", retry_after=exc.headers.get("Retry-After"))
+        try:
+            body = exc.read().decode("utf-8", errors="replace")
+        except (OSError, http.client.HTTPException):
+            body = ""
+            result["error"] += "_incomplete_response"
+    except http.client.IncompleteRead as exc:
+        body = exc.partial.decode("utf-8", errors="replace")
+        result["error"] = "incomplete_response"
+    except http.client.HTTPException:
+        body = ""
+        result["error"] = "http_protocol_error"
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         body = ""
         result["error"] = type(exc).__name__
@@ -40,7 +55,7 @@ def fetch_json(path: str, key: str = "", timeout: float = 10) -> dict:
         body = body.replace(key, "[REDACTED]").replace(urllib.parse.quote(key, safe=""), "[REDACTED]")
     result["received_at"] = utc_now()
     try:
-        result["payload"] = json.loads(body)
+        result["payload"] = json.loads(body, parse_constant=reject_nonfinite_json)
     except (ValueError, TypeError):
         result["response_text"] = body
         if result["error"] is None:
@@ -64,7 +79,7 @@ def process_run(run_dir: Path, final: bool = False) -> None:
     if final:
         args.append("--package")
     try:
-        result = subprocess.run(args, check=False, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=45)
+        result = subprocess.run(args, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=45, check=False)
         print(json.dumps({"event": "derivation", "exit_code": result.returncode, "result": result.stdout[-2500:], "error": result.stderr[-1500:]}), flush=True)
     except (OSError, subprocess.TimeoutExpired) as exc:
         print(json.dumps({"event": "derivation_failed", "error": type(exc).__name__}), flush=True)
@@ -156,6 +171,10 @@ def record(run_dir: Path, minutes: float = 90, interval: float = 30, key: str = 
         metadata["status"] = "disk_error"
         exit_code = 2
         raise
+    except Exception:
+        metadata["status"] = "unexpected_error"
+        exit_code = 2
+        raise
     finally:
         metadata["ended_at"] = utc_now()
         if metadata["status"] == "recording":
@@ -163,11 +182,8 @@ def record(run_dir: Path, minutes: float = 90, interval: float = 30, key: str = 
         atomic_json(run_dir / "run.json", metadata)
         if raw_path.exists():
             compressed = raw_path.with_suffix(".jsonl.gz")
-            with (
-                raw_path.open("rb") as source,
-                compressed.with_suffix(".gz.tmp").open("wb") as target,
-                gzip.GzipFile(fileobj=target, mode="wb", mtime=0) as archive,
-            ):
+            with (raw_path.open("rb") as source, compressed.with_suffix(".gz.tmp").open("wb") as target,
+                  gzip.GzipFile(fileobj=target, mode="wb", mtime=0) as archive):
                 shutil.copyfileobj(source, archive)
             os.replace(compressed.with_suffix(".gz.tmp"), compressed)
             process_run(run_dir, final=True)

@@ -3,7 +3,9 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+
 from ingest.common import load_route
+from ingest.database_derive import advance
 from ingest.database_poller import (
     FetchFailure,
     backup,
@@ -12,7 +14,6 @@ from ingest.database_poller import (
     read_batch,
     utc,
 )
-from ingest.derive import advance
 from ingest.settings import Settings, load_routes
 
 T = datetime(2026, 10, 25, 0, 59, tzinfo=UTC)
@@ -57,6 +58,9 @@ def test_bus_29_short_segment_is_recordable(monkeypatch):
         monkeypatch.delenv(name, raising=False)
     short = load_route("bus-29-outbound-mornington-crescent-tottenham-court-road")
     assert 4 <= len(short["stops"]) <= 8
+    # Fields the standalone derivation and export read for every segment.
+    for field in ("route_version", "route_pattern_id", "min_travel_seconds", "max_travel_seconds"):
+        assert short[field]
     settings = Settings.read()
     assert {short["origin"]["naptan_id"], short["destination"]["naptan_id"]} <= settings.stop_ids
 

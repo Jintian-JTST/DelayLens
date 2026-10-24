@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "source": "tfl_live_recording",
+  "route_id": "bus-24-inbound-warren-leicester",
+  "recording_status": "completed",
+  "capture_start_utc": "2026-10-24T13:53:05.672238Z",
+  "last_poll_utc": "2026-10-24T14:53:08.064431Z",
+  "capture_end_utc": "2026-10-24T14:53:10.071722Z",
+  "observed_span_seconds": 3602.392193,
+  "planned_duration_minutes": 60,
+  "poll_interval_seconds": 30,
+  "validation_window_seconds": 3604.399484,
+  "validation_window_complete": true,
+  "ninety_minute_window_complete": false,
+  "raw_polls": 121,
+  "successful_polls": 121,
+  "failed_polls": 0,
+  "empty_successful_polls": 0,
+  "http_failures": {},
+  "raw_prediction_rows": 24465,
+  "unique_source_predictions": 18370,
+  "selected_source_predictions": 1585,
+  "expected_utc_30_second_slots_through_last_poll": 121,
+  "successful_utc_30_second_slots": 121,
+  "poll_slot_completeness": 1.0,
+  "missing_successful_slot_starts_utc": [],
+  "successful_poll_gaps": [],
+  "stop_events": 58,
+  "estimated_stop_events": 32,
+  "uncertain_stop_events": 26,
+  "pending_stop_events": 19,
+  "uncertain_event_reasons": {
+    "fewer_than_two_source_timestamps": 2,
+    "stale_prediction_at_last_sighting": 3,
+    "disappeared_before_near_stop": 2,
+    "awaiting_two_post_eta_absences": 1,
+    "pending_approach": 18
+  },
+  "excluded_source_records": {
+    "stale_source_prediction": 163
+  },
+  "rejected_segment_reasons": {},
+  "independent_trips": 4,
+  "distinct_vehicles": 4,
+  "support_state": "insufficient_data",
+  "calibration_verified": false,
+  "data_gate": "partial",
+  "coverage_hourly": [
+    {
+      "hour_utc": "2026-10-24T13:00:00.000000Z",
+      "reference_local": {
+        "local_at": "2026-10-24T14:00:00+01:00",
+        "local_date": "2026-10-24",
+        "weekday": 5,
+        "utc_offset_seconds": 3600,
+        "fold": 0,
+        "timezone": "Europe/London"
+      },
+      "successful_polls": 14,
+      "usable_segments": 1,
+      "distinct_vehicles": 1
+    },
+    {
+      "hour_utc": "2026-10-24T14:00:00.000000Z",
+      "reference_local": {
+        "local_at": "2026-10-24T15:00:00+01:00",
+        "local_date": "2026-10-24",
+        "weekday": 5,
+        "utc_offset_seconds": 3600,
+        "fold": 0,
+        "timezone": "Europe/London"
+      },
+      "successful_polls": 107,
+      "usable_segments": 3,
+      "distinct_vehicles": 3
+    }
+  ],
+  "limitations": [
+    "TfL supplies arrival predictions, not independently measured arrival events.",
+    "Near-stop inference can still be wrong; confidence is a rule-evidence category, not a probability.",
+    "This short weekend recording does not establish calibrated predictions or weekday/general-route performance.",
+    "Saturday-to-Sunday transfer is unvalidated; use explicitly dated replay/reference periods.",
+    "A data snapshot is not a verified model, API, UI, deployment or database integration.",
+    "Trip IDs are required for usable samples in v1; missing or ambiguous identities are excluded.",
+    "Only complete identity-stable 120-2400-second segments are usable; excluded or missing trips can bias delay distributions."
+  ],
+  "counting_rule": "One canonical complete route segment per matched vehicle/run; never prediction rows or minute replay steps.",
+  "raw_recovery": {
+    "duplicate_poll_records": 0,
+    "incomplete_tails": []
+  },
+  "generation_id": "generation_666bb6dfb762cea71e43daa9f4a8f757",
+  "source_trace_review": {
+    "review_type": "agent_source_trace",
+    "reviewed_segment_ids_in_current_generation": [
+      "segment_3ad38bb56c70cfff3765b1e6be2e3d95",
+      "segment_89b488cb0b6c839d52b225fd80277b38",
+      "segment_eece4936a4945acfce0a969e7b99d71c"
+    ],
+    "reviewed_segment_count": 3,
+    "required_examples": 3,
+    "human_review_claimed": false
+  },
+  "acceptance_gate": "partial"
+}

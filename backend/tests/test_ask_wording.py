@@ -97,8 +97,8 @@ def test_dated_question_resolves_to_saturday_five_pm_london():
     assert result.interpretation.route_id == BUS29
     assert result.interpretation.deadline == datetime(2026, 10, 24, 16, 0, tzinfo=UTC)
     assert requests[0].deadline == datetime(2026, 10, 24, 16, 0, tzinfo=UTC)
-    assert "Leave by 16:22" in result.answer  # 15:22Z in London time
-    assert "92%" in result.answer
+    assert "Leave by 16:22 for an estimated 92% chance (from 20 recorded trips) of arriving by 17:00" in result.answer
+    assert "15:22Z" not in result.answer
 
 
 def test_answer_names_route_assumed_walks_and_past_deadline():
@@ -149,7 +149,7 @@ def test_compare_answer_names_route_walks_and_past_deadline():
     departures = ["2026-10-24T16:00:00", "2026-10-24T16:20:00"]  # London wall clock (BST)
     result, _ = _ask("2026-10-24T17:00:00", curve, name="compare_departures", departures=departures)
     answer = result.answer
-    assert answer.startswith("Chance of arriving by 17:00: 16:00: 50%, 16:20: 50%. Best: 16:00 (bus 29, ")
+    assert answer.startswith("Estimated chance of arriving by 17:00: 16:00: 50%, 16:20: 50%. Best: 16:00 (bus 29, ")
     assert "Mornington Crescent" in answer
     assert "5-minute walks at each end" in answer
     assert "That time has already passed, so this replays recorded data for Sat 24 Oct." in answer
@@ -164,3 +164,8 @@ def test_compare_with_no_data_and_future_deadline_names_route_without_past_note(
     result, _ = _ask("2026-10-25T17:00:00", empty, name="compare_departures", departures=departures)
     assert result.answer.startswith("I don't have enough recorded data to compare (bus 29, ")
     assert "already passed" not in result.answer
+
+
+def test_no_recommendation_says_estimated():
+    curve = _curve(datetime(2026, 10, 24, 14, 30, tzinfo=UTC), 60, recommended=None, status="low_data")
+    assert "reaches an estimated 90% chance" in _ask("2026-10-24T17:00:00", curve)[0].answer

@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field
 
 DataStatus = Literal["ok", "low_data", "insufficient_data"]
 AskStatus = Literal["ok", "unsupported_route", "unclear", "gemini_unavailable"]
@@ -26,7 +26,7 @@ class Route(BaseModel):
 
 class DepartureCurveRequest(BaseModel):
     route_id: str
-    deadline: datetime
+    deadline: AwareDatetime
     walk_to_min: float = Field(5, ge=0, le=60)
     walk_from_min: float = Field(5, ge=0, le=60)
     tolerance: float = Field(0.10, gt=0, lt=1)

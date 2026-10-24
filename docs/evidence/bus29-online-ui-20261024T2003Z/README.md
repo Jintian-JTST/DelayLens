@@ -22,6 +22,20 @@ Bus 29 UI screenshot and its curl: about 20:06 UTC (page footer "Updated 21:06" 
 last trip 20:48 London. A different reader at a different moment (D-CodeX: 53 trips at 19:58 UTC)
 will see a different count because recording continues.
 
+## Which number means what
+
+"54 trips" (mine) and "53 trips" (D, PR #44) are the whole route's source trips at that read-back
+time. "15 trips" or "18 trips" is the sample at the single recommended departure only. Same
+route (bus 29 Mornington Crescent -> Tottenham Court Road), walk 5+5, tolerance 10%.
+
+| Run | Deadline | Result | Trips (route / at advice) |
+| --- | --- | --- | --- |
+| B curl, `../bus29-online-api-20261024T2000Z/` | 16:00 UTC | 15:22 UTC, p=0.9174, `ok` | 54 / not recorded |
+| B UI example, this folder | 19:00 UTC (20:00 London) | 18:53 London, p=1, `low_data` | 54 / 15 |
+| D PR #44 | 16:00 UTC | 15:22 UTC, p=0.9174 (UI 92%), `ok` | 53 / 18 |
+
+Different deadlines give different advice; the 16:00 UTC figures agree across B and D.
+
 ## Bus 29, online UI (added ~20:06 UTC, live data had grown to 54 trips)
 
 Driven in headless Chrome over DevTools on the real page: route set to Mornington Crescent ->

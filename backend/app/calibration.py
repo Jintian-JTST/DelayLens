@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from app import model
+from app import curves, model
 from app.schemas import Calibration, ReliabilityBin
 
 BLOCK_MIN = 30
@@ -76,7 +76,7 @@ def _known_outcome(segments: model.Segments, board: int, b: int) -> int | None:
         return None  # next run is in a gap or after the held-out block
     unconf = segments.unconfirmed_departures
     j = int(np.searchsorted(unconf, board, side="left"))
-    if j < len(unconf) and unconf[j] < segments.t_origin[i]:
+    if j < len(unconf) and unconf[j] <= segments.t_origin[i]:
         return None  # an unconfirmed bus came first: the outcome is unknown
     return i
 
@@ -103,7 +103,10 @@ def backtest(segments: model.Segments) -> tuple[list[Outcome], int]:
                 continue
             for off in DEADLINE_OFFSETS_MIN:
                 deadline = d + median_ride + off * SECONDS_PER_MIN
-                p = float(model.replay_curve(train, np.array([d]), deadline).p_on_time[0])
+                curve = model.replay_curve(
+                    train, np.array([d]), deadline, tod_window_min=curves.TOD_WINDOW_MIN
+                )
+                p = float(curve.p_on_time[0])
                 if np.isnan(p):
                     continue  # insufficient_data: the model made no prediction
                 outcomes.append(

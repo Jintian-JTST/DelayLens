@@ -26,6 +26,10 @@ LONDON = ZoneInfo("Europe/London")
 Z_90 = 1.645
 WHAT_IF_MIN = (5, 10, 15)
 
+# Time-of-day window (+/- minutes) for reference runs. Shared with calibration so
+# the backtest scores the same model the API serves.
+TOD_WINDOW_MIN = 60
+
 
 # Polls further apart than this many typical intervals split the coverage,
 # matching D's exporter (tasks/model.md, load_handoff).
@@ -124,7 +128,8 @@ def _basis(segments: model.Segments) -> str:
     last = datetime.fromtimestamp(int(segments.t_origin[-1]), LONDON)
     span = f"{first:%a %d %b %H:%M} - {last:%a %d %b %H:%M}"
     return (
-        f"Based on {n} recorded trips ({span}, London time). Arrivals are estimated "
+        f"Based on {n} recorded trips ({span}, London time), replaying "
+        f"±{TOD_WINDOW_MIN} min around each departure. Arrivals are estimated "
         "from TfL predictions, not measured; not yet calibrated."
     )
 

@@ -81,6 +81,13 @@ def test_real_model_curve_on_hand_checkable_timetable():
         assert lo <= p["p_on_time"] <= hi
 
 
+def test_basis_discloses_the_time_of_day_window():
+    # PLAN section 4 allows a +/-60 min window only if it is disclosed.
+    basis = _curve()["data_quality"]["basis"]
+    assert "±60 min" in basis
+    assert f"±{curves.TOD_WINDOW_MIN} min" in basis
+
+
 def test_what_if_is_relative_to_recommendation():
     data = _curve()
     rec = data["recommended"]["p_on_time"]

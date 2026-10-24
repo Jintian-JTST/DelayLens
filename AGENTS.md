@@ -4,11 +4,35 @@
 
 Build a reliable, demo-ready MVP with clear user value. Follow the event's coding,
 reuse, attribution and submission rules; verify those rules before development.
-The product is DelayLens, using London TfL bus predictions. The intended stack,
+The product is DelayLens, using London TfL bus predictions; the team-confirmed
+main route is London bus 29 (2026-10-24). The intended stack,
 MVP priorities and data-quality policy are recorded in `PLAN.md` and
 `docs/PROJECT.md`. Read them before implementation; distinguish planned work from
 actual verification in `docs/PROGRESS.md` and the role's task record. Do not change
 the agreed city, source, architecture or scope without coordinating the contract.
+
+## AI tool entry points
+
+These rules moved out of `README.md`, which is now written for people. Keep shared
+guidance here; the tool-specific files below only point to this file.
+
+| Tool | Repository instructions |
+| --- | --- |
+| Codex | `AGENTS.md` |
+| GitHub Copilot | [.github/copilot-instructions.md](.github/copilot-instructions.md) |
+| Claude Code | [CLAUDE.md](CLAUDE.md) |
+| Gemini CLI | [GEMINI.md](GEMINI.md) |
+| Cursor | [.cursor/rules/oxhack.mdc](.cursor/rules/oxhack.mdc) |
+
+Official format references: [Codex](https://learn.chatgpt.com/docs/agent-configuration/agents-md),
+[Copilot](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions),
+[Claude Code](https://code.claude.com/docs/en/memory),
+[Gemini CLI](https://geminicli.com/docs/reference/memport/) and
+[Cursor](https://cursor.com/docs/rules).
+
+If a tool does not load these rules automatically, ask it to read `AGENTS.md` and
+the relevant project and task documents. Local tool accounts and connectors are
+optional unless a task needs them.
 
 ## Tool and skill discovery
 

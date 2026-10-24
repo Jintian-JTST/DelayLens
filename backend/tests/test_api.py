@@ -70,7 +70,13 @@ def _curve_body(**overrides):
 
 
 def test_health():
-    assert client.get("/api/health").json() == {"status": "ok"}
+    assert client.get("/api/health").json() == {"status": "ok", "ask_available": False}
+
+
+def test_health_reports_ask_available_when_gemini_key_set(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key-never-returned")
+    body = client.get("/api/health").json()
+    assert body == {"status": "ok", "ask_available": True}
 
 
 def test_routes_lists_fixture_route():

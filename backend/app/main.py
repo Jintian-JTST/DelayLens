@@ -1,6 +1,7 @@
 import hmac
 import json
 import os
+import threading
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -117,6 +118,30 @@ def routes() -> list[Route]:
     return result
 
 
+# TfL's rate limit is per app key, so viewers share one upstream request per route
+# for LIVE_TTL_S. Only successes are cached: a failure is retried on the next call.
+LIVE_TTL_S = 25.0
+_live_cache: dict[str, tuple[float, LiveResponse]] = {}
+_live_locks: dict[str, threading.Lock] = {}
+_live_locks_guard = threading.Lock()
+
+
+def _live_for(route) -> LiveResponse:
+    with _live_locks_guard:
+        lock = _live_locks.setdefault(route.route_id, threading.Lock())
+    with lock:  # concurrent callers wait for one fetch instead of each calling TfL
+        hit = _live_cache.get(route.route_id)
+        if hit and time.monotonic() - hit[0] < LIVE_TTL_S:
+            return hit[1]
+        result = tfl.get_live(
+            route,
+            app_key=os.getenv("TFL_APP_KEY", ""),
+            direction=getattr(route, "direction", None),
+        )
+        _live_cache[route.route_id] = (time.monotonic(), result)
+        return result
+
+
 _segments_memo: dict[tuple[datetime, str], model.Segments] = {}
 _calibration_memo: dict[tuple[datetime, tuple[str, ...]], Calibration] = {}
 
@@ -193,7 +218,6 @@ def ask(
     x_ask_access_code: str | None = Header(default=None),
 ) -> AskResponse:
     _require_ask_access(x_ask_access_code)
-    app_key = os.getenv("TFL_APP_KEY", "")
     return ask_module.answer_question(
         req.question,
         now=datetime.now(UTC),
@@ -201,9 +225,7 @@ def ask(
         api_key=os.getenv("GEMINI_API_KEY", ""),
         models=_gemini_models(),
         compute_curve=_compute_curve,
-        get_live=lambda r: tfl.get_live(
-            r, app_key=app_key, direction=getattr(r, "direction", None)
-        ),
+        get_live=_live_for,
     )
 
 
@@ -213,9 +235,7 @@ def ask(
 def live(route_id: str) -> LiveResponse | JSONResponse:
     route = _route_or_404(route_id)
     try:
-        return tfl.get_live(
-            route, app_key=os.getenv("TFL_APP_KEY", ""), direction=route.direction
-        )
+        return _live_for(route)
     except tfl.TflUnavailable:
         return JSONResponse(status_code=503, content={"error": "tfl_unavailable"})
 

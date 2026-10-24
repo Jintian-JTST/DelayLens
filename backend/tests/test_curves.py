@@ -116,3 +116,36 @@ def test_ten_minute_headway_never_reaches_ok_on_one_date():
     assert data["data_quality"]["status"] == "low_data"
     assert data["points"]
     assert data["recommended"] is None
+
+
+def test_ok_rows_use_the_model_bootstrap_band(monkeypatch):
+    seen = {}
+    real = model.departure_curve
+
+    def spy(*args, **kwargs):
+        seen["curve"] = real(*args, **kwargs)
+        return seen["curve"]
+
+    monkeypatch.setattr(model, "departure_curve", spy)
+    data = _curve()
+    curve = seen["curve"]
+    ok_rows = [i for i, s in enumerate(curve.status) if s == "ok"]
+    assert ok_rows
+    by_time = {p["depart_at"]: p for p in data["points"]}
+    for i in ok_rows:
+        point = by_time[curves._utc(curve.depart_at[i]).isoformat().replace("+00:00", "Z")]
+        assert point["ci"] == [round(float(curve.ci_low[i]), 4), round(float(curve.ci_high[i]), 4)]
+
+
+def test_recommendation_matches_model_advisor(monkeypatch):
+    data = _curve()
+    advice = model.recommend(
+        model.departure_curve(
+            curves.to_segments(main._cache.segments(ROUTE)),
+            datetime(2026, 10, 24, 17, 0, tzinfo=UTC),
+        ),
+        0.10,
+    )
+    assert advice.reason == "ok"
+    expected = curves._utc(advice.depart_at).isoformat().replace("+00:00", "Z")
+    assert data["recommended"]["depart_at"] == expected

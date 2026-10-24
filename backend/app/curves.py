@@ -1,11 +1,13 @@
 """Map M's model output (app/model.py) onto the API contract (PLAN.md section 6.3).
 
-B owns this file; probability logic stays in the model. Until M's bootstrap band
-lands, `ci` is a provisional 90% Wilson interval over distinct runs.
+B owns this file; probability, band and advice logic stay in the model. `ci` is
+M's 90% run bootstrap on ok rows. The model gives no band for low_data rows, but
+the contract and frontend need one, so those get a wider 90% Wilson interval over
+distinct runs.
 """
 
 import math
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -54,6 +56,13 @@ def _wilson(p: float, n: int) -> tuple[float, float]:
     return (round(max(0.0, centre - half), 4), round(min(1.0, centre + half), 4))
 
 
+def _band(curve: model.Curve, i: int, p: float) -> tuple[float, float]:
+    low, high = float(curve.ci_low[i]), float(curve.ci_high[i])
+    if math.isnan(low) or math.isnan(high):
+        return _wilson(p, int(curve.n_trips[i]))
+    return (round(low, 4), round(high, 4))
+
+
 def _utc(epoch: float) -> datetime:
     return datetime.fromtimestamp(float(epoch), UTC)
 
@@ -84,7 +93,7 @@ def build_response(
             CurvePoint(
                 depart_at=_utc(curve.depart_at[i]),
                 p_on_time=round(p, 4),
-                ci=_wilson(p, int(curve.n_trips[i])),
+                ci=_band(curve, i, p),
                 arrive_p50=_utc(curve.arrive_p50[i]),
                 arrive_p90=_utc(curve.arrive_p90[i]),
                 n_trips=int(curve.n_trips[i]),
@@ -92,25 +101,21 @@ def build_response(
         )
         statuses.append(str(curve.status[i]))
 
-    # Advisor policy from tasks/model.md: recommend only from rows with status ok.
-    eligible = [
-        pt for pt, st in zip(points, statuses, strict=True)
-        if st == "ok" and 1 - pt.p_on_time <= req.tolerance
-    ]
-    best = eligible[-1] if eligible else None
-    what_if: list[WhatIf] = []
-    if best is not None:
-        by_depart = {pt.depart_at: pt for pt in points}
-        for delay in WHAT_IF_MIN:
-            later = by_depart.get(best.depart_at + timedelta(minutes=delay))
-            if later is not None:
-                what_if.append(
-                    WhatIf(
-                        delay_min=delay,
-                        p_on_time=later.p_on_time,
-                        delta=round(later.p_on_time - best.p_on_time, 4),
-                    )
-                )
+    advice = model.recommend(curve, req.tolerance)
+    best = (
+        Recommended(depart_at=_utc(advice.depart_at), p_on_time=round(advice.p_on_time, 4))
+        if advice.depart_at is not None and advice.p_on_time is not None
+        else None
+    )
+    what_if = (
+        [
+            WhatIf(delay_min=delay, p_on_time=round(p, 4), delta=round(change, 4))
+            for delay, p, change in model.what_if(curve, advice.depart_at, WHAT_IF_MIN)
+            if p is not None and change is not None
+        ]
+        if advice.depart_at is not None
+        else []
+    )
 
     if not points:
         status = "insufficient_data"
@@ -120,7 +125,7 @@ def build_response(
         status = "ok"
     return DepartureCurveResponse(
         points=points,
-        recommended=Recommended(depart_at=best.depart_at, p_on_time=best.p_on_time) if best else None,
+        recommended=best,
         what_if=what_if,
         data_quality=DataQuality(status=status, basis=_basis(segments)),
         server_ms=0.0,

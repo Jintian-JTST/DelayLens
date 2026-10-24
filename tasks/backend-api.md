@@ -147,3 +147,15 @@ Updated: 2026-10-24 (Europe/London).
   (35 outcomes censored). Before censoring, that hole produced a misleading Brier score of 0.63.
 - For D: Victoria has a 16.7-min gap between recorded departures (trains run every 2-3 min) - likely
   unmatched runs; coverage intervals would let the model and backtest handle this properly.
+
+## Update: M's bootstrap band and advisor
+
+- `curves.py` now uses M's `model.recommend()` and `model.what_if()` (B's duplicate advisor removed), and
+  M's 90% run bootstrap (`ci_low`/`ci_high`) for `ok` rows. The model gives no band for `low_data` rows;
+  because `CurvePoint.ci` is required by the contract and the frontend chart, those rows keep a wider 90%
+  Wilson interval over distinct runs. Contract unchanged.
+- Checks: `pytest -q` 162 passed, 28 skipped; `ruff check app tests` passed. Real Tiger Data (~16:20 UTC):
+  Victoria 51 trips: first real recommendation (leave 15:43 UTC, P=0.913; +5 min -> 0.049), 23 ms. Bus 29
+  segments 14 and 22 trips: `low_data`, no recommendation, 4-10 ms. Calibration 24 ms, 21 outcomes, Brier 0.042,
+  `not_validated`.
+- Not checked in the browser (the running localhost servers are another checkout's).

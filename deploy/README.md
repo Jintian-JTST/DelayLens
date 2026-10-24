@@ -171,8 +171,8 @@ frozen, not live, copy. Run from the repository root.
 2. Start the frontend (terminal 2): `cd frontend && npm run dev`, then open
    <http://127.0.0.1:5173/>. The dev server proxies `/api` to port 8000.
 3. Check the offline numbers (turn Wi-Fi off first): bus 29, Saturday 24 Oct, deadline
-   17:00 London gives leave 16:25 at 90%; deadline 15:30 gives "not enough data" and no
-   advice. `/api/ask` needs a Gemini key and is not available offline; do not demo it
+   17:00 London gives leave 16:25 at 90%; deadline 15:30 gives `low_data` (some data, but 5-14 runs
+   per departure) and no recommendation, not "no data". `/api/ask` needs a Gemini key and is not available offline; do not demo it
    without network.
 4. Run the smoke check from the demo computer and keep the output:
 

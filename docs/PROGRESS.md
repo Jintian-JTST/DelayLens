@@ -8,12 +8,12 @@ remote CI, public deployment or overnight availability.
 
 | Gate | Verified state and limits |
 | --- | --- |
-| Frozen bus 29 | Unchanged 16:55 UTC database snapshot: 26 short-route / 18 long-route inferred segments, origin events and 373 poll times. Arrivals are not measured. |
-| Independent bus 29 | Completed 90-minute run: 7 independent inferred journeys and 162 events. A separate three-example agent source review preserves the original handoff. Support remains low_data. |
+| Frozen bus 29 | Original16:55 UTC snapshot retained (26 short/18 long). Separate20:25:58 UTC handoff snapshot:56 short/48 long inferred segments,8/6 recorded hours,791 poll times. These are database-pipeline counts, not measured arrivals or pooled standalone samples. |
+| Independent bus 29 | Earlier90-minute run:7 journeys with separate three-example source review. New180-minute run completed:5 journeys/251 events, low_data, source-trace acceptance pending. The15-run target is explicitly unmet; three usable UTC hours are present. |
 | Offline data/model/API/UI | Actual frozen data through API and Chrome: UTC 16:00 deadline, walks 5/5, 91 points, recommendation 15:25 UTC with estimated probability 0.90. UTC 14:30: 77 points and no qualifying advice. No synthetic successful API payload was substituted. |
 | Presentation | Desktop and 390/320px states, risk/conservative/what-if controls and methodology checked. Frozen date/source labels remain visible. Physical devices remain unverified. |
-| CI | PR/push workflow added for offline backend tests/Ruff and frontend tests/type-check/build. Local equivalents passed; a green GitHub run and green main still require observation. |
-| Current capture | Read-only inspection at 19:26 UTC found a database poll about 10 seconds old, the active 180-minute standalone run and a separate area recorder. Existing processes were untouched. This proves freshness then, not overnight continuity. |
+| CI | Offline backend tests/Ruff and frontend tests/build passed locally and in GitHub PR/main runs. Main cb06b69 has [successful push CI](https://github.com/Jintian-JTST/OxHack/actions/runs/40128498142). Inspect actual checks for subsequent heads. |
+| Current capture | The180-minute standalone recorder normally finished20:21:55 UTC; final packages appeared20:23:09 and its process exited. Database/area recorders were left untouched. No overnight continuity claim is made. |
 
 ## Delivery records
 
@@ -21,6 +21,8 @@ remote CI, public deployment or overnight availability.
 - [Bus 29 source review](../tasks/chat-data-source-review.md): 179 raw polls reproduce all 7 published segments and 162 events; three examples traced to complete raw frames. Agent review is not human signoff.
 - [Bus 29 browser acceptance](../tasks/chat-bus29-acceptance.md): actual offline API/browser evidence and corrected prediction/inference wording. The frozen README's older model examples are historical.
 - [CI handoff](../tasks/chat-ci-handoff.md): backend **196 passed**, 28 explicitly live tests deselected; frontend **11 passed**, type-check/build and Ruff passed. The existing Starlette/httpx deprecation warning remains.
+- [Final capture/data handoff](../tasks/chat-final-capture.md):354 raw polls,5 standalone journeys, full replay and four ZIP manifests/CRCs verified; final model loader uses all5 rows. Separate refreshed database snapshot is ready for M3.
+- [Network-backed browser evidence](evidence/bus29-network-browser-20261024/README.md): actual database/API/UI, screenshots, full requests/responses and curl comparison; PR44 is merged. This remains historical replay, not live arrivals.
 
 Historical implementation and external-service results remain in
 [D](../tasks/data-ingestion.md), [B](../tasks/backend-api.md),
@@ -32,10 +34,10 @@ They are dated reports, not newly rerun external checks.
 
 | Gate | Next action / owner |
 | --- | --- |
-| 180-minute export | D waits for the existing run to finish, exports to a new dated location, verifies SHA256/replay and reports actual route/time support. No target count is assumed achieved. |
-| Refreshed model/backtest | M reruns against the new handoff; inferred outcomes are not independent measured arrivals. |
-| Network-backed demo / recovery | B records live-database browser/API evidence and local smoke checks separately from the frozen-data evidence. |
-| Remote CI / integration | Integrator reviews this proposal and observes actual GitHub checks before claiming main is green. |
+| 180-minute export | Final archives and SHA256 are verified in the new dated handoff. Standalone5<15 remains below target; separate database56/48 counts must not replace it. |
+| Refreshed model/backtest | M reruns M3/T10 against the final handoff and new20:25:58 UTC database snapshot; inferred outcomes are not independent measured arrivals. New calibration is not claimed by D. |
+| Network-backed demo / recovery | Network UI evidence is on main (PR44); B's local recovery checklist is recorded separately. Physical disconnection and overnight survival are not implied. |
+| Remote CI / integration | PR39/44 and their main CI were observed successful; integrator checks the current head and reviews final data handoff changes. |
 | Unattended collection / deployment | D supplies timestamped polls over the claimed interval and verifies restart/recovery on the actual host. No overnight or VM success is claimed. |
 | Submission / media | M/F confirm rules, final dated scenario, video and submission; this delivery does not publish the app. |
 

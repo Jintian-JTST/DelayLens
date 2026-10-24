@@ -1,0 +1,60 @@
+{
+  "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+  "recording_status": "completed",
+  "started_at": "2026-10-24T17:21:48.620061Z",
+  "ended_at": "2026-10-24T20:21:55.872001Z",
+  "last_poll_utc": "2026-10-24T20:21:28.351586Z",
+  "raw_polls": 354,
+  "successful_polls": 353,
+  "failed_polls": 1,
+  "independent_trips": 5,
+  "replayed_events": 251,
+  "support_state": "low_data",
+  "data_gate": "pass",
+  "acceptance_gate": "pending_source_trace_review",
+  "poll_hours": [
+    "2026-10-24T17:00:00.000000Z",
+    "2026-10-24T18:00:00.000000Z",
+    "2026-10-24T19:00:00.000000Z",
+    "2026-10-24T20:00:00.000000Z"
+  ],
+  "usable_segment_hours": [
+    "2026-10-24T17:00:00.000000Z",
+    "2026-10-24T19:00:00.000000Z",
+    "2026-10-24T20:00:00.000000Z"
+  ],
+  "target_15_runs_and_3_usable_hours_met": false,
+  "raw_jsonl_sha256": "6a0df901329cb069b21080c801dc3fd444c26a813f543106e0080e73e894f5d1",
+  "recovery": {
+    "duplicate_poll_records": 0,
+    "incomplete_tails": []
+  },
+  "archives": [
+    {
+      "path": "delaylens-bus-29-outbound-mornington-crescent-tottenham-court-road-final-data.zip",
+      "bytes": 7446496,
+      "sha256": "a2387081646e5f835941250bbb8ca1af48d006396d056c59149e2bc8cb768371",
+      "crc_and_manifest_verified": true
+    },
+    {
+      "path": "delaylens-bus-29-outbound-mornington-crescent-tottenham-court-road-final-source.zip",
+      "bytes": 37724,
+      "sha256": "3d8558b7eea9c26d2ba87a4fe7b97948e2713b7254b76f1808a9d18880423c69",
+      "crc_and_manifest_verified": true
+    },
+    {
+      "path": "delaylens-bus-29-outbound-mornington-crescent-tottenham-court-road-first-sample-data.zip",
+      "bytes": 1908565,
+      "sha256": "f0b0966fb8607c5c9e124b9b6f30ed191302e0810e1607ec822da95a6bce200e",
+      "crc_and_manifest_verified": true
+    },
+    {
+      "path": "delaylens-bus-29-outbound-mornington-crescent-tottenham-court-road-first-sample-source.zip",
+      "bytes": 37724,
+      "sha256": "b5fadc12e9b019e510e75d0e1329fd8aa0ad5652a295dd9f5c3ca1e913175581",
+      "crc_and_manifest_verified": true
+    }
+  ],
+  "human_review_claimed": false,
+  "database_counts_pooled": false
+}

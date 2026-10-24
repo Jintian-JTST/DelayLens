@@ -1,0 +1,97 @@
+[
+  {
+    "segment_id": "segment_7de91e71c97f7ec284b618a752fd9c25",
+    "origin": {
+      "local_at": "2026-10-24T18:43:25+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    },
+    "destination": {
+      "local_at": "2026-10-24T18:58:29+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    }
+  },
+  {
+    "segment_id": "segment_2f37eef7e4ac92f275f3d7b7c34b18f7",
+    "origin": {
+      "local_at": "2026-10-24T20:07:09+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    },
+    "destination": {
+      "local_at": "2026-10-24T20:19:24+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    }
+  },
+  {
+    "segment_id": "segment_cc24d90c04d630526b7ffc4e948f7a60",
+    "origin": {
+      "local_at": "2026-10-24T20:30:12+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    },
+    "destination": {
+      "local_at": "2026-10-24T20:42:06+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    }
+  },
+  {
+    "segment_id": "segment_dc1123c1c67572f948686a1977f3df3d",
+    "origin": {
+      "local_at": "2026-10-24T20:43:16+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    },
+    "destination": {
+      "local_at": "2026-10-24T20:54:09+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    }
+  },
+  {
+    "segment_id": "segment_49b028c3329660c7d4f541c2640d458f",
+    "origin": {
+      "local_at": "2026-10-24T21:02:12+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    },
+    "destination": {
+      "local_at": "2026-10-24T21:14:38+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    }
+  }
+]

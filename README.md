@@ -124,6 +124,56 @@ bus 29 sample coverage.
 5. **Ask (optional)** - Gemini turns a plain-English question into a form request;
    the normal form remains available without it.
 
+### How the model works
+
+DelayLens answers "if I leave at time *d*, how likely am I to arrive by my
+deadline?" by **replaying recorded trips**, with no fitted formula or timetable.
+
+1. You reach the origin stop at *d* plus your walk to the stop.
+2. Every recorded minute within **±60 minutes** of that London local time, on the
+   same date, is replayed. Combining dates, such as Saturday with Sunday, must be
+   requested explicitly and is never done silently. With ±30 minutes, bus 29 never
+   reached the 15 trips needed for advice (see the
+   [bus 29 window check](docs/evidence/bus29-db-snapshot-20261024T1655Z/README.md)).
+3. Each replayed minute boards the first recorded bus leaving at least 1 minute
+   later, and its inferred arrival plus your walk from the stop gives one outcome.
+4. The share of outcomes arriving by the deadline is the estimated chance of
+   being on time; median and 90th-percentile arrivals are reported too.
+
+**Unknown stays unknown.** A replayed minute is set aside (censored), not counted
+as late, when it falls in a recording gap, after the recording ends, or when the
+next bus was seen leaving the origin but its trip could not be confirmed.
+
+**Evidence tiers** count distinct bus runs, not replayed minutes or prediction rows:
+
+| Usable runs | Shown |
+| --- | --- |
+| 0-4 | Counts only: no probability, band or recommendation |
+| 5-14 | Preliminary estimate: no band, no recommendation |
+| 15+ | Estimate, 90% band and a "leave by" recommendation |
+
+The 90% band resamples whole runs (200 bootstrap resamples), so it describes
+sampling variability in our inferred data. The recommendation is the latest
+departure whose estimated chance of being late is within your tolerance
+(default 10%); the conservative option uses the band's lower edge.
+
+**Limitations.**
+
+- **Arrivals are inferred, not measured.** Stop events are inferred from TfL
+  arrival predictions; no actual arrival times were measured.
+- **One Saturday afternoon.** The usable data covers Sat 24 Oct 2026, roughly
+  14:50-18:00 London time, so it says nothing about weekdays or peak hours.
+- **Thin data gets no answer.** Below 15 runs there is no recommendation, and
+  below 5 runs only sample counts are shown.
+- **Calibration is preliminary.** The `/api/calibration` blocked hold-out scores
+  the model against the same inferred events, not measured arrivals; its status
+  is never "validated".
+
+Evidence: [bus 24 validation](docs/evidence/bus24-validation-20261024/README.md)
+and the [bus 29 snapshot](docs/evidence/bus29-db-snapshot-20261024T1655Z/README.md).
+Code: [backend/app/model.py](backend/app/model.py), with hand-checked tests in
+[backend/tests/test_model.py](backend/tests/test_model.py).
+
 ## Status
 
 | Part | State |
@@ -131,8 +181,8 @@ bus 29 sample coverage.
 | Data validation | Bus 24: 60-minute capture completed, 121 successful polls, 4 traceable inferred trips; CSV and snapshots exported |
 | Database recorder | Separate recorder and SQL tooling retained; its archive/derivation contract differs from the standalone validator |
 | Backend API | FastAPI health, routes, departure-curve and Ask endpoints |
-| Model | NumPy replay model and database-backed API adapter are present; usable output depends on connected data and coverage |
-| Frontend | React/Vite source is present on main (PR #8); the real-data API/UI journey still needs verification |
+| Model | Replay with censoring, evidence tiers, run-bootstrap band and advisor, served by `/api/departure-curve` with a ±60-minute window (PR #20) |
+| Frontend | React/Vite planner; checked locally against real bus 29 data and the offline snapshot on Sat 24 Oct (Sat 17:00 deadline: about 16:22, 92% live; 16:25, 90% snapshot) |
 
 The bus 24 validation ran on **24 October 2026, 14:53-15:53 Europe/London**
 (13:53-14:53 UTC), stopping after 60 minutes at the owner's request. Three
@@ -194,6 +244,24 @@ uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Open <http://127.0.0.1:8000/api/health> or <http://127.0.0.1:8000/docs>.
+
+**Offline snapshot mode** (no database or network needed for curves) serves the
+frozen bus 29 data; a relative path is resolved from the repository root:
+
+```text
+# macOS / Linux (bash, zsh)
+SNAPSHOT_DIR=docs/evidence/bus29-db-snapshot-20261024T1655Z uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+# Windows PowerShell
+$env:SNAPSHOT_DIR = "docs/evidence/bus29-db-snapshot-20261024T1655Z"
+uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Without uv, use the backend virtual environment's Python:
+`.venv/bin/python -m uvicorn app.main:app --port 8000` (Windows:
+`.venv\Scripts\python.exe`). The basis text then ends with "Offline snapshot
+frozen 24 Oct 16:55 UTC; not live data"; `/api/stats` is unavailable, and live
+arrivals and Ask still need the network.
 
 ### Run a recorder
 

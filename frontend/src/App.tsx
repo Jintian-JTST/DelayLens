@@ -875,7 +875,7 @@ export default function App() {
                             : result.curve.data_quality.status ===
                                 "insufficient_data"
                               ? "Insufficient data"
-                              : `${Math.max(0, ...points.map((p) => p.n_trips))} observed trips`}
+                              : `Up to ${Math.max(0, ...points.map((p) => p.n_trips))} trips per departure time`}
                       </span>
                     )}
                   </div>

@@ -669,9 +669,7 @@ export default function App() {
                             onClick={() =>
                               editForm({
                                 deadline: inputDate(
-                                  new Date(
-                                    latestCoveredHour + 30 * 60_000,
-                                  ).toISOString(),
+                                  new Date(latestCoveredHour).toISOString(),
                                   clock,
                                 ),
                               })
@@ -819,7 +817,7 @@ export default function App() {
                 <div className="planner-note">
                   <Icon name="shield" size={18} />
                   <p>
-                    A probability, not a promise.
+                    An estimate, not a promise.
                     <br />
                     We’ll always show our uncertainty.
                   </p>
@@ -886,9 +884,9 @@ export default function App() {
                         <strong>Early estimate · limited observations</strong>
                         <p>
                           Some departure times have fewer than{" "}
-                          {MIN_RECOMMENDATION_TRIPS} recorded trips. The
-                          uncertainty band matters: these probabilities are
-                          preliminary.
+                          {MIN_RECOMMENDATION_TRIPS} recorded trips. Estimates
+                          there are preliminary, inferred from TfL predictions
+                          rather than measured arrivals.
                         </p>
                       </div>
                     </div>
@@ -951,7 +949,7 @@ export default function App() {
                       <p className="coverage-note">
                         {points.length} of {result.request.window_min + 1}{" "}
                         departure times have usable observations. Blank sections
-                        have too little data for a probability.
+                        have too little data for an estimate.
                       </p>
                     )}
                   {result && (

@@ -37,6 +37,7 @@ They are dated reports, not newly rerun external checks.
 | 180-minute export | Final archives and SHA256 are verified in the new dated handoff. Standalone5<15 remains below target; separate database56/48 counts must not replace it. |
 | Refreshed model/backtest | **Done (T10/M3, reviewer-checked, chat #280).** Final snapshot `bus29-db-final-20261024T202558Z`: Mornington Brier 0.1296 (1104 outcomes, 49 runs), Finsbury Park 0.1318; Sat 17:00 → 16:22, p=0.9174. Standalone 5 runs give no advice. Preliminary: one Saturday, scored against inferred events. See [tasks/model.md](../tasks/model.md). |
 | Network-backed demo / recovery | Network UI evidence is on main (PR44); B's local recovery checklist is recorded separately. Physical disconnection and overnight survival are not implied. |
+| Backend input hardening | **Done (T25/T28).** 44 bad requests found 3 HTTP 500 (naive deadline, `1e400`, deeply nested JSON); fixed in #57 (merged `5cfe07b`) with regression tests; pytest 199 passed / 28 skipped, no 5xx on snapshot or live DB. Valid Ask not tested. Details: [B](../tasks/backend-api.md). |
 | Remote CI / integration | PR39/44 and their main CI were observed successful; integrator checks the current head and reviews final data handoff changes. |
 | Unattended collection / deployment | D supplies timestamped polls over the claimed interval and verifies restart/recovery on the actual host. No overnight or VM success is claimed. |
 | Submission / media | M/F confirm rules, final dated scenario, video and submission; this delivery does not publish the app. |

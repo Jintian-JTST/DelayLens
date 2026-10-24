@@ -306,6 +306,38 @@ route from existing stop events once its local `routes.json` includes it.
 Checks run by Claude on the merged branch (Linux, Python 3.13, `uv sync --locked
 --group dev`) are listed in the pull request; no live recording was run.
 
+### Live results, 2026-10-24 15:49-16:18 UTC (17:49 London)
+
+Reported by D from the recording laptop; not rerun by Claude.
+
+- Database recorder: the short route was added to the workspace's local
+  `routes.json` at about 15:49Z without a restart or polling change; the next poll
+  synchronized it. `health` at 15:49Z: 29,534 prediction rows, 846 stop events,
+  last poll 16 s old. Matched trips: short route **17** (UTC origin hours 13-15,
+  computed retroactively from stored stop events), full route 10, Victoria 41.
+- Database-view short-route durations: **638-950 s** (median 792 s), inside the
+  10-20 minute P0 window, so the Camden Town fallback is not needed. 15 trips have
+  two `near_stop_prediction` endpoints; LK66HCX (origin) and LK66HDC (destination)
+  have a `last_poll` endpoint and are uncertain. LJ13FEO's inferred origin, 13:49:20Z,
+  precedes the first poll at 13:49:34Z and is left-censored.
+- Standalone run `bus29-short-20261024T1546Z` started at 15:46Z (90 minutes) from
+  a separate worktree of the PR #11 branch: preflight passed, HTTP 200 with about
+  416 line predictions per poll. At 16:17Z: 63 polls, 0 failed, 28 estimated stop
+  events, **1 independent trip**. Its stricter rules (trip ID, post-ETA absence
+  confirmations, fresh source frames) admit fewer runs than the database view, so
+  a longer follow-on run is planned after it closes.
+- First real-data interface check, 16:18Z: B's API (main checkout, port 8001,
+  database credentials copied locally from the recorder workspace and not printed)
+  with F's dev server in journey-service mode showed "Service connected" and, for
+  Victoria, "Based on 49 recorded trips (Sat 24 Oct 14:49 - Sat 24 Oct 17:00,
+  London time)" with `insufficient_data` for a 19:00 deadline outside coverage.
+  The bus 29 short-route view had not yet been checked.
+- Open for B: the API passes `get_segments` rows with a `last_poll` endpoint to the
+  model; PLAN treats disappearance alone as uncertain. Reported to B, not changed here.
+- Operations: no VM tonight. The laptop stays on mains power with sleep disabled;
+  recorders do not restart after a reboot, so use `deploy/local-recorders.ps1`
+  and keep one database writer.
+
 ## Imported feat/data evidence (historical handoff)
 
 The following branch record is retained verbatim except for the recorder module

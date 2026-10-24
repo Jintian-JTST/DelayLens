@@ -338,15 +338,17 @@ def _departure_answer(
     elif curve.recommended is None:
         answer = (
             f"No departure between {_hhmm(curve.points[0].depart_at)} and "
-            f"{_hhmm(curve.points[-1].depart_at)} reaches a "
+            f"{_hhmm(curve.points[-1].depart_at)} reaches an estimated "
             f"{round((1 - args.tolerance) * 100)}% chance of arriving by "
             f"{_hhmm(args.deadline)}{context}.{past}"
         )
     else:
         rec = curve.recommended
+        trips = next((p.n_trips for p in curve.points if p.depart_at == rec.depart_at), None)
+        support = f" (from {trips} recorded trips)" if trips else ""
         answer = (
-            f"Leave by {_hhmm(rec.depart_at)} for a {round(rec.p_on_time * 100)}% chance "
-            f"of arriving by {_hhmm(args.deadline)}{context}.{past}"
+            f"Leave by {_hhmm(rec.depart_at)} for an estimated {round(rec.p_on_time * 100)}% "
+            f"chance{support} of arriving by {_hhmm(args.deadline)}{context}.{past}"
         )
     return AskResponse(interpretation=interp, curve=curve, answer=answer, status="ok")
 
@@ -395,7 +397,7 @@ def _compare_answer(
         listing = ", ".join(f"{_hhmm(d)}: {round(p * 100)}%" for d, p in scored)
         best = max(scored, key=lambda item: item[1])
         answer = (
-            f"Chance of arriving by {_hhmm(args.deadline)}: {listing}. "
+            f"Estimated chance of arriving by {_hhmm(args.deadline)}: {listing}. "
             f"Best: {_hhmm(best[0])}{context}.{past}"
         )
     return AskResponse(interpretation=interp, curve=curve, answer=answer, status="ok")

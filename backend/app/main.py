@@ -117,8 +117,9 @@ def _route_or_404(route_id: str) -> _ConfiguredRoute:
 
 
 @app.get("/api/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, str | bool]:
+    # ask_available: a Gemini key is configured (the passcode, if any, is checked per request).
+    return {"status": "ok", "ask_available": bool(os.getenv("GEMINI_API_KEY", "").strip())}
 
 
 def _snapshot() -> db.Snapshot | None:

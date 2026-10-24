@@ -68,7 +68,7 @@ def main() -> int:
     if status is None:
         report(False, "site reachable", "no response (connection error or timeout)")
         return 1
-    report(status == 200 and payload == {"status": "ok"}, "/api/health", f"status {status}")
+    report(status == 200 and isinstance(payload, dict) and payload.get("status") == "ok", "/api/health", f"status {status}")
     if parsed.scheme == "http" and parsed.hostname not in ("127.0.0.1", "localhost"):
         report(False, "HTTPS", "the public site is served over plain http")
 

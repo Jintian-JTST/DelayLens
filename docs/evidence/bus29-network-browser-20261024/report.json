@@ -1,0 +1,109 @@
+{
+  "base": "http://127.0.0.1:5182",
+  "capture_started_utc": "2026-10-24T19:57:55.657Z",
+  "source_revision": "2d7e51cd6c43ef18a12bdc181b1cf49b83b75568 + QA database mode",
+  "mode": "recorded TfL predictions via read-only database API; inferred arrivals, not measured",
+  "checks": [
+    {
+      "name": "真实记录数据→API→浏览器曲线与建议",
+      "detail": {
+        "request": {
+          "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+          "deadline": "2026-10-24T16:00:00.000Z",
+          "walk_to_min": 5,
+          "walk_from_min": 5,
+          "tolerance": 0.1,
+          "window_min": 90
+        },
+        "points": 91,
+        "recommended": {
+          "depart_at": "2026-10-24T15:22:00Z",
+          "p_on_time": 0.9174
+        },
+        "basis": "Based on 53 trips recorded on this route (Sat 24 Oct 14:49 - Sat 24 Oct 20:43, London time), replaying ±60 min around each departure. Arrivals are estimated from TfL predictions, not measured; not yet calibrated.",
+        "advice": "03 / DEPARTURE ADVICE\n\nAim to leave by\n\n15:22\n92%\nchance of being on time\n\nIncludes 10 minutes of walking. A little buffer goes a long way.\n\nWhat if I leave later?\nOn plan\n+5 min\n+10 min\n+15 min"
+      },
+      "passed": true
+    },
+    {
+      "name": "风险/保守估计/晚5分钟在本地生效",
+      "detail": {
+        "curveRequestsBefore": 2,
+        "curveRequestsAfter": 2,
+        "flexible": "15:25\n83%\nchance of being on time"
+      },
+      "passed": true
+    },
+    {
+      "name": "390px真实建议与来源标签无横向溢出",
+      "detail": {
+        "viewport": 390,
+        "document": 390
+      },
+      "passed": true
+    },
+    {
+      "name": "320px真实建议与来源标签无横向溢出",
+      "detail": {
+        "viewport": 320,
+        "document": 320
+      },
+      "passed": true
+    },
+    {
+      "name": "真实低数据时段无建议且what-if禁用",
+      "detail": {
+        "status": "low_data",
+        "points": 77,
+        "advice": "03 / DEPARTURE ADVICE\n\nLimited observations · preliminary curve\n\nGive yourself more room.\n\nNo departure in this window meets your target. Try another deadline, a shorter walk, or a higher tolerance.\n\nWhat if I leave later?\nOn plan\n+5 min\n+10 min\n+15 min"
+      },
+      "passed": true
+    },
+    {
+      "name": "390px低数据状态无横向溢出",
+      "detail": {
+        "viewport": 390,
+        "document": 390
+      },
+      "passed": true
+    },
+    {
+      "name": "320px低数据状态无横向溢出",
+      "detail": {
+        "viewport": 320,
+        "document": 320
+      },
+      "passed": true
+    },
+    {
+      "name": "方法页将TfL预测、推断样本与实测到站区分",
+      "detail": {
+        "methodology": "THE METHOD, WITHOUT THE MYSTERY\nConfidence should come with context.\n\nDelayLens is designed to replay recorded journeys, including the wait at your stop. Supported departure times get an estimated on-time probability and a 90% uncertainty band, inferred from TfL predictions.\n\nAt each departure time, 5–14 usable trips use a 90% Wilson interval; 15 or more use a 90% run-bootstrap interval. Fewer than 5 usable trips show no probability or advice. Recommendations require at least 15 usable trips for that departure time.\n\n01\nRecord TfL predictions\n\nCapture TfL predictions over time and infer journey samples.\n\n02\nReplay your journey\n\nCompare departures with trips at a similar time of day, including your walks.\n\n03\nMake the trade-off\n\nChoose how much risk you accept. Less data means more uncertainty.\n\nSingle-leg London routes and weekend observations only. Arrivals are inferred from TfL predictions, not measured, so every figure is an estimate, not a guarantee. Fixture results are synthetic and do not validate this method."
+      },
+      "passed": true
+    },
+    {
+      "name": "320px方法页无横向溢出",
+      "detail": {
+        "viewport": 320,
+        "document": 320
+      },
+      "passed": true
+    },
+    {
+      "name": "无浏览器异常、意外HTTP失败或外网请求",
+      "detail": {
+        "runtimeErrors": [],
+        "unexpectedHttpErrors": [],
+        "externalRequests": []
+      },
+      "passed": true
+    }
+  ],
+  "runtimeErrors": [],
+  "unexpectedHttpErrors": [],
+  "externalRequests": [],
+  "initial_route": "tube-victoria-outbound-brixton-oxford-circus",
+  "passed": true,
+  "capture_completed_utc": "2026-10-24T19:58:18.744Z"
+}

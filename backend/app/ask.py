@@ -271,7 +271,7 @@ def answer_question(
             args = _CurveArgs.model_validate(raw)
             if args.route_id not in by_id:
                 return _unsupported(routes)
-            return _departure_answer(args, compute_curve)
+            return _departure_answer(args, compute_curve, by_id[args.route_id], now)
         if name == "compare_departures":
             cmp_args = _CompareArgs.model_validate(raw)
             if cmp_args.route_id not in by_id:
@@ -287,7 +287,28 @@ def answer_question(
     return _unclear()
 
 
-def _departure_answer(args: _CurveArgs, compute_curve: CurveFn) -> AskResponse:
+def _departure_context(route: Route, args: _CurveArgs, now: datetime) -> str:
+    """Name the route and the assumed walks, so a wrong route or default is visible."""
+    if args.walk_to_min == args.walk_from_min:
+        walks = f"{args.walk_to_min:g}-minute walks at each end"
+    else:
+        walks = (
+            f"a {args.walk_to_min:g}-minute walk to the stop "
+            f"and {args.walk_from_min:g} minutes from the last stop"
+        )
+    text = (
+        f" ({route.mode} {route.line_id}, {route.origin.name} to {route.destination.name}; "
+        f"assuming {walks}.)"
+    )
+    if args.deadline <= now:
+        day = args.deadline.astimezone(LONDON).strftime("%a %d %b")
+        text += f" That time has already passed, so this replays recorded data for {day}."
+    return text
+
+
+def _departure_answer(
+    args: _CurveArgs, compute_curve: CurveFn, route: Route, now: datetime
+) -> AskResponse:
     interp = Interpretation(
         route_id=args.route_id,
         deadline=args.deadline,
@@ -304,18 +325,23 @@ def _departure_answer(args: _CurveArgs, compute_curve: CurveFn) -> AskResponse:
             tolerance=args.tolerance,
         )
     )
+    context = _departure_context(route, args, now)
     if curve.data_quality.status == "insufficient_data" or not curve.points:
-        answer = f"I don't have enough recorded data to say. {curve.data_quality.basis}"
+        answer = (
+            f"I don't have enough recorded data to say.{context} {curve.data_quality.basis}"
+        )
     elif curve.recommended is None:
         answer = (
-            f"No departure in the next {len(curve.points) - 1} minutes reaches a "
-            f"{round((1 - args.tolerance) * 100)}% chance of arriving by {_hhmm(args.deadline)}."
+            f"No departure between {_hhmm(curve.points[0].depart_at)} and "
+            f"{_hhmm(curve.points[-1].depart_at)} reaches a "
+            f"{round((1 - args.tolerance) * 100)}% chance of arriving by "
+            f"{_hhmm(args.deadline)}.{context}"
         )
     else:
         rec = curve.recommended
         answer = (
             f"Leave by {_hhmm(rec.depart_at)} for a {round(rec.p_on_time * 100)}% chance "
-            f"of arriving by {_hhmm(args.deadline)}."
+            f"of arriving by {_hhmm(args.deadline)}.{context}"
         )
     return AskResponse(interpretation=interp, curve=curve, answer=answer, status="ok")
 

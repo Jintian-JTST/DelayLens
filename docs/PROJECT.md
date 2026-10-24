@@ -11,7 +11,7 @@ verification belong in [PROGRESS.md](PROGRESS.md) and the role task records.
 | Name | DelayLens |
 | Users/problem | Travellers choosing when to leave when journey time is uncertain |
 | Data geography | London TfL bus predictions; Oxford BODS is outside this MVP |
-| First route | One verified 10-20-minute bus segment over 4-8 consecutive stops; D selects exact IDs from live evidence |
+| First route | London bus 29 (team-confirmed 2026-10-24); one verified 10-20-minute subsegment over 4-8 consecutive stops; D selects exact IDs from live evidence |
 | Core journey | Supported route/time + deadline/walks -> empirical distribution/evidence -> eligible departure choices/what-if; separate live predictions |
 | P0 | Raw-first collection, traceable inference, CSV/query/snapshot handoff, form/API/model/UI and honest sample-support states |
 | P1 | Supervised overnight VM, public demo, essential recovery; then Gemini, coverage UI and Tiger Data optimisation |

@@ -12,7 +12,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app import db
-from app.schemas import Stats
 
 
 def _when(value: str) -> datetime:
@@ -30,8 +29,17 @@ def _read_csv(path: Path, columns: list[str]) -> list[dict[str, str]]:
         return list(reader)
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def resolve_snapshot_dir(value: str | Path) -> Path:
+    """A relative SNAPSHOT_DIR is taken from the repository root, not the launch directory."""
+    path = Path(value)
+    return path if path.is_absolute() else PROJECT_ROOT / path
+
+
 def load_snapshot_dir(directory: str | Path) -> db.Snapshot:
-    root = Path(directory)
+    root = resolve_snapshot_dir(directory)
     summary_path = root / "summary.json"
     if not summary_path.is_file():
         raise ValueError(f"SNAPSHOT_DIR has no summary.json: {root.name}")
@@ -94,14 +102,7 @@ def load_snapshot_dir(directory: str | Path) -> db.Snapshot:
         coverage=coverage,
         origin_events=origin_events,
         poll_times=poll_times,
-        # Row and chunk counts are database facts the frozen folder does not hold.
-        stats=Stats(
-            rows=0,
-            chunks=0,
-            compression_ratio=None,
-            first_polled_at=poll_times[0] if poll_times else None,
-            last_polled_at=poll_times[-1] if poll_times else None,
-        ),
+        stats=None,  # row/chunk counts are not in the folder; /api/stats says so (503)
         refreshed_at=refreshed_at,
         source_label=f"Offline snapshot frozen {stamp} UTC; not live data.",
     )

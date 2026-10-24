@@ -53,6 +53,14 @@ def test_loads_the_frozen_bus_29_folder():
     assert snapshot.source_label == "Offline snapshot frozen 24 Oct 16:55 UTC; not live data."
 
 
+def test_a_relative_snapshot_dir_is_taken_from_the_repository_root(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)  # the launch directory must not matter
+    relative = "docs/evidence/bus29-db-snapshot-20261024T1655Z"
+    assert snapshot_files.resolve_snapshot_dir(relative) == FROZEN
+    assert snapshot_files.resolve_snapshot_dir(str(FROZEN)) == FROZEN
+    assert len(snapshot_files.load_snapshot_dir(relative).poll_times) == 373
+
+
 def test_parses_types_timezones_and_sorts(tmp_path):
     snapshot = snapshot_files.load_snapshot_dir(_mini_snapshot(tmp_path))
     segments = snapshot.segments["r1"]
@@ -62,7 +70,7 @@ def test_parses_types_timezones_and_sorts(tmp_path):
     assert [t.minute for t in snapshot.poll_times] == [49, 50]
     assert snapshot.origin_events["r1"][0].vehicle_id == "C"
     assert snapshot.coverage["r1"].hours_covered[0].hour == 14
-    assert snapshot.stats.first_polled_at == snapshot.poll_times[0]
+    assert snapshot.stats is None
 
 
 @pytest.mark.parametrize("breakage", ["no_summary", "no_segments", "bad_number", "missing_column", "no_routes"])
@@ -120,7 +128,9 @@ def test_demo_runs_with_no_database(monkeypatch):
         routes = {r["route_id"]: r for r in client.get("/api/routes").json()}
         assert routes[MORNINGTON]["trips_observed"] == 26
         assert client.get("/api/calibration", params={"route_id": MORNINGTON}).status_code == 200
-        assert client.get("/api/stats").json()["last_polled_at"].startswith("2026-10-24T16:55")
+        stats = client.get("/api/stats")  # row/chunk counts are unknown offline: unavailable, not zero
+        assert stats.status_code == 503
+        assert stats.json()["detail"] == "stats_unavailable_in_snapshot_mode"
 
 
 def test_a_bad_snapshot_dir_fails_startup_loudly(monkeypatch, tmp_path):

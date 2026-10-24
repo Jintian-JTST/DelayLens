@@ -74,7 +74,8 @@ class Snapshot:
     coverage: dict[str, Coverage]
     origin_events: dict[str, list[OriginEvent]]
     poll_times: list[datetime]
-    stats: Stats
+    # None in offline snapshot mode: row and chunk counts are database facts.
+    stats: Stats | None
     refreshed_at: datetime
     # Set only for an offline snapshot (SNAPSHOT_DIR); shown in the basis text.
     source_label: str | None = None

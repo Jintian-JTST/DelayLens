@@ -254,6 +254,8 @@ def live(route_id: str) -> LiveResponse | JSONResponse:
 @app.get("/api/stats", response_model=Stats)
 def stats() -> Stats:
     if snapshot := _snapshot():
+        if snapshot.stats is None:  # offline snapshot: do not report made-up zero counts
+            raise HTTPException(status_code=503, detail="stats_unavailable_in_snapshot_mode")
         return snapshot.stats
     raise HTTPException(status_code=503, detail="database_not_connected")
 

@@ -40,15 +40,21 @@ export default function Methodology({
         <h2>Confidence should come with context.</h2>
         <p>
           DelayLens is designed to replay recorded journeys, including the wait
-          at your stop. Each departure time gets an estimated on-time probability
+          at your stop. Supported departure times get an estimated on-time probability
           and a 90% uncertainty band, inferred from TfL predictions.
+        </p>
+        <p>
+          At each departure time, 5–14 usable trips use a 90% Wilson interval;
+          15 or more use a 90% run-bootstrap interval. Fewer than 5 usable trips
+          show no probability or advice. Recommendations require at least 15
+          usable trips for that departure time.
         </p>
         <div className="method-steps">
           <div>
             <b>01</b>
-            <h3>Record real arrivals</h3>
+            <h3>Record TfL predictions</h3>
             <p>
-              Capture TfL predictions over time and derive observed journeys.
+              Capture TfL predictions over time and infer journey samples.
             </p>
           </div>
           <div>

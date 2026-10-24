@@ -1,0 +1,34 @@
+{
+  "review_type": "agent_source_trace",
+  "reviewer": "D-CodeX / raw_trace_audit",
+  "reviewed_at_utc": "2026-10-24T19:28:10Z",
+  "human_review_claimed": false,
+  "checks": [
+    "Replayed 179 complete raw polls to the same seven published segments and 162 events.",
+    "Verified each reviewed endpoint against complete original poll payloads and source prediction identities.",
+    "Checked matching line, direction, vehicle, trip and eight-stop order; positive travel duration.",
+    "Checked at least two source times, last source gap at most 90 seconds, ETA adjustment at most 120 seconds, near-stop countdown at most 60 seconds and fresh source clocks.",
+    "Checked two successful, healthy and distinct post-ETA absence frames with advancing source times and at least 20 seconds separation."
+  ],
+  "limitations": "Agent review of recorded TfL prediction evidence only. No human signoff, independently measured arrival, calibrated probability or database-snapshot audit is claimed.",
+  "reviewed_segments": [
+    {
+      "segment_id": "segment_5a5d5369af29e491af4256b683488a66",
+      "origin_event_id": "event_042987e9f3bf6fc7e437fc7f9397b0af",
+      "destination_event_id": "event_4a192158144ecd39549ac8a248da3fa7",
+      "outcome": "consistent_with_rule"
+    },
+    {
+      "segment_id": "segment_792a48c1e93953260f7bca2a16b04fce",
+      "origin_event_id": "event_47e101af448a66bc2d0e4816556208db",
+      "destination_event_id": "event_54935382fe29989c6fee504fa34db9a7",
+      "outcome": "consistent_with_rule"
+    },
+    {
+      "segment_id": "segment_c739b590165953e0737340a6d59cc3a5",
+      "origin_event_id": "event_b83892d8c09869b60c88ec4fb4127f10",
+      "destination_event_id": "event_ed7e8df2b193fdfbb1f1253305ea20b3",
+      "outcome": "consistent_with_rule"
+    }
+  ]
+}

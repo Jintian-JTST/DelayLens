@@ -1,0 +1,402 @@
+{
+  "schema_version": 1,
+  "review_type": "agent_source_trace",
+  "human_review_claimed": false,
+  "raw_uncompressed_sha256": "fb08165b9bf0b49295c76e8774c376abac610c4f4bef4c8d75c04d953f2016fc",
+  "raw_poll_count": 179,
+  "replayed_segment_count": 7,
+  "replayed_event_count": 162,
+  "examples": [
+    {
+      "segment": {
+        "segment_id": "segment_5a5d5369af29e491af4256b683488a66",
+        "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+        "route_version": "2026-10-24.1",
+        "route_pattern_id": "29-outbound-branch-0",
+        "run_id": "run_390c6ca2e4805355d2af135a17b4faca",
+        "line_id": "29",
+        "direction": "outbound",
+        "vehicle_id": "LK66GCV",
+        "trip_id": "603050",
+        "origin_at": "2026-10-24T15:53:39.000000Z",
+        "destination_at": "2026-10-24T16:03:47.000000Z",
+        "travel_seconds": 608.0,
+        "inference_method": "near_stop_prediction_v1",
+        "confidence": "supported_by_rule",
+        "quality": "estimated",
+        "source": "tfl_live_recording",
+        "origin_event_id": "event_042987e9f3bf6fc7e437fc7f9397b0af",
+        "destination_event_id": "event_4a192158144ecd39549ac8a248da3fa7"
+      },
+      "endpoints": [
+        {
+          "endpoint": "origin_event_id",
+          "event_id": "event_042987e9f3bf6fc7e437fc7f9397b0af",
+          "stop_sequence": 0,
+          "naptan_id": "490000152C",
+          "inferred_at": "2026-10-24T15:53:39.000000Z",
+          "selected_prediction_id": "prediction_09ebd7901061a4b105d8b2ee7cf03653",
+          "source_prediction_count": 11,
+          "last_source_gap_seconds": 60.703494,
+          "last_eta_adjustment_seconds": 30.0,
+          "last_predictions": [
+            {
+              "prediction_id": "prediction_749f99f26e1e815a4d3321d15c517ac8",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66GCV",
+                "tripId": "603050",
+                "naptanId": "490000152C",
+                "timestamp": "2026-10-24T15:52:17.4270854Z",
+                "expectedArrival": "2026-10-24T15:54:09Z",
+                "timeToStation": 112
+              }
+            },
+            {
+              "prediction_id": "prediction_09ebd7901061a4b105d8b2ee7cf03653",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66GCV",
+                "tripId": "603050",
+                "naptanId": "490000152C",
+                "timestamp": "2026-10-24T15:53:18.1305795Z",
+                "expectedArrival": "2026-10-24T15:53:39Z",
+                "timeToStation": 21
+              }
+            }
+          ],
+          "absence_confirmations": [
+            {
+              "poll_id": "969c6383-96b2-4521-889e-4f74fe16c15f",
+              "at": "2026-10-24T15:54:50.840271Z",
+              "frame_id": "frame_e9b03fe9d022f71e056d2c9f1eb1648a",
+              "source_at": "2026-10-24T15:54:19.167143Z"
+            },
+            {
+              "poll_id": "448a35af-afd2-47b5-b163-e12737636626",
+              "at": "2026-10-24T15:55:19.878294Z",
+              "frame_id": "frame_7d5cdd15863a60b58ea0b46ef1b330b1",
+              "source_at": "2026-10-24T15:54:47.868309Z"
+            }
+          ]
+        },
+        {
+          "endpoint": "destination_event_id",
+          "event_id": "event_4a192158144ecd39549ac8a248da3fa7",
+          "stop_sequence": 7,
+          "naptan_id": "490000235GX",
+          "inferred_at": "2026-10-24T16:03:47.000000Z",
+          "selected_prediction_id": "prediction_95351a9768dbeb08a3ff04dfb58a98d6",
+          "source_prediction_count": 25,
+          "last_source_gap_seconds": 29.939205,
+          "last_eta_adjustment_seconds": 0.0,
+          "last_predictions": [
+            {
+              "prediction_id": "prediction_721468afa1de802518225e520f4d4402",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66GCV",
+                "tripId": "603050",
+                "naptanId": "490000235GX",
+                "timestamp": "2026-10-24T16:02:47.8943096Z",
+                "expectedArrival": "2026-10-24T16:03:47Z",
+                "timeToStation": 60
+              }
+            },
+            {
+              "prediction_id": "prediction_95351a9768dbeb08a3ff04dfb58a98d6",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66GCV",
+                "tripId": "603050",
+                "naptanId": "490000235GX",
+                "timestamp": "2026-10-24T16:03:17.8335142Z",
+                "expectedArrival": "2026-10-24T16:03:47Z",
+                "timeToStation": 30
+              }
+            }
+          ],
+          "absence_confirmations": [
+            {
+              "poll_id": "29238064-5551-4604-a299-e64f5bc7b0f9",
+              "at": "2026-10-24T16:04:19.793869Z",
+              "frame_id": "frame_8fc6ed519b47c19646477b9d4e6557f3",
+              "source_at": "2026-10-24T16:03:47.914684Z"
+            },
+            {
+              "poll_id": "27de25eb-51af-4397-94d9-8cfa39948dc7",
+              "at": "2026-10-24T16:04:50.040578Z",
+              "frame_id": "frame_7aecefa9a9469e5d5a1d8ed94d662ccc",
+              "source_at": "2026-10-24T16:04:18.117862Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "segment": {
+        "segment_id": "segment_792a48c1e93953260f7bca2a16b04fce",
+        "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+        "route_version": "2026-10-24.1",
+        "route_pattern_id": "29-outbound-branch-0",
+        "run_id": "run_2ba12c5c46e3d44beba904e9f0484d1a",
+        "line_id": "29",
+        "direction": "outbound",
+        "vehicle_id": "LK66HCV",
+        "trip_id": "603101",
+        "origin_at": "2026-10-24T16:26:11.000000Z",
+        "destination_at": "2026-10-24T16:38:55.000000Z",
+        "travel_seconds": 764.0,
+        "inference_method": "near_stop_prediction_v1",
+        "confidence": "supported_by_rule",
+        "quality": "estimated",
+        "source": "tfl_live_recording",
+        "origin_event_id": "event_47e101af448a66bc2d0e4816556208db",
+        "destination_event_id": "event_54935382fe29989c6fee504fa34db9a7"
+      },
+      "endpoints": [
+        {
+          "endpoint": "origin_event_id",
+          "event_id": "event_47e101af448a66bc2d0e4816556208db",
+          "stop_sequence": 0,
+          "naptan_id": "490000152C",
+          "inferred_at": "2026-10-24T16:26:11.000000Z",
+          "selected_prediction_id": "prediction_0b967abe83395f0a81a023450348771b",
+          "source_prediction_count": 53,
+          "last_source_gap_seconds": 86.144582,
+          "last_eta_adjustment_seconds": 0.0,
+          "last_predictions": [
+            {
+              "prediction_id": "prediction_f797a51d8e9cfef85c13b00483c03038",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66HCV",
+                "tripId": "603101",
+                "naptanId": "490000152C",
+                "timestamp": "2026-10-24T16:24:22.3891431Z",
+                "expectedArrival": "2026-10-24T16:26:11Z",
+                "timeToStation": 109
+              }
+            },
+            {
+              "prediction_id": "prediction_0b967abe83395f0a81a023450348771b",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66HCV",
+                "tripId": "603101",
+                "naptanId": "490000152C",
+                "timestamp": "2026-10-24T16:25:48.5337257Z",
+                "expectedArrival": "2026-10-24T16:26:11Z",
+                "timeToStation": 23
+              }
+            }
+          ],
+          "absence_confirmations": [
+            {
+              "poll_id": "a38cb892-88df-4af6-8563-7e9fc21651b1",
+              "at": "2026-10-24T16:27:20.211292Z",
+              "frame_id": "frame_0d8e698e60c22c4524dd531eb3e5bc7e",
+              "source_at": "2026-10-24T16:26:48.312596Z"
+            },
+            {
+              "poll_id": "7c28651f-43ad-4258-920c-5b20452ba209",
+              "at": "2026-10-24T16:27:51.645554Z",
+              "frame_id": "frame_320676d4faa07feb13cdce784089d3b6",
+              "source_at": "2026-10-24T16:27:19.576227Z"
+            }
+          ]
+        },
+        {
+          "endpoint": "destination_event_id",
+          "event_id": "event_54935382fe29989c6fee504fa34db9a7",
+          "stop_sequence": 7,
+          "naptan_id": "490000235GX",
+          "inferred_at": "2026-10-24T16:38:55.000000Z",
+          "selected_prediction_id": "prediction_b7105233fe6cebfa66f21da4b900d34d",
+          "source_prediction_count": 55,
+          "last_source_gap_seconds": 29.640252,
+          "last_eta_adjustment_seconds": 0.0,
+          "last_predictions": [
+            {
+              "prediction_id": "prediction_b3bfa867919c49f4986e64f583e48d59",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66HCV",
+                "tripId": "603101",
+                "naptanId": "490000235GX",
+                "timestamp": "2026-10-24T16:38:19.7821695Z",
+                "expectedArrival": "2026-10-24T16:38:55Z",
+                "timeToStation": 36
+              }
+            },
+            {
+              "prediction_id": "prediction_b7105233fe6cebfa66f21da4b900d34d",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66HCV",
+                "tripId": "603101",
+                "naptanId": "490000235GX",
+                "timestamp": "2026-10-24T16:38:49.422421Z",
+                "expectedArrival": "2026-10-24T16:38:55Z",
+                "timeToStation": 6
+              }
+            }
+          ],
+          "absence_confirmations": [
+            {
+              "poll_id": "4411b73b-3cd0-4ff4-bbdb-08bc55fd6149",
+              "at": "2026-10-24T16:39:53.483281Z",
+              "frame_id": "frame_7267b1c8fccaf8261fcf3e4187518de5",
+              "source_at": "2026-10-24T16:39:21.543625Z"
+            },
+            {
+              "poll_id": "1248571e-e5a2-4e2a-8254-d1358b9d2453",
+              "at": "2026-10-24T16:40:21.499745Z",
+              "frame_id": "frame_80336bdd8888eeb35dd02846f3a73c09",
+              "source_at": "2026-10-24T16:39:49.612994Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "segment": {
+        "segment_id": "segment_c739b590165953e0737340a6d59cc3a5",
+        "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+        "route_version": "2026-10-24.1",
+        "route_pattern_id": "29-outbound-branch-0",
+        "run_id": "run_dc906c3b9338963a1a49e4a5246785f8",
+        "line_id": "29",
+        "direction": "outbound",
+        "vehicle_id": "LK66HDG",
+        "trip_id": "603119",
+        "origin_at": "2026-10-24T16:32:32.000000Z",
+        "destination_at": "2026-10-24T16:44:48.000000Z",
+        "travel_seconds": 736.0,
+        "inference_method": "near_stop_prediction_v1",
+        "confidence": "supported_by_rule",
+        "quality": "estimated",
+        "source": "tfl_live_recording",
+        "origin_event_id": "event_b83892d8c09869b60c88ec4fb4127f10",
+        "destination_event_id": "event_ed7e8df2b193fdfbb1f1253305ea20b3"
+      },
+      "endpoints": [
+        {
+          "endpoint": "origin_event_id",
+          "event_id": "event_b83892d8c09869b60c88ec4fb4127f10",
+          "stop_sequence": 0,
+          "naptan_id": "490000152C",
+          "inferred_at": "2026-10-24T16:32:32.000000Z",
+          "selected_prediction_id": "prediction_dbabd90bd6b2e407453f9386a4a0693b",
+          "source_prediction_count": 59,
+          "last_source_gap_seconds": 59.720736,
+          "last_eta_adjustment_seconds": 53.0,
+          "last_predictions": [
+            {
+              "prediction_id": "prediction_59dac795a998b400c5f6f4c0901c4eeb",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66HDG",
+                "tripId": "603119",
+                "naptanId": "490000152C",
+                "timestamp": "2026-10-24T16:31:18.8921957Z",
+                "expectedArrival": "2026-10-24T16:31:39Z",
+                "timeToStation": 21
+              }
+            },
+            {
+              "prediction_id": "prediction_dbabd90bd6b2e407453f9386a4a0693b",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66HDG",
+                "tripId": "603119",
+                "naptanId": "490000152C",
+                "timestamp": "2026-10-24T16:32:18.6129313Z",
+                "expectedArrival": "2026-10-24T16:32:32Z",
+                "timeToStation": 14
+              }
+            }
+          ],
+          "absence_confirmations": [
+            {
+              "poll_id": "418a5fe3-cf44-4dfe-8170-35a77fa90a5b",
+              "at": "2026-10-24T16:33:50.777559Z",
+              "frame_id": "frame_fdab9616ffbd577481646ef4ed25efb5",
+              "source_at": "2026-10-24T16:33:18.593844Z"
+            },
+            {
+              "poll_id": "4c0b780c-5730-4e68-964a-dcb4f4016500",
+              "at": "2026-10-24T16:34:20.370545Z",
+              "frame_id": "frame_e143ac93d6ea10899ac55f9dc7dbcedc",
+              "source_at": "2026-10-24T16:33:48.714592Z"
+            }
+          ]
+        },
+        {
+          "endpoint": "destination_event_id",
+          "event_id": "event_ed7e8df2b193fdfbb1f1253305ea20b3",
+          "stop_sequence": 7,
+          "naptan_id": "490000235GX",
+          "inferred_at": "2026-10-24T16:44:48.000000Z",
+          "selected_prediction_id": "prediction_b784cb0453a4a0785f6526c64a1f7ffe",
+          "source_prediction_count": 59,
+          "last_source_gap_seconds": 60.801296,
+          "last_eta_adjustment_seconds": 0.0,
+          "last_predictions": [
+            {
+              "prediction_id": "prediction_b7b1da4bffcceaf7b0055693611fab52",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66HDG",
+                "tripId": "603119",
+                "naptanId": "490000235GX",
+                "timestamp": "2026-10-24T16:43:19.9094877Z",
+                "expectedArrival": "2026-10-24T16:44:48Z",
+                "timeToStation": 89
+              }
+            },
+            {
+              "prediction_id": "prediction_b784cb0453a4a0785f6526c64a1f7ffe",
+              "prediction": {
+                "lineId": "29",
+                "direction": "outbound",
+                "vehicleId": "LK66HDG",
+                "tripId": "603119",
+                "naptanId": "490000235GX",
+                "timestamp": "2026-10-24T16:44:20.7107835Z",
+                "expectedArrival": "2026-10-24T16:44:48Z",
+                "timeToStation": 28
+              }
+            }
+          ],
+          "absence_confirmations": [
+            {
+              "poll_id": "9d06b9b0-6521-425c-8e8b-073c37763b9c",
+              "at": "2026-10-24T16:45:21.766775Z",
+              "frame_id": "frame_199aa9c8d91b8d650f3f2aac1da3dd66",
+              "source_at": "2026-10-24T16:44:49.887841Z"
+            },
+            {
+              "poll_id": "262fea43-b8b6-4b3f-ae58-e273fd6ae682",
+              "at": "2026-10-24T16:46:22.652666Z",
+              "frame_id": "frame_b78cab8d952d1418fea4149d2deebcf1",
+              "source_at": "2026-10-24T16:45:50.870842Z"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "limitation": "Compact excerpts do not independently prove absence; verification reads each complete original poll. All arrival times remain inferred predictions."
+}

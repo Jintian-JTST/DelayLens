@@ -1,6 +1,8 @@
 import json
 import os
 import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
@@ -12,7 +14,7 @@ from fastapi.responses import JSONResponse
 from pydantic import Field, TypeAdapter, ValidationError
 
 from app import ask as ask_module
-from app import fixtures, tfl
+from app import db, fixtures, tfl
 from app.schemas import (
     AskRequest,
     AskResponse,
@@ -58,7 +60,26 @@ def _load_routes() -> list[_ConfiguredRoute]:
         ) from None
 
 
-app = FastAPI(title="DelayLens API")
+_cache: db.SegmentCache | None = None
+
+
+def _database_url() -> str:
+    url = os.getenv("DATABASE_URL", "")
+    return "" if "user:password@host" in url else url
+
+
+@asynccontextmanager
+async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
+    global _cache
+    if url := _database_url():
+        _cache = db.SegmentCache(url)
+        _cache.start()
+    yield
+    if _cache is not None:
+        _cache.stop()
+
+
+app = FastAPI(title="DelayLens API", lifespan=_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")],
@@ -79,9 +100,27 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _snapshot() -> db.Snapshot | None:
+    return _cache.snapshot if _cache is not None else None
+
+
 @app.get("/api/routes", response_model=list[Route])
 def routes() -> list[Route]:
-    return _load_routes()
+    result = _load_routes()
+    if snapshot := _snapshot():
+        for route in result:
+            if cov := snapshot.coverage.get(route.route_id):
+                route.trips_observed = cov.trips_observed
+                route.hours_covered = cov.hours_covered
+    return result
+
+
+def _no_model_basis(route_id: str) -> str:
+    snapshot = _snapshot()
+    if snapshot is None:
+        return "Recorded-trip data not connected; no probability available."
+    trips = len(snapshot.segments.get(route_id, []))
+    return f"{trips} trips recorded so far; prediction model not connected yet."
 
 
 def _compute_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
@@ -94,7 +133,7 @@ def _compute_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
             server_ms=0,
             data_quality=DataQuality(
                 status="insufficient_data",
-                basis="Recorded-trip model not connected; no probability available.",
+                basis=_no_model_basis(req.route_id),
             ),
         )
     else:
@@ -145,6 +184,8 @@ def live(route_id: str) -> LiveResponse | JSONResponse:
 
 @app.get("/api/stats", response_model=Stats)
 def stats() -> Stats:
+    if snapshot := _snapshot():
+        return snapshot.stats
     raise HTTPException(status_code=503, detail="database_not_connected")
 
 

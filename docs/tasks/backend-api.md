@@ -85,3 +85,17 @@ Updated: 2026-10-24 (Europe/London).
   (7 ingest tests need a database and skipped).
 - Still unverified: `app/db.py` against real Tiger Data; `/api/stats`, `/api/calibration` are still 503 stubs.
 - Next (B): `db.py` pool + minute cache using D's `get_segments` / `route_coverage` views, then M's `model.py`.
+
+## Update: Tiger Data cache (db.py)
+
+- Added `backend/app/db.py`: read-only connection, loads D's `get_segments` and `route_coverage`
+  views plus row/chunk/compression stats into an in-memory snapshot every 60 s in a background
+  thread (started by the FastAPI lifespan when `DATABASE_URL` is set). A failed refresh keeps the
+  last good snapshot and logs only the error type.
+- `/api/routes` now fills `trips_observed` and `hours_covered` from the database; `/api/stats` is real;
+  real-route curves stay `insufficient_data` but report the recorded trip count until M's model lands.
+  `SegmentCache.segments(route_id)` is the hook for M's model.
+- Checks (macOS, Python 3.14): `pytest -q` 62 passed; `ruff check app tests` passed. Against real
+  Tiger Data at ~14:34 UTC: cache loaded with no error; routes 11 ms (bus 29: 0 trips, Victoria: 14
+  trips over 2 hours); stats 2 ms (10,674 rows, 2 chunks, no compression yet).
+- Open: bus 29 has 0 matched trips so far (D to check); `/api/calibration` still a 503 stub.

@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import csv
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
-from typing import Sequence
 from zoneinfo import ZoneInfo
 
 import numpy as np

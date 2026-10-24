@@ -6,7 +6,7 @@ exactly 20 min to D. Query times are Europe/London local time; the deadline is
 """
 
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 import numpy as np
 import pytest
@@ -66,7 +66,7 @@ def test_regular_timetable_is_exact(timetable: Segments) -> None:
 
 
 def test_jitter_is_reproducible_and_valid() -> None:
-    kwargs = dict(headway_jitter_min=3, ride_jitter_min=5)
+    kwargs = {"headway_jitter_min": 3, "ride_jitter_min": 5}
     a = synthetic_segments(START, END, seed=1, **kwargs)
     b = synthetic_segments(START, END, seed=1, **kwargs)
     c = synthetic_segments(START, END, seed=2, **kwargs)
@@ -82,7 +82,7 @@ def test_naive_datetimes_are_rejected() -> None:
 
 
 def test_segments_reject_bad_input() -> None:
-    one = dict(vehicle_id=np.array(["v1"]), t_origin=np.array([100]))
+    one = {"vehicle_id": np.array(["v1"]), "t_origin": np.array([100])}
     with pytest.raises(ValueError):
         Segments(segment_id=np.array(["s1"]), t_dest=np.array([100]), **one)
     with pytest.raises(ValueError):
@@ -146,7 +146,7 @@ def test_exact_time_of_day_gives_step_curve(fortnight: Segments) -> None:
     # 11:40 bus arrives at 12:00 exactly (on time), so 11:39 is the last safe
     # departure; at 11:40 you need the 11:50 bus and arrive at 12:10. Replaying the
     # same local time on 15 explicitly chosen dates gives 15 runs: status ok.
-    exact = dict(tod_window_min=0, reference_dates=FIFTEEN_DAYS)
+    exact = {"tod_window_min": 0, "reference_dates": FIFTEEN_DAYS}
     for minute in range(20, 40):
         assert p_on_time(fortnight, at(11, minute), DEADLINE, **exact) == 1.0
     for minute in range(40, 51):
@@ -173,7 +173,7 @@ def test_walking_time_shifts_the_step(fortnight: Segments) -> None:
     # A 4-min walk from D means the bus must arrive by 11:56: the 11:30 bus. You
     # catch it only if you reach O by 11:29, so with a 6-min walk to O, leave by
     # 11:23. Leaving at 11:24 means the 11:40 bus and arriving at 12:04.
-    kwargs = dict(walk_to_min=6, walk_from_min=4, tod_window_min=0, reference_dates=FIFTEEN_DAYS)
+    kwargs = {"walk_to_min": 6, "walk_from_min": 4, "tod_window_min": 0, "reference_dates": FIFTEEN_DAYS}
     assert p_on_time(fortnight, at(11, 23), DEADLINE, **kwargs) == 1.0
     assert p_on_time(fortnight, at(11, 24), DEADLINE, **kwargs) == 0.0
 
@@ -213,8 +213,8 @@ def test_dates_are_not_pooled_unless_requested() -> None:
 
 def test_repeated_local_hour_stays_distinct() -> None:
     # 01:30 happens twice on Sun 25 Oct: 00:30 UTC (BST) then 01:30 UTC (GMT).
-    first = datetime(2026, 10, 25, 0, 30, tzinfo=timezone.utc)
-    second = datetime(2026, 10, 25, 1, 30, tzinfo=timezone.utc)
+    first = datetime(2026, 10, 25, 0, 30, tzinfo=UTC)
+    second = datetime(2026, 10, 25, 1, 30, tzinfo=UTC)
     sun = [date(2026, 10, 25)]
     reach = np.array([to_epoch(first), to_epoch(second)])
     inst = reference_instants(reach, sun, tod_window_min=0)

@@ -1,0 +1,2 @@
+# Independent recorder dependency; B owns backend/pyproject.toml and uv.lock.
+psycopg[binary]>=3.2,<4

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "capture_started_utc": "2026-10-24T19:57:55.657Z",
+  "capture_completed_utc": "2026-10-24T19:58:18.744Z",
+  "files": [
+    {
+      "path": "curl-1600-headers.txt",
+      "bytes": 152,
+      "sha256": "e2a8a1d29e2e2d154e885406a7ed0a23ad473ee3795deca45f6734ec5f8bcd66"
+    },
+    {
+      "path": "curl-1600-response.json",
+      "bytes": 22792,
+      "sha256": "5b100fbfd8c6cff330c95181c933a74ac1913357dffd7adca5fcfa89fd5c1035"
+    },
+    {
+      "path": "curl-comparison.json",
+      "bytes": 330,
+      "sha256": "a10210d331bcff0b9229ef4cf2c814db2b016c3928b0144822bbaad019767236"
+    },
+    {
+      "path": "deadline-1430-request.json",
+      "bytes": 201,
+      "sha256": "9d5bbb6ba7d0bf5a91adf50ce6a2b3fd70b38c0c78e0bc87fbdf1e51012f3409"
+    },
+    {
+      "path": "deadline-1430-response.json",
+      "bytes": 18976,
+      "sha256": "5cd530824e34ec5ff6e9a71fed9ad4cfa8e154e5a0ab8bb6a39d3ce27bf06543"
+    },
+    {
+      "path": "deadline-1600-request.json",
+      "bytes": 201,
+      "sha256": "875ffc491427dbc778fa4d919ad89cd2c6cec9165492dc4ccc611cb2b6794733"
+    },
+    {
+      "path": "deadline-1600-response.json",
+      "bytes": 22359,
+      "sha256": "b753b750e87ecd93d7feddea3037935073993f20becf56aeac64c8383e13db3f"
+    },
+    {
+      "path": "low-data-320.png",
+      "bytes": 136776,
+      "sha256": "5fb75b0fc016ffeb4924d00072f0b4b1a2fffb00e0215d5ba1c9d3c85642ae72"
+    },
+    {
+      "path": "methodology-1440.png",
+      "bytes": 152781,
+      "sha256": "3cae6c2aebc4a348373344ec911639a2c9f7279a0532d5098fb27143b2213548"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3932,
+      "sha256": "f7b32bd7c31b4d3e0f033c984a20d57e38d64cccfc311b6e5ac6a556eec8a5c5"
+    },
+    {
+      "path": "recorded-1440.png",
+      "bytes": 151669,
+      "sha256": "37c9efedf3fb47e68ced7a64b7d51e0fc46929c56f8dfe0295df6e029400be1c"
+    },
+    {
+      "path": "recorded-320.png",
+      "bytes": 130447,
+      "sha256": "115054459a1448dff70717fc6a9650d729ca2a75aa27e6c6fd61af84de256710"
+    },
+    {
+      "path": "report.json",
+      "bytes": 4505,
+      "sha256": "99b303dbf293e25368dbc8c8c8ab44808ec1710e06b8be21e566c39d64be0725"
+    },
+    {
+      "path": "routes-response.json",
+      "bytes": 2484,
+      "sha256": "3b254a92992fbde3ba9d9bb95e2bab315193172e0343b42ef6a8de9c9742da88"
+    }
+  ]
+}

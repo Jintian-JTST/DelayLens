@@ -1,0 +1,8 @@
+{
+  "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+  "deadline": "2026-10-24T14:30:00.000Z",
+  "walk_to_min": 5,
+  "walk_from_min": 5,
+  "tolerance": 0.1,
+  "window_min": 90
+}

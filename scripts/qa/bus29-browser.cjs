@@ -1,4 +1,4 @@
-/* Real frozen data through API/model/UI. No intercepted successful API payloads. */
+/* Real recorded data through API/model/UI. No intercepted successful API payloads. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -6,8 +6,11 @@ const puppeteer = require(process.env.PUPPETEER_MODULE || 'puppeteer-core');
 const base = process.env.QA_BASE_URL || 'http://127.0.0.1:5183';
 const out = path.resolve(process.env.QA_OUTPUT_DIR || '.local/qa/chat-bus29');
 const route = 'bus-29-outbound-mornington-crescent-tottenham-court-road';
+const dataMode = process.env.QA_DATA_MODE || 'snapshot';
+assert(['snapshot', 'database'].includes(dataMode), 'QA_DATA_MODE must be snapshot or database');
+const database = dataMode === 'database';
 fs.mkdirSync(out, { recursive: true });
-const report = { base, capture_started_utc: new Date().toISOString(), source_revision: process.env.QA_SOURCE_REV || null, mode: 'offline recorded TfL predictions; inferred arrivals; not live', checks: [], runtimeErrors: [], unexpectedHttpErrors: [], externalRequests: [] };
+const report = { base, capture_started_utc: new Date().toISOString(), source_revision: process.env.QA_SOURCE_REV || null, mode: database ? 'recorded TfL predictions via read-only database API; inferred arrivals, not measured' : 'offline recorded TfL predictions; inferred arrivals; not live', checks: [], runtimeErrors: [], unexpectedHttpErrors: [], externalRequests: [] };
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 function check(name, detail) { report.checks.push({ name, detail, passed: true }); }
 (async () => {
@@ -47,7 +50,10 @@ function check(name, detail) { report.checks.push({ name, detail, passed: true }
     await page.goto(base, { waitUntil: 'networkidle2', timeout: 30000 });
     await page.waitForSelector('#route option');
     await page.waitForFunction(() => !document.querySelector('#journey-form button[type=submit]')?.disabled);
-    assert.equal(await page.$eval('#route', el => el.value), route);
+    report.initial_route = await page.$eval('#route', el => el.value);
+    if (!database) assert.equal(report.initial_route, route);
+    const routes = await page.evaluate(async () => (await fetch('/api/routes')).json());
+    fs.writeFileSync(path.join(out, 'routes-response.json'), JSON.stringify(routes, null, 2));
     await page.select('#timezone', 'utc');
     await page.select('#route', route);
     const field = async (selector, value) => page.$eval(selector, (el, next) => {
@@ -80,13 +86,14 @@ function check(name, detail) { report.checks.push({ name, detail, passed: true }
     assert(initial.payload.points.find(point => point.depart_at === initial.payload.recommended.depart_at)?.n_trips >= 15);
     assert(await page.$('.curve-svg path'));
     const basis = await page.$eval('.data-basis', el => el.innerText);
-    assert(basis.includes('Offline snapshot frozen 24 Oct 16:55 UTC; not live data.'));
+    if (database) assert(!basis.includes('Offline snapshot'));
+    else assert(basis.includes('Offline snapshot frozen 24 Oct 16:55 UTC; not live data.'));
     assert(basis.includes('±60 min'));
     assert(!/Interactive demo|Fixture data/.test(await page.$eval('header', el => el.innerText)));
     const advice = await page.$eval('[aria-label="Departure recommendation"]', el => el.innerText);
     assert(advice.includes('Aim to leave by'));
     assert(advice.includes(initial.payload.recommended.depart_at.slice(11, 16)));
-    check('真实冻结数据→API→浏览器曲线与建议', { request: initial.request, points: initial.payload.points.length, recommended: initial.payload.recommended, basis, advice });
+    check('真实记录数据→API→浏览器曲线与建议', { request: initial.request, points: initial.payload.points.length, recommended: initial.payload.recommended, basis, advice });
     await capture('recorded-1440.png');
 
     const beforeControls = curveRequests;
@@ -113,9 +120,10 @@ function check(name, detail) { report.checks.push({ name, detail, passed: true }
       assert(sizes.document <= sizes.viewport + 1, JSON.stringify(sizes));
       assert(await page.$('.recommendation'));
       const label = await page.$eval('.data-basis', el => el.innerText);
-      assert(label.includes('not live data'));
+      if (database) assert(!label.includes('Offline snapshot'));
+      else assert(label.includes('not live data'));
       await capture(`recorded-${width}.png`);
-      check(`${width}px真实建议与冻结标签无横向溢出`, sizes);
+      check(`${width}px真实建议与来源标签无横向溢出`, sizes);
     }
 
     await page.setViewport({ width: 1440, height: 1000 });

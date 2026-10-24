@@ -15,6 +15,13 @@ The default form is the first route, Victoria line Brixton -> Oxford Circus (Tub
 (Sat 24 Oct 14:49 - 20:47, London time)", no recommendation. curl: `insufficient_data`,
 0 points, no recommendation, same 120-trip basis. They agree.
 
+## Read-back times
+
+Default-form screenshots and curl: about 20:03 UTC (`captured_at_utc.txt`; Brixton 120 trips).
+Bus 29 UI screenshot and its curl: about 20:06 UTC (page footer "Updated 21:06" BST); 54 trips,
+last trip 20:48 London. A different reader at a different moment (D-CodeX: 53 trips at 19:58 UTC)
+will see a different count because recording continues.
+
 ## Bus 29, online UI (added ~20:06 UTC, live data had grown to 54 trips)
 
 Driven in headless Chrome over DevTools on the real page: route set to Mornington Crescent ->

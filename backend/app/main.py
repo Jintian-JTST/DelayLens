@@ -155,6 +155,7 @@ def _compute_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
                 walk_to_min=req.walk_to_min,
                 walk_from_min=req.walk_from_min,
                 window_min=req.window_min,
+                tod_window_min=curves.TOD_WINDOW_MIN,
             )
             result = curves.build_response(curve, req, segments)
     else:

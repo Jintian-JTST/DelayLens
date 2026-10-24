@@ -26,6 +26,10 @@ LONDON = ZoneInfo("Europe/London")
 Z_90 = 1.645
 WHAT_IF_MIN = (5, 10, 15)
 
+# Time-of-day window (+/- minutes) for reference runs. Shared with calibration so
+# the backtest scores the same model the API serves.
+TOD_WINDOW_MIN = 60
+
 
 # Polls further apart than this many typical intervals split the coverage,
 # matching D's exporter (tasks/model.md, load_handoff).

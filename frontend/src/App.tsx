@@ -416,7 +416,9 @@ export default function App() {
                 : catalogError
                   ? "Service offline"
                   : routes.length
-                    ? "Service connected"
+                    ? isOfflineSnapshot(result?.curve.data_quality.basis)
+                      ? "Offline snapshot"
+                      : "Service connected"
                     : "No routes yet"}
           </span>
         </div>
@@ -483,7 +485,7 @@ export default function App() {
                   onChange={(event) => setQuestion(event.target.value)}
                   placeholder={
                     askOff
-                      ? "Ask is off. Use the journey form below."
+                      ? "Ask is unavailable"
                       : "“I need to be at Oxford Circus around 2…”"
                   }
                   maxLength={500}

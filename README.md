@@ -149,11 +149,13 @@ next bus was seen leaving the origin but its trip could not be confirmed.
 | Usable runs | Shown |
 | --- | --- |
 | 0-4 | Counts only: no probability, band or recommendation |
-| 5-14 | Preliminary estimate: no band, no recommendation |
-| 15+ | Estimate, 90% band and a "leave by" recommendation |
+| 5-14 | Preliminary estimate with a wider 90% Wilson interval; no recommendation |
+| 15+ | Estimate, 90% run-bootstrap band and a "leave by" recommendation |
 
-The 90% band resamples whole runs (200 bootstrap resamples), so it describes
-sampling variability in our inferred data. The recommendation is the latest
+For 15+ runs the 90% band resamples whole runs (200 bootstrap resamples), so it
+describes sampling variability in our inferred data. For 5-14 runs the API shows a
+wider 90% Wilson interval over distinct runs instead
+([backend/app/curves.py](backend/app/curves.py)). The recommendation is the latest
 departure whose estimated chance of being late is within your tolerance
 (default 10%); the conservative option uses the band's lower edge.
 

@@ -20,7 +20,7 @@ without a usable segment are censored, never counted as late.
 | Usable runs | Status | Output |
 | --- | --- | --- |
 | 0–4 | `insufficient_data` | Counts only |
-| 5–14 | `low_data` | Estimate; no band, no recommendation |
+| 5–14 | `low_data` | Estimate; no model band (API adds a 90% Wilson interval); no recommendation |
 | 15+ | `ok` | Estimate, band, `recommend()` and `what_if()` |
 
 A curve takes about 8.5 ms (PLAN target 50 ms). `n_boot=0` skips the band for

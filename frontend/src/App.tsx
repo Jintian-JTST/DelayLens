@@ -10,6 +10,7 @@ import {
 import { recommend, delayedPoint, MIN_RECOMMENDATION_TRIPS } from "./advisor";
 import { demoCurve, demoRoutes } from "./demo";
 import { demoRequested } from "./demoFlag";
+import { nextResultFocus } from "./resultFocus";
 import { exampleDeadline, isCovered, pickInitialRoute } from "./defaults";
 import {
   askOffNotice,
@@ -106,6 +107,8 @@ export default function App() {
   );
   const curveController = useRef<AbortController | null>(null);
   const askController = useRef<AbortController | null>(null);
+  const adviceRef = useRef<HTMLElement | null>(null);
+  const focusResultPending = useRef(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -185,6 +188,14 @@ export default function App() {
       );
   }, [result]);
 
+  // The old result unmounts on submit, which drops focus to the page top;
+  // hand it to the new recommendation once for keyboard and screen-reader users.
+  useEffect(() => {
+    const next = nextResultFocus(focusResultPending.current, !!result);
+    focusResultPending.current = next.pending;
+    if (next.focus) adviceRef.current?.focus();
+  }, [result]);
+
   const demo = mode === "demo";
   const fixture =
     demo ||
@@ -223,6 +234,7 @@ export default function App() {
   async function submitJourney(event: FormEvent) {
     event.preventDefault();
     if (!activeRoute) return;
+    focusResultPending.current = true;
     askController.current?.abort();
     setAskBusy(false);
     setAskMessage("");
@@ -1018,6 +1030,8 @@ export default function App() {
                 </section>
                 <div className="below-chart">
                   <section
+                    ref={adviceRef}
+                    tabIndex={-1}
                     className={`advice-card ${lowData ? "advice-low-data" : ""}`}
                     aria-label="Departure recommendation"
                   >

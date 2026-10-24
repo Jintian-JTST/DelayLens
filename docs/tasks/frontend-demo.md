@@ -3,7 +3,7 @@
 - Task ID: frontend-demo
 - Owner (person / AI tool): F / Codex
 - Branch: feat/frontend
-- Status: frontend implemented; awaiting real-data integration
+- Status: real Victoria low-data curves verified; ready for integration review
 - Integrator / reviewer: B; integration order D → M → B → F
 
 ## Outcome and acceptance criteria
@@ -93,3 +93,31 @@ macOS/zsh, Node 24.22.1, npm 12.2.1, Chrome 151.0.7922.172:
 - Passed the production build and all seven unit tests. Targeted Chrome checks
   passed for the real-route empty state, explicit 91-point demo, switching back,
   390px/320px layouts and absence of uncaught browser errors.
+
+### Real Victoria curves and low-data design (2026-10-24)
+
+- Updated against B's integrated model on `feat/api` (`568844b` at verification).
+  No shared API schema changes were needed. The initial route now prefers the
+  most recorded trips, which selects Victoria over the currently empty bus route.
+- Prominent preliminary-estimate notices accompany the chart and advice. The
+  inspected point shows its trip count. The frontend mirrors B/M's policy that
+  only departure points with at least 15 trips are recommendation-eligible;
+  changing tolerance or the conservative setting cannot bypass that rule.
+  Coordinate updates to this eligibility threshold with B and M.
+- API-omitted minutes leave gaps in both probability and uncertainty paths.
+  The complete requested time axis stays visible and a coverage note explains
+  missing points. Isolated points retain their uncertainty whisker.
+- The form shows reported coverage and offers an explicitly historical
+  recorded-hour example. The user submits it; future deadlines are not silently
+  replaced. Results also show their calendar date.
+- Actual API/browser verification: Victoria, deadline `2026-10-24T14:30:00Z`,
+  `low_data`, 66 returned points, 5–14 trips per point, no recommendation.
+  Desktop and phone widths rendered without overflow or browser errors. Actual
+  screenshots are saved in ignored `.local/qa/low-data-real*.png`.
+- Passed `npm run build` and **11 unit tests**. Intercepted browser cases also
+  verified all-low-data and mixed-data eligibility, disconnected SVG segments,
+  risk/conservative controls, and 390px/320px layouts. These intercepted cases
+  supplement the real-API check; they do not represent additional real journeys.
+- Next: B integrates F; D deploys the combined build. Rehearse the recorded-hour
+  real-data flow and capture a stable demo/video after integration. Keep recording
+  data and verify additional endpoints/calibration as those integrations mature.

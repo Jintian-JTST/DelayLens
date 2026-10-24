@@ -68,6 +68,14 @@ configuration, not hard-coded deployment assumptions.
 - `insufficient_data` suppresses probabilities and advice. Live service failures,
   empty arrivals, unavailable statistics and missing calibration have explicit
   states. Live arrivals refresh every 30 seconds while their panel is mounted.
+- `low_data` shows a prominent preliminary-estimate warning at the chart and
+  advice card. Sample counts are shown for the inspected departure. The local
+  advisor mirrors the backend policy: at least 15 trips are needed for a
+  departure to be eligible. Risk changes cannot turn sparse samples into advice.
+- Unsupported minutes remain blank on the full requested time axis, including
+  gaps in the curve and its band. The form initially chooses the route with the
+  most recorded trips. **Try a recorded-hour example** explicitly fills a
+  historical deadline from the route's coverage; submit it to inspect real data.
 - Ask uses the existing `/api/ask` contract. Its returned numbers are displayed;
   the frontend never invents natural-language travel predictions. Interpretation
   chips focus editable form fields. Partial parsing pre-fills usable fields;
@@ -81,9 +89,10 @@ configuration, not hard-coded deployment assumptions.
 
 ## Current integration limits
 
-The existing backend provides fixture curves; real route definitions, recorded
-trips, the model, Gemini, statistics and calibration are still dependencies on
-the other roles. Frontend success does not verify those services or deployment.
+The integrated `feat/api` backend now supplies real Victoria curves. Early
+results are generally `low_data`; deadlines outside recorded coverage may still
+return `insufficient_data`. A real recorded-hour curve has been verified in the
+frontend. This does not verify every external service, calibration or deployment.
 Chrome desktop and phone-sized layouts have been checked; physical-device,
 Safari, Firefox and screen-reader verification remain outstanding.
 

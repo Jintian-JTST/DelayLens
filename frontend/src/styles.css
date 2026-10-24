@@ -1816,3 +1816,71 @@ footer button {
     min-height: 40px;
   }
 }
+
+.low-data-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 14px 15px;
+  border: 1px solid #ead6b7;
+  border-radius: 10px;
+  background: #fbf2e5;
+  color: #805d38;
+}
+.low-data-notice > svg {
+  flex: none;
+  margin-top: 2px;
+}
+.low-data-notice strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 650;
+}
+.low-data-notice p {
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.coverage-note {
+  padding: 0 0 12px;
+  font-size: 11px;
+  color: #716b78;
+}
+.advice-low-data {
+  border: 1px solid #a68559;
+}
+.advice-caution {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #ecd3ae;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.advice-caution svg {
+  flex: none;
+}
+.route-coverage-hint {
+  grid-column: 1 / -1;
+  margin: -10px 0 20px;
+  font-size: 10px;
+  color: #716b78;
+}
+.route-coverage-hint button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #72518d;
+  padding: 7px 0;
+  text-align: left;
+  font-size: 11px;
+  text-decoration: underline;
+}
+.route-coverage-hint small {
+  display: block;
+  font-size: 9px;
+  line-height: 1.6;
+}

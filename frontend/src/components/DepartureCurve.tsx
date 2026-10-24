@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CurvePoint } from "../api";
+import { curveSegments } from "../chart";
 import { timeLabel, type Clock } from "../time";
 
 interface Props {
@@ -8,6 +9,8 @@ interface Props {
   selected: CurvePoint | null;
   tolerance: number;
   clock: Clock;
+  windowStart: string;
+  windowEnd: string;
 }
 
 export default function DepartureCurve({
@@ -16,6 +19,8 @@ export default function DepartureCurve({
   selected,
   tolerance,
   clock,
+  windowStart,
+  windowEnd,
 }: Props) {
   const [hover, setHover] = useState<number | null>(null);
   const svg = useRef<SVGSVGElement>(null);
@@ -32,28 +37,31 @@ export default function DepartureCurve({
     right = 23,
     top = 25,
     bottom = 42;
-  const first = Date.parse(points[0].depart_at);
-  const last = Date.parse(points.at(-1)!.depart_at);
+  const first = Date.parse(windowStart);
+  const last = Date.parse(windowEnd);
   const x = (iso: string) =>
     left +
     ((Date.parse(iso) - first) / Math.max(1, last - first)) *
       (width - left - right);
   const y = (p: number) => top + (1 - p) * (height - top - bottom);
-  const line = points
-    .map((p, i) => `${i ? "L" : "M"}${x(p.depart_at)},${y(p.p_on_time)}`)
-    .join(" ");
-  const band =
-    points
-      .map((p, i) => `${i ? "L" : "M"}${x(p.depart_at)},${y(p.ci[1])}`)
-      .join(" ") +
-    [...points]
-      .reverse()
-      .map((p) => `L${x(p.depart_at)},${y(p.ci[0])}`)
-      .join(" ") +
-    "Z";
+  const paths = curveSegments(points).map((segment) => {
+    const line = segment
+      .map((p, i) => `${i ? "L" : "M"}${x(p.depart_at)},${y(p.p_on_time)}`)
+      .join(" ");
+    const band =
+      segment
+        .map((p, i) => `${i ? "L" : "M"}${x(p.depart_at)},${y(p.ci[1])}`)
+        .join(" ") +
+      [...segment]
+        .reverse()
+        .map((p) => `L${x(p.depart_at)},${y(p.ci[0])}`)
+        .join(" ") +
+      "Z";
+    return { segment, line, band };
+  });
   const focus =
     hover === null
-      ? (selected ?? recommended)
+      ? (selected ?? recommended ?? points[0])
       : points[Math.min(hover, points.length - 1)];
   const ticks = [0, 0.25, 0.5, 0.75, 1];
 
@@ -63,7 +71,8 @@ export default function DepartureCurve({
         <span>
           {focus ? (
             <>
-              Leave at <strong>{timeLabel(focus.depart_at, clock)}</strong>
+              At <strong>{timeLabel(focus.depart_at, clock)}</strong> ·{" "}
+              {focus.n_trips} trips
             </>
           ) : (
             "Explore the departure curve"
@@ -72,8 +81,8 @@ export default function DepartureCurve({
         <span>
           {focus ? (
             <>
-              <strong>{Math.round(focus.p_on_time * 100)}%</strong> chance of
-              being on time
+              <strong>{Math.round(focus.p_on_time * 100)}%</strong> estimated
+              on-time probability
             </>
           ) : (
             "Earlier departures give you more room"
@@ -92,16 +101,21 @@ export default function DepartureCurve({
         onPointerMove={(event) => {
           const rect = event.currentTarget.getBoundingClientRect();
           const position = ((event.clientX - rect.left) / rect.width) * width;
-          setHover(
+          const target =
+            first +
             Math.max(
               0,
-              Math.min(
-                points.length - 1,
-                Math.round(
-                  ((position - left) / (width - left - right)) *
-                    (points.length - 1),
-                ),
-              ),
+              Math.min(1, (position - left) / (width - left - right)),
+            ) *
+              (last - first);
+          setHover(
+            points.reduce(
+              (nearest, point, index) =>
+                Math.abs(Date.parse(point.depart_at) - target) <
+                Math.abs(Date.parse(points[nearest].depart_at) - target)
+                  ? index
+                  : nearest,
+              0,
             ),
           );
         }}
@@ -163,11 +177,15 @@ export default function DepartureCurve({
             </text>
           </g>
         ))}
-        <path
-          d={`${line}L${x(points.at(-1)!.depart_at)},${y(0)}L${x(points[0].depart_at)},${y(0)}Z`}
-          fill="url(#curve-fill)"
-        />
-        <path d={band} fill="#b2a0d8" opacity=".27" />
+        {paths.map(({ segment, line, band }) => (
+          <g key={segment[0].depart_at}>
+            <path
+              d={`${line}L${x(segment.at(-1)!.depart_at)},${y(0)}L${x(segment[0].depart_at)},${y(0)}Z`}
+              fill="url(#curve-fill)"
+            />
+            <path d={band} fill="#b2a0d8" opacity=".27" />
+          </g>
+        ))}
         <line
           x1={left}
           x2={width - right}
@@ -176,14 +194,37 @@ export default function DepartureCurve({
           stroke="#d98866"
           strokeDasharray="5 5"
         />
-        <path
-          d={line}
-          stroke="#7961bf"
-          strokeWidth="3"
-          fill="none"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
+        {paths.map(({ segment, line }) => (
+          <g key={segment[0].depart_at}>
+            <path
+              className="probability-line"
+              d={line}
+              stroke="#7961bf"
+              strokeWidth="3"
+              fill="none"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            {segment.length === 1 && (
+              <>
+                <line
+                  x1={x(segment[0].depart_at)}
+                  x2={x(segment[0].depart_at)}
+                  y1={y(segment[0].ci[0])}
+                  y2={y(segment[0].ci[1])}
+                  stroke="#b2a0d8"
+                  strokeWidth="3"
+                />
+                <circle
+                  cx={x(segment[0].depart_at)}
+                  cy={y(segment[0].p_on_time)}
+                  r="3"
+                  fill="#7961bf"
+                />
+              </>
+            )}
+          </g>
+        ))}
         {recommended && (
           <line
             x1={x(recommended.depart_at)}
@@ -223,16 +264,18 @@ export default function DepartureCurve({
         )}
         {(width < 500 ? [0, 1 / 3, 2 / 3, 1] : [0, 0.2, 0.4, 0.6, 0.8, 1]).map(
           (fraction) => {
-            const p = points[Math.round(fraction * (points.length - 1))];
+            const iso = new Date(
+              first + fraction * (last - first),
+            ).toISOString();
             return (
               <text
                 key={fraction}
-                x={x(p.depart_at)}
+                x={x(iso)}
                 y={height - 16}
                 textAnchor="middle"
                 className="axis-text"
               >
-                {timeLabel(p.depart_at, clock)}
+                {timeLabel(iso, clock)}
               </text>
             );
           },

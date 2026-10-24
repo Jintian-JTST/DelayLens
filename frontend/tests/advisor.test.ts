@@ -39,3 +39,15 @@ test("what-if arithmetic remains absolute across the UK clock change", () => {
   const after = { ...point(0, 0.8), depart_at: "2026-10-25T01:00:00Z" };
   assert.equal(delayedPoint([before, after], before, 5), after);
 });
+
+test("low-data points cannot become recommendations at any tolerance", () => {
+  const sparse = { ...point(20, 1), n_trips: 14 };
+  assert.equal(recommend([sparse], 0.1), null);
+  assert.equal(recommend([sparse], 0.99, true), null);
+});
+
+test("a mixed curve recommends only from sufficiently observed departures", () => {
+  const reliable = { ...point(10, 0.95), n_trips: 15 };
+  const sparse = { ...point(20, 0.99), n_trips: 14 };
+  assert.equal(recommend([reliable, sparse], 0.1), reliable);
+});

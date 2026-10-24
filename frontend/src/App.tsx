@@ -6,7 +6,7 @@ import {
   type Interpretation,
   type Route,
 } from "./api";
-import { recommend, delayedPoint } from "./advisor";
+import { recommend, delayedPoint, MIN_RECOMMENDATION_TRIPS } from "./advisor";
 import { demoCurve, demoRoutes } from "./demo";
 import {
   browserZone,
@@ -108,7 +108,10 @@ export default function App() {
           setCurveBusy(false);
           return;
         }
-        const initialForm = formFor(list[0].route_id, clockRef.current);
+        const initialRoute = list.reduce((best, route) =>
+          route.trips_observed > best.trips_observed ? route : best,
+        );
+        const initialForm = formFor(initialRoute.route_id, clockRef.current);
         setForm(initialForm);
         setCurveBusy(true);
         const body = requestFor(
@@ -122,7 +125,7 @@ export default function App() {
               ? demoCurve(body)
               : await api.curve(body, controller.signal);
           if (!controller.signal.aborted)
-            setResult({ curve, request: body, route: list[0] });
+            setResult({ curve, request: body, route: initialRoute });
         } catch {
           if (!controller.signal.aborted)
             setCurveError(
@@ -158,8 +161,15 @@ export default function App() {
       ? []
       : (result?.curve.points ?? []);
   const best = recommend(points, tolerance / 100, conservative);
+  const lowData = result?.curve.data_quality.status === "low_data";
+  const hasEligibleDepartures = points.some(
+    (point) => point.n_trips >= MIN_RECOMMENDATION_TRIPS,
+  );
   const selected = best ? delayedPoint(points, best, delay) : null;
   const activeRoute = routes.find((route) => route.route_id === form.routeId);
+  const latestCoveredHour = activeRoute?.hours_covered.length
+    ? Math.max(...activeRoute.hours_covered.map(Date.parse))
+    : null;
   const zone = zoneFor(clock);
   const dirty =
     !!result &&
@@ -590,6 +600,41 @@ export default function App() {
                           </div>
                         </div>
                       )}
+                      {latestCoveredHour !== null && (
+                        <div className="route-coverage-hint">
+                          <p>
+                            {activeRoute!.hours_covered.length} recorded hours ·
+                            latest{" "}
+                            {new Intl.DateTimeFormat("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              timeZone: zone,
+                              timeZoneName: "short",
+                            }).format(new Date(latestCoveredHour))}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              editForm({
+                                deadline: inputDate(
+                                  new Date(
+                                    latestCoveredHour + 30 * 60_000,
+                                  ).toISOString(),
+                                  clock,
+                                ),
+                              })
+                            }
+                          >
+                            Try a recorded-hour example{" "}
+                            <Icon name="arrow" size={13} />
+                          </button>
+                          <small>
+                            This fills a historical deadline. Submit to explore
+                            real recorded journeys.
+                          </small>
+                        </div>
+                      )}
                       <label htmlFor="deadline">I need to arrive by</label>
                       <div className="input-with-icon">
                         <Icon name="clock" size={18} />
@@ -755,6 +800,12 @@ export default function App() {
                             <strong>
                               {timeLabel(result.request.deadline, clock)}
                             </strong>{" "}
+                            ·{" "}
+                            {new Intl.DateTimeFormat("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              timeZone: zone,
+                            }).format(new Date(result.request.deadline))}{" "}
                             · {result.route.destination.name} · {zone}
                           </>
                         ) : (
@@ -777,6 +828,20 @@ export default function App() {
                       </span>
                     )}
                   </div>
+                  {lowData && (
+                    <div className="low-data-notice" role="status">
+                      <Icon name="info" size={20} />
+                      <div>
+                        <strong>Early estimate · limited observations</strong>
+                        <p>
+                          Some departure times have fewer than{" "}
+                          {MIN_RECOMMENDATION_TRIPS} recorded trips. The
+                          uncertainty band matters: these probabilities are
+                          preliminary.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {curveBusy || catalogBusy ? (
                     <div className="chart-loading" role="status">
                       <div className="skeleton" />
@@ -798,6 +863,11 @@ export default function App() {
                       selected={selected}
                       tolerance={tolerance / 100}
                       clock={clock}
+                      windowStart={new Date(
+                        Date.parse(result!.request.deadline) -
+                          result!.request.window_min * 60_000,
+                      ).toISOString()}
+                      windowEnd={result!.request.deadline}
                     />
                   ) : (
                     <div className="chart-empty">
@@ -824,6 +894,15 @@ export default function App() {
                       window.
                     </p>
                   )}
+                  {result &&
+                    points.length > 0 &&
+                    points.length < result.request.window_min + 1 && (
+                      <p className="coverage-note">
+                        {points.length} of {result.request.window_min + 1}{" "}
+                        departure times have usable observations. Blank sections
+                        have too little data for a probability.
+                      </p>
+                    )}
                   {result && (
                     <div className="data-basis">
                       <Icon name="info" size={15} />
@@ -833,13 +912,19 @@ export default function App() {
                 </section>
                 <div className="below-chart">
                   <section
-                    className="advice-card"
+                    className={`advice-card ${lowData ? "advice-low-data" : ""}`}
                     aria-label="Departure recommendation"
                   >
                     <div className="section-top">
-                      <span className="eyebrow">03 / YOUR BEST MOVE</span>
+                      <span className="eyebrow">03 / DEPARTURE ADVICE</span>
                       <Icon name="clock" size={20} />
                     </div>
+                    {lowData && (
+                      <p className="advice-caution">
+                        <Icon name="info" size={15} />
+                        Limited observations · preliminary curve
+                      </p>
+                    )}
                     <div aria-live="polite">
                       {best ? (
                         <>
@@ -886,14 +971,18 @@ export default function App() {
                       ) : (
                         <>
                           <h3>
-                            {points.length
-                              ? "Give yourself more room."
-                              : "A time you can feel good about."}
+                            {points.length && !hasEligibleDepartures
+                              ? "Recommendation pending"
+                              : points.length
+                                ? "Give yourself more room."
+                                : "A time you can feel good about."}
                           </h3>
                           <p className="advice-note">
-                            {points.length
-                              ? "No departure in this window meets your target. Try another deadline, a shorter walk, or a higher tolerance."
-                              : "Your recommended departure will appear once a journey has enough data."}
+                            {points.length && !hasEligibleDepartures
+                              ? `Explore the curve while data accumulates. Recommendations need at least ${MIN_RECOMMENDATION_TRIPS} recorded trips for a departure time.`
+                              : points.length
+                                ? "No departure in this window meets your target. Try another deadline, a shorter walk, or a higher tolerance."
+                                : "Your recommended departure will appear once a journey has enough data."}
                           </p>
                         </>
                       )}

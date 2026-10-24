@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": ".local/tests",
+    "rootDir": ".",
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["src/advisor.ts", "src/time.ts", "tests/*.test.ts"]
+}

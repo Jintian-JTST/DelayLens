@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 620" role="img" aria-labelledby="title description">
+  <title id="title">DelayLens planned architecture</title>
+  <desc id="description">TfL predictions flow through a recorder into Tiger Data and a raw backup. A FastAPI backend uses an empirical replay model and Gemini interpretation, then returns results to a React interface. This diagram describes the plan and does not verify deployment.</desc>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="m0 0 10 5-10 5z" fill="#b2a6be"/></marker></defs>
+  <rect width="1120" height="620" rx="24" fill="#f6f5f0"/>
+  <g font-family="Arial, sans-serif">
+    <text x="48" y="57" font-size="13" letter-spacing="2" fill="#8e779f">DELAYLENS / THE DATA BEHIND THE DECISION</text>
+    <text x="48" y="105" font-size="32" fill="#282b39">From live predictions to a better time to leave.</text>
+    <g stroke="#b2a6be" stroke-width="2" fill="none" marker-end="url(#arrow)">
+      <path d="M305 230h75"/><path d="M595 230h75"/><path d="M790 280v80"/><path d="M670 425h-75" marker-start="url(#arrow)"/><path d="M790 495v28H176v-28"/>
+    </g>
+    <g fill="#fff" stroke="#e4dfE8">
+      <rect x="48" y="170" width="257" height="110" rx="14"/>
+      <rect x="380" y="170" width="215" height="110" rx="14"/>
+      <rect x="670" y="170" width="402" height="110" rx="14"/>
+      <rect x="380" y="360" width="215" height="135" rx="14"/>
+      <rect x="670" y="360" width="402" height="135" rx="14"/>
+    </g>
+    <rect x="48" y="360" width="257" height="135" rx="14" fill="#2c303e"/>
+    <g font-size="11" letter-spacing="1.5" fill="#85758e"><text x="70" y="198">LIVE SOURCE</text><text x="402" y="198">CAPTURE</text><text x="692" y="198">HISTORY</text><text x="692" y="390">COMPUTE + VALIDATE</text><text x="402" y="390">NATURAL LANGUAGE</text></g>
+    <g fill="#282b39" font-size="20"><text x="70" y="230">TfL Unified API</text><text x="402" y="230">Recorder</text><text x="692" y="230">Tiger Data</text><text x="692" y="425">FastAPI + empirical replay</text><text x="402" y="425">Gemini</text></g>
+    <g fill="#716b78" font-size="13"><text x="70" y="254">Arrival predictions + live arrivals</text><text x="402" y="254">30-second polls · UTC</text><text x="692" y="254">Predictions → observed stops → trip segments</text><text x="692" y="451">Cached journeys · probabilities · uncertainty</text><text x="692" y="473">Live arrivals also requested directly from TfL</text><text x="402" y="451">Question → validated arguments</text><text x="402" y="473">Numbers come from the model</text></g>
+    <g fill="#d0d1dc"><text x="70" y="390" font-size="11" letter-spacing="1.5">THE DECISION</text><text x="70" y="451" font-size="13">Curve · advisor · what-if · live</text><text x="70" y="473" font-size="13">Editable interpretation + coverage</text></g>
+    <text x="70" y="425" font-size="20" fill="#fff">React interface</text>
+    <text x="48" y="550" font-size="13" fill="#716b78">Recorder also writes a gzipped JSONL backup. Risk controls run locally in the browser.</text>
+    <text x="48" y="580" font-size="11" fill="#8e779f">IMPLEMENTATION PLAN · Source: PLAN.md · Not a claim of live integration or deployment</text>
+  </g>
+</svg>

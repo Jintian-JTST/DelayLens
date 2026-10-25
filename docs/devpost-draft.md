@@ -1,6 +1,6 @@
 # DelayLens: Devpost submission draft
 
-Owner: M (Olivia). Fill in the ___ blanks on Sunday 09:30–10:30 and submit 11:00–11:15.
+Owner: PROJECT_REVIEWER for the repository handoff after M went offline; the authenticated submitter is still unconfirmed. Team target: Sunday 11:00–11:15 (not an independently verified official cutoff). Remaining external inputs are listed in [submission-handoff.md](submission-handoff.md).
 Every number below comes from the final snapshot `bus29-db-final-20261024T202558Z`
 (verified on main; see [tasks/model.md](../tasks/model.md)) unless marked. Judge answers
 with evidence links: [judge-qa.md](judge-qa.md).
@@ -127,11 +127,14 @@ Web Speech API, TfL Unified API.
 
 ## Links and tracks
 
-- Repo: https://github.com/Jintian-JTST/OxHack
-- Demo video: ___ (backup video, owner ___)
+- Repo: https://github.com/Jintian-JTST/DelayLens
+- Formal hosted demo video: ___ (not confirmed). [93-second silent captioned backup](evidence/backup-demo-20261025/delaylens-backup.webm), backup owner PROJECT_REVIEWER; repository download is available, final host/Devpost acceptance unverified.
 - Try it: none (no public deployment; local demo, see README "Run the API")
-- Tracks to tick: HRT (Data for Predictions & Decision Making), Tiger Data, Gemini API,
-  Built with Delta. ___ Check that each is selected on Devpost and needs no separate form.
+- Planned tracks: HRT (Data for Predictions & Decision Making), Tiger Data, Gemini API,
+  Built with Delta. None is recorded as selected or eligible yet. MLH’s
+  [event prize page](https://www.mlh.com/events/oxhack-26/prizes) lists Tiger Data and
+  Gemini API categories; this does not verify our eligibility, HRT/Delta criteria,
+  combinations or account selections. ___ The submitter must confirm actual requirements. ___
 - Delta thread links: ___
 - Data attribution: "Data provided by Transport for London." This is the notice
   listed in TfL's [live bus arrivals branding guidance](https://tfl.gov.uk/info-for/open-data-users/our-open-data)
@@ -141,12 +144,12 @@ Web Speech API, TfL Unified API.
 
 ## Before submitting: open items and owners
 
-Checked against main `f57eb65` on Sun 25 Oct by M (T43). Fill these in by hand. Do not
-guess links or numbers.
+Preflight by M (T43), then manager T49 handoff after M went offline. Fill external
+fields from actual account/organiser evidence. Do not guess links or numbers.
 
 | Item | Owner | Status |
 | --- | --- | --- |
-| Demo video link and backup owner | Proposed: Olivia assigns a recorder and a backup (not yet confirmed) | 09:30: recording status unconfirmed, no reply to #981. Proposed ETA, not agreed: record at the 10:30 rehearsal, link by 10:45 |
+| Formal video link / backup | PROJECT_REVIEWER owns the completed repository backup; formal hosting operator unconfirmed | Backup exists and is verified in PR80; accepted hosting URL and Devpost field still unconfirmed |
 | Delta thread links | Proposed: Olivia, with David and JTST (not yet confirmed) | 09:30: none received, no reply to #981. Proposed ETA, not agreed: 10:00 |
 | Devpost track selections and eligibility (HRT, Tiger Data, Gemini API, Built with Delta) | Proposed: Olivia, with the organisers (not yet confirmed) | 09:30: unconfirmed, and no eligibility check reported. Proposed ETA, not agreed: 10:00 |
 | D's data/infra paragraph and verified totals | D supplied; manager replayed PR74 | Verified above; source packages committed |

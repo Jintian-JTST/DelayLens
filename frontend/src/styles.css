@@ -546,23 +546,6 @@ main {
 }
 .route-map,
 .route-map text,
-.map-northern path {
-  fill: none;
-  stroke: #c6c8cc;
-  stroke-width: 4;
-  stroke-linejoin: round;
-}
-.map-northern line {
-  stroke: #c6c8cc;
-  stroke-width: 3;
-}
-.route-map .map-northern text {
-  fill: #8a8e95;
-  font-size: 12.5px;
-}
-.route-map .map-northern-key {
-  font-style: italic;
-}
 .map-route {
   fill: none;
   stroke: #b4c8ee;

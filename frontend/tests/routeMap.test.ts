@@ -33,11 +33,20 @@ const route = (overrides: Partial<Route> = {}): Route => ({
   ...overrides,
 });
 
-test("the map is only drawn for the bus 29 demo route with stops", () => {
+test("the map uses the configured stops, or just the real two ends", () => {
   assert.equal(mapStops(route())?.length, 8);
-  assert.equal(mapStops(route({ route_id: "bus-24-inbound-warren-tottenham" })), null);
-  assert.equal(mapStops(route({ stops: undefined })), null);
-  assert.equal(mapStops(route({ stops: null })), null);
+  // A route without a stop list shows only its real origin and destination.
+  const bare = mapStops(
+    route({ route_id: "bus-29-outbound-finsbury", stops: undefined }),
+  );
+  assert.deepEqual(
+    bare?.map((s) => s.name),
+    [names[0], names[7]],
+  );
+  assert.equal(mapStops(route({ stops: null }))?.length, 2);
+  assert.equal(mapStops(route({ stops: [] }))?.length, 2);
+  // Never for the labelled fixture, nor without a route.
+  assert.equal(mapStops(route({ line_id: "fixture" })), null);
   assert.equal(mapStops(null), null);
 });
 
@@ -59,7 +68,8 @@ test("layout uses horizontal runs and one 45-degree diagonal", () => {
   // Equal horizontal and vertical travel on the diagonal is a 45-degree angle.
   const drop = points[4].y - points[3].y;
   assert.equal(path, `M130,92 L388,92 L${388 + drop},${92 + drop} L759,162`);
-  for (let i = 1; i < points.length; i++) assert.ok(points[i].x > points[i - 1].x);
+  for (let i = 1; i < points.length; i++)
+    assert.ok(points[i].x > points[i - 1].x);
   assert.equal(layoutStops(0).path, "");
 });
 
@@ -96,7 +106,11 @@ test("timeline splits a departure into walks, wait+ride and the p50-p90 spread",
 });
 
 test("timeline never shows a negative wait or reversed percentiles", () => {
-  const odd = { ...point, arrive_p50: "2026-10-24T15:25:00Z", arrive_p90: "2026-10-24T15:20:00Z" };
+  const odd = {
+    ...point,
+    arrive_p50: "2026-10-24T15:25:00Z",
+    arrive_p90: "2026-10-24T15:20:00Z",
+  };
   const t = journeyTimeline(odd, 5, 5, "2026-10-24T15:30:00Z");
   assert.ok(t.stopP50 >= t.atStop);
   assert.ok(t.arriveP90 >= t.arriveP50);
@@ -107,9 +121,15 @@ test("summary names the route, times and the per-stop caveat", () => {
   const t = journeyTimeline(point, 5, 5, "2026-10-24T16:00:00Z");
   const fmt = (ms: number) => new Date(ms).toISOString().slice(11, 16);
   const text = journeySummary(t, route().stops!, fmt, 92);
-  assert.match(text, /Mornington Crescent Station to Tottenham Court Road Station, 8 stops/);
+  assert.match(
+    text,
+    /Mornington Crescent Station to Tottenham Court Road Station, 8 stops/,
+  );
   assert.match(text, /Leave 15:22, reach the stop about 15:27/);
-  assert.match(text, /typical arrival 15:45, 9 in 10 replayed trips by 15:52, deadline 16:00/);
+  assert.match(
+    text,
+    /typical arrival 15:45, 9 in 10 replayed trips by 15:52, deadline 16:00/,
+  );
   assert.match(text, /Estimated 92% chance/);
   assert.match(text, /not measured/);
   assert.doesNotMatch(journeySummary(t, route().stops!, fmt, null), /chance/);
@@ -119,4 +139,15 @@ test("slack wording covers spare, exact and late p90", () => {
   assert.equal(slackLabel(8), "8 min to spare at p90");
   assert.equal(slackLabel(0), "p90 lands on the deadline");
   assert.equal(slackLabel(-3), "p90 is 3 min after the deadline");
+});
+
+test("two real ends are laid out on one straight, well-spaced run", () => {
+  const layout = layoutStops(2);
+  assert.equal(layout.points.length, 2);
+  assert.equal(layout.points[0].y, layout.points[1].y);
+  assert.ok(layout.points[1].x - layout.points[0].x >= 300);
+  assert.equal(
+    layout.path,
+    `M${layout.points[0].x},${layout.points[0].y} L${layout.points[1].x},${layout.points[1].y}`,
+  );
 });

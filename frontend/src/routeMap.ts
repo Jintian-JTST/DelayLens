@@ -7,15 +7,20 @@ import type { CurvePoint, Route, Stop } from "./api.ts";
  * intermediate stop: uncertainty is attributed to the wait and the whole ride.
  */
 
-/** The bus 29 demo route; the only route the schematic is drawn for. */
+/** The bus 29 route the original schematic was drawn for (kept for tests and docs). */
 export const MAP_ROUTE_ID =
   "bus-29-outbound-mornington-crescent-tottenham-court-road";
 
-/** The configured stop sequence for the demo route, or null when unavailable. */
+/**
+ * Stops to draw for a route: its configured sequence when the API has one,
+ * otherwise only the real origin and destination. Nothing is invented, so a
+ * route without a known stop list shows just its two ends. The labelled demo
+ * fixture is never drawn as if it were a real line.
+ */
 export function mapStops(route: Route | null | undefined): Stop[] | null {
-  if (!route || route.route_id !== MAP_ROUTE_ID) return null;
+  if (!route || route.line_id === "fixture") return null;
   const stops = route.stops ?? [];
-  return stops.length >= 2 ? stops : null;
+  return stops.length >= 2 ? stops : [route.origin, route.destination];
 }
 
 /** Split a stop name into short lines for SVG labels (no mid-word breaks). */
@@ -54,6 +59,20 @@ export const MAP_GEOMETRY = {
  * horizontal run. Stops sit only on the horizontal runs.
  */
 export function layoutStops(count: number, g = MAP_GEOMETRY): StopLayout {
+  // With only the two real ends there is nothing to bend around: one straight
+  // run, widely spaced so the labels do not collide.
+  if (count <= 2) {
+    const points: MapPoint[] = [];
+    for (let i = 0; i < count; i++)
+      points.push({ x: g.startX + i * 480, y: g.topY });
+    return {
+      points,
+      bendAfter: Math.max(0, count - 1),
+      path: points.length
+        ? points.map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`).join(" ")
+        : "",
+    };
+  }
   const bendAfter = Math.max(0, Math.floor((count - 1) / 2));
   const points: MapPoint[] = [];
   for (let i = 0; i < count; i++) {
@@ -61,13 +80,20 @@ export function layoutStops(count: number, g = MAP_GEOMETRY): StopLayout {
     else
       points.push({
         // The diagonal covers `drop` horizontally (45 degrees), then half a gap.
-        x: g.startX + bendAfter * g.spacing + g.drop + (i - bendAfter - 0.5) * g.spacing,
+        x:
+          g.startX +
+          bendAfter * g.spacing +
+          g.drop +
+          (i - bendAfter - 0.5) * g.spacing,
         y: g.topY + g.drop,
       });
   }
   if (!points.length) return { points, bendAfter, path: "" };
   const corner = points[bendAfter];
-  const segments = [`M${points[0].x},${points[0].y}`, `L${corner.x},${corner.y}`];
+  const segments = [
+    `M${points[0].x},${points[0].y}`,
+    `L${corner.x},${corner.y}`,
+  ];
   if (count > bendAfter + 1) {
     segments.push(`L${corner.x + g.drop},${corner.y + g.drop}`);
     const end = points.at(-1)!;
@@ -119,7 +145,10 @@ export function journeyTimeline(
 ): JourneyTimeline {
   const leave = Date.parse(point.depart_at);
   const atStop = leave + walkToMin * 60_000;
-  const arriveP50 = Math.max(atStop + walkFromMin * 60_000, Date.parse(point.arrive_p50));
+  const arriveP50 = Math.max(
+    atStop + walkFromMin * 60_000,
+    Date.parse(point.arrive_p50),
+  );
   const arriveP90 = Math.max(arriveP50, Date.parse(point.arrive_p90));
   const stopP50 = arriveP50 - walkFromMin * 60_000;
   const stopP90 = arriveP90 - walkFromMin * 60_000;
@@ -168,7 +197,9 @@ export function journeySummary(
   const from = stops[0].name;
   const to = stops.at(-1)!.name;
   const chance =
-    chancePercent === null ? "" : ` Estimated ${chancePercent}% chance of arriving on time.`;
+    chancePercent === null
+      ? ""
+      : ` Estimated ${chancePercent}% chance of arriving on time.`;
   return (
     `Schematic map of bus 29 from ${from} to ${to}, ${stops.length} stops. ` +
     `Leave ${format(timeline.leave)}, reach the stop about ${format(timeline.atStop)}, ` +

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 2868,
+      "sha256": "011ec0c667b48991d77144c9fe85978b13b02a5201643dbce5f61a6ebb136521"
+    },
+    {
+      "path": "t10-output.txt",
+      "bytes": 3101,
+      "sha256": "ba3245e69ccc8f3360b0371daa3ae08b9e46be25e883058256b52a246504cd51"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1350,
+      "sha256": "a898b296370d70a09c5f4f3eea65dcbf6fd6f3cbae88415f1c9d979a759eaeed"
+    }
+  ]
+}

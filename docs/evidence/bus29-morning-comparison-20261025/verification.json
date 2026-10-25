@@ -1,0 +1,45 @@
+{
+  "manifestSha256": "f3ca015020d438fa0f55856238485e6fb8bb1a6f6c2e861807fd9b606c33863b",
+  "filesVerified": 8,
+  "lockedTreeUnchanged": true,
+  "routes": {
+    "bus-29-outbound-mornington-crescent-tottenham-court-road": {
+      "count": 80,
+      "LondonDates": {
+        "2026-10-24": 74,
+        "2026-10-25": 6
+      }
+    },
+    "bus-29-outbound-finsbury-park-tottenham-court-road": {
+      "count": 70,
+      "LondonDates": {
+        "2026-10-24": 67,
+        "2026-10-25": 3
+      }
+    }
+  },
+  "apiComparison": {
+    "lockedRecommendation": {
+      "depart_at": "2026-10-24T15:22:00Z",
+      "p_on_time": 0.9174
+    },
+    "candidateRecommendation": {
+      "depart_at": "2026-10-24T15:22:00Z",
+      "p_on_time": 0.9174
+    },
+    "recommendationIdentical": true,
+    "pointCounts": [
+      91,
+      91
+    ],
+    "pointsIdentical": true,
+    "confidenceBandsIdentical": true
+  },
+  "checked_at_utc": "2026-10-25T06:36:17.992041+00:00",
+  "candidateSourcePR": 70,
+  "candidateHead": "79b87d30837cbc024cb5cceef42e84d18475d5f8",
+  "lockedPath": "docs/evidence/bus29-db-final-20261024T202558Z",
+  "candidatePath": "docs/evidence/bus29-db-20261025T0607Z",
+  "lockedManifestSha256": "4846881faf25b915db107b744dd36cd97815a6d2038ff1c8539f133c2461d1fb",
+  "newStandaloneHandoff": "not delivered; not independently verified; T42 remains partial"
+}

@@ -96,11 +96,22 @@ def test_what_if_is_relative_to_recommendation():
         assert w["delta"] == pytest.approx(w["p_on_time"] - rec, abs=1e-4)
 
 
-def test_deadline_on_unrecorded_date_is_insufficient():
+def test_deadline_on_unrecorded_date_replays_a_recorded_day():
     data = _curve(deadline="2026-10-26T17:00:00Z")
+    assert data["points"]
+    assert data["data_quality"]["basis"].startswith(
+        "No trips recorded for Mon 26 Oct near this time, so this replays Sat 24 Oct "
+        "at the same London time (most recent recorded day; no same-weekday "
+        "recordings yet)."
+    )
+
+
+def test_time_recorded_on_no_day_is_insufficient():
+    data = _curve(deadline="2026-10-26T06:00:00Z")  # recordings are 12:00-20:00 UTC
     assert data["data_quality"]["status"] == "insufficient_data"
     assert data["points"] == []
     assert data["recommended"] is None
+    assert not data["data_quality"]["basis"].startswith("No trips recorded for")
 
 
 def test_duplicate_runs_are_counted_once():

@@ -312,6 +312,14 @@ def _past_note(deadline: datetime, now: datetime) -> str:
     return f" That time has already passed, so this replays recorded data for {day}."
 
 
+def _borrowed_note(curve: DepartureCurveResponse) -> str:
+    """The curve's note when it replayed another recorded day, so Ask says so too."""
+    basis = curve.data_quality.basis
+    if not basis.startswith("No trips recorded for"):
+        return ""
+    return " " + basis.split(")", 1)[0] + ")."
+
+
 def _departure_answer(
     args: _CurveArgs, compute_curve: CurveFn, route: Route, now: datetime
 ) -> AskResponse:
@@ -332,7 +340,7 @@ def _departure_answer(
         )
     )
     context = _route_context(route, args.walk_to_min, args.walk_from_min)
-    past = _past_note(args.deadline, now)
+    past = _past_note(args.deadline, now) + _borrowed_note(curve)
     if curve.data_quality.status == "insufficient_data" or not curve.points:
         answer = (
             f"I don't have enough recorded data to say{context}.{past} "
@@ -377,7 +385,7 @@ def _compare_answer(
         )
     )
     context = _route_context(route, args.walk_to_min, args.walk_from_min)
-    past = _past_note(args.deadline, now)
+    past = _past_note(args.deadline, now) + _borrowed_note(curve)
     if curve.data_quality.status == "insufficient_data" or not curve.points:
         return AskResponse(
             interpretation=interp,

@@ -520,6 +520,46 @@ def departure_curve(
     )
 
 
+MAX_REFERENCE_TRIES = 8
+
+
+def reference_date_candidates(segments: Segments, deadline: datetime) -> list[date]:
+    """Recorded London dates to borrow when the deadline's own date has no trips
+    near that time: the same weekday first (most recent week first), then any
+    other recorded date (most recent first). The deadline's own date is excluded.
+    """
+    own = to_epoch(deadline)
+    own_date = datetime.fromtimestamp(own, LONDON).date()
+    recorded = sorted(
+        {datetime.fromtimestamp(int(e), LONDON).date() for e in segments.t_origin},
+        reverse=True,
+    )
+    others = [d for d in recorded if d != own_date]
+    same_weekday = [d for d in others if d.weekday() == own_date.weekday()]
+    rest = [d for d in others if d.weekday() != own_date.weekday()]
+    return (same_weekday + rest)[:MAX_REFERENCE_TRIES]
+
+
+def departure_curve_with_reference(
+    segments: Segments,
+    deadline: datetime,
+    **kwargs,
+) -> tuple[Curve, date | None]:
+    """departure_curve on the deadline's own date; if that gives no probability at
+    any departure, replay the same London time on the first candidate date that
+    does (see reference_date_candidates). Returns the curve and the borrowed date,
+    or None when the own date was used or nothing had data.
+    """
+    curve = departure_curve(segments, deadline, **kwargs)
+    if np.isfinite(curve.p_on_time).any():
+        return curve, None
+    for ref in reference_date_candidates(segments, deadline):
+        borrowed = departure_curve(segments, deadline, reference_dates=[ref], **kwargs)
+        if np.isfinite(borrowed.p_on_time).any():
+            return borrowed, ref
+    return curve, None
+
+
 def p_on_time(
     segments: Segments,
     depart_at: datetime,

@@ -7,7 +7,7 @@ distinct runs.
 """
 
 import math
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -120,7 +120,24 @@ def _utc(epoch: float) -> datetime:
     return datetime.fromtimestamp(float(epoch), UTC)
 
 
-def _basis(segments: model.Segments, snapshot_label: str | None = None) -> str:
+def _reference_note(deadline: datetime, reference_date: date) -> str:
+    asked = deadline.astimezone(LONDON).date()
+    why = (
+        "same weekday"
+        if reference_date.weekday() == asked.weekday()
+        else "most recent recorded day; no same-weekday recordings yet"
+    )
+    return (
+        f"No trips recorded for {asked:%a %d %b} near this time, so this replays "
+        f"{reference_date:%a %d %b} at the same London time ({why})."
+    )
+
+
+def _basis(
+    segments: model.Segments,
+    snapshot_label: str | None = None,
+    reference_note: str | None = None,
+) -> str:
     n = len(segments)
     if n == 0:
         return "No trips recorded on this route yet."
@@ -132,6 +149,8 @@ def _basis(segments: model.Segments, snapshot_label: str | None = None) -> str:
         f"±{TOD_WINDOW_MIN} min around each departure. Arrivals are estimated "
         "from TfL predictions, not measured; not yet calibrated."
     )
+    if reference_note:
+        text = f"{reference_note} {text}"
     return f"{text} {snapshot_label}" if snapshot_label else text
 
 
@@ -140,6 +159,7 @@ def build_response(
     req: DepartureCurveRequest,
     segments: model.Segments,
     snapshot_label: str | None = None,
+    reference_date: date | None = None,
 ) -> DepartureCurveResponse:
     points: list[CurvePoint] = []
     statuses: list[str] = []
@@ -185,6 +205,13 @@ def build_response(
         points=points,
         recommended=best,
         what_if=what_if,
-        data_quality=DataQuality(status=status, basis=_basis(segments, snapshot_label)),
+        data_quality=DataQuality(
+            status=status,
+            basis=_basis(
+                segments,
+                snapshot_label,
+                _reference_note(req.deadline, reference_date) if reference_date else None,
+            ),
+        ),
         server_ms=0.0,
     )

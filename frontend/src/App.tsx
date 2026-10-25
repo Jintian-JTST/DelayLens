@@ -1255,7 +1255,7 @@ export default function App() {
             delaylens<span>Made for the moments that matter.</span>
           </span>
           <span>
-            Powered by{" "}
+            Data provided by Transport for London. Powered by{" "}
             <a
               href="https://tfl.gov.uk/info-for/open-data-users/"
               target="_blank"

@@ -6,6 +6,7 @@ import {
   VOICE_UNSUPPORTED,
   liveText,
   readTranscript,
+  shouldSubmitOnEnd,
   speechErrorMessage,
   speechRecognitionCtor,
   type SpeechRecognitionLike,
@@ -34,12 +35,19 @@ export default function VoiceButton({
   );
   const [listening, setListening] = useState(false);
   const recognition = useRef<SpeechRecognitionLike | null>(null);
+  const session = useRef<{ final: string; failed: boolean; cancelled: boolean } | null>(null);
   const callbacks = useRef({ onInterim, onFinal, onStatus });
   callbacks.current = { onInterim, onFinal, onStatus };
 
-  useEffect(() => () => recognition.current?.abort(), []);
+  // Aborting still fires `end` (sometimes with text); mark the session first so
+  // it cannot submit a second question after Ask was sent another way.
+  function cancel() {
+    if (session.current) session.current.cancelled = true;
+    recognition.current?.abort();
+  }
+  useEffect(() => cancel, []);
   useEffect(() => {
-    if (disabled) recognition.current?.abort();
+    if (disabled) cancel();
   }, [disabled]);
 
   function start() {
@@ -53,29 +61,34 @@ export default function VoiceButton({
     rec.interimResults = true;
     rec.continuous = false;
     rec.maxAlternatives = 1;
-    let final = "";
-    let failed = false;
+    const current = { final: "", failed: false, cancelled: false };
+    session.current = current;
     rec.onresult = (event) => {
       const transcript = readTranscript(event.results);
-      final = transcript.final;
+      current.final = transcript.final;
       callbacks.current.onInterim(liveText(transcript));
     };
     rec.onerror = (event) => {
-      failed = true;
+      current.failed = true;
       const message = speechErrorMessage(event.error);
       // "aborted" is quiet: clear the listening prompt instead of leaving it up.
       callbacks.current.onStatus(message, message ? "error" : "info");
     };
     rec.onend = () => {
-      recognition.current = null;
+      if (session.current === current) {
+        recognition.current = null;
+        session.current = null;
+      }
       setListening(false);
-      if (final) {
+      if (shouldSubmitOnEnd(current)) {
         callbacks.current.onStatus(
-          `Heard “${final}”. Asking DelayLens…`,
+          `Heard “${current.final}”. Asking DelayLens…`,
           "info",
         );
-        callbacks.current.onFinal(final);
-      } else if (!failed) {
+        callbacks.current.onFinal(current.final);
+      } else if (current.cancelled) {
+        callbacks.current.onStatus("", "info");
+      } else if (!current.failed) {
         callbacks.current.onStatus(speechErrorMessage("no-speech"), "error");
       }
     };

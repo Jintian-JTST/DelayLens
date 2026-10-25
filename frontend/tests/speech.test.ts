@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   liveText,
   readTranscript,
+  shouldSubmitOnEnd,
   speechErrorMessage,
   speechRecognitionCtor,
   type SpeechResultLike,
@@ -53,4 +54,19 @@ test("error codes map to helpful messages; aborted stays quiet", () => {
   assert.match(speechErrorMessage("audio-capture"), /No microphone/);
   assert.match(speechErrorMessage("network"), /network/);
   assert.match(speechErrorMessage("something-new"), /stopped unexpectedly/);
+});
+
+test("an aborted voice session never submits, even if end fires with a transcript", () => {
+  // Regression: pressing the text Ask button while listening made Ask busy, which
+  // aborted recognition; Chrome then fired `end` with text and a second POST went out.
+  assert.equal(
+    shouldSubmitOnEnd({ final: "when should I leave", failed: false, cancelled: true }),
+    false,
+  );
+});
+
+test("a voice session submits only a non-empty final transcript without errors", () => {
+  assert.equal(shouldSubmitOnEnd({ final: "when should I leave", failed: false, cancelled: false }), true);
+  assert.equal(shouldSubmitOnEnd({ final: "   ", failed: false, cancelled: false }), false);
+  assert.equal(shouldSubmitOnEnd({ final: "when should I leave", failed: true, cancelled: false }), false);
 });

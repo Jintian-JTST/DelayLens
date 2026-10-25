@@ -68,6 +68,19 @@ export function liveText(transcript: { final: string; interim: string }): string
   return tidy(`${transcript.final} ${transcript.interim}`);
 }
 
+/**
+ * Whether a finished recognition session should send its transcript to Ask.
+ * A session we aborted (Ask became busy, or the button unmounted) or one that
+ * reported an error never submits, even if the browser still fires `end` with text.
+ */
+export function shouldSubmitOnEnd(session: {
+  final: string;
+  failed: boolean;
+  cancelled: boolean;
+}): boolean {
+  return Boolean(session.final.trim()) && !session.failed && !session.cancelled;
+}
+
 /** User-facing message for a SpeechRecognition error code, or "" to stay quiet. */
 export function speechErrorMessage(code: string): string {
   switch (code) {

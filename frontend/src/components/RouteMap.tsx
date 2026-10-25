@@ -202,7 +202,7 @@ export default function RouteMap({
               Leave {fmt(timeline.leave)}
             </text>
             <text x={origin.x - 4} y={origin.y + 38} textAnchor="start" className="accent">
-              Board ~{fmt(timeline.atStop)}
+              At stop ~{fmt(timeline.atStop)}
             </text>
             <text x={origin.x - 4} y={origin.y + 53} textAnchor="start" className="accent small">
               wait varies

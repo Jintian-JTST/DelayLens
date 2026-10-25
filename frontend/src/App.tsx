@@ -296,7 +296,9 @@ export default function App() {
 
   async function askQuestion(text: string) {
     if (!text.trim() || demo || askBlocked || !routes.length) return;
-    askController.current?.abort();
+    // One question at a time: a second submit while one is in flight (e.g. the
+    // text Ask button pressed during voice input) must not POST again.
+    if (askController.current && !askController.current.signal.aborted) return;
     const controller = new AbortController();
     askController.current = controller;
     setAskBusy(true);
@@ -379,6 +381,7 @@ export default function App() {
         );
       }
     } finally {
+      if (askController.current === controller) askController.current = null;
       if (!controller.signal.aborted) setAskBusy(false);
     }
   }

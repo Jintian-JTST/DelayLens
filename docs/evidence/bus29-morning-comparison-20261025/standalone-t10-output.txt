@@ -1,0 +1,27 @@
+
+== docs/evidence/bus29-db-final-20261024T202558Z
+frozen 2026-10-24 20:25 UTC, 791 polls
+- bus-29-outbound-finsbury-park-tottenham-court-road: 48 runs
+  runs per London hour: 2026-10-24 15:00 BST (+0100): 8, 2026-10-24 16:00 BST (+0100): 9, 2026-10-24 17:00 BST (+0100): 10, 2026-10-24 18:00 BST (+0100): 8, 2026-10-24 19:00 BST (+0100): 7, 2026-10-24 20:00 BST (+0100): 6
+  backtest: preliminary, Brier 0.1318, 760 outcomes, 42 runs
+    predicted 0.081 observed 0.091 (n=186)
+    predicted 0.291 observed 0.295 (n=88)
+    predicted 0.486 observed 0.547 (n=117)
+    predicted 0.712 observed 0.763 (n=152)
+    predicted 0.934 observed 0.949 (n=217)
+- bus-29-outbound-mornington-crescent-tottenham-court-road: 56 runs
+  runs per London hour: 2026-10-24 14:00 BST (+0100): 1, 2026-10-24 15:00 BST (+0100): 9, 2026-10-24 16:00 BST (+0100): 12, 2026-10-24 17:00 BST (+0100): 8, 2026-10-24 18:00 BST (+0100): 10, 2026-10-24 19:00 BST (+0100): 6, 2026-10-24 20:00 BST (+0100): 9, 2026-10-24 21:00 BST (+0100): 1
+  backtest: preliminary, Brier 0.1296, 1104 outcomes, 49 runs
+    predicted 0.046 observed 0.053 (n=360)
+    predicted 0.295 observed 0.356 (n=163)
+    predicted 0.500 observed 0.537 (n=177)
+    predicted 0.695 observed 0.768 (n=142)
+    predicted 0.918 observed 0.908 (n=262)
+  Sat 17:00 London: leave 16:22 p=0.9174 (up to 22 runs, 91/91 points ok)
+  Sat 15:30 London: no_departure_meets_tolerance (up to 17 runs, 6/91 points ok)
+
+== standalone docs/evidence/bus29-independent-20261025T0545Z
+4/4 rows used, 4 runs
+runs per London hour: 2026-10-24 23:00 BST (+0100): 2, 2026-10-25 00:00 BST (+0100): 2
+Sat 17:00 London: too_few_runs (up to 0 runs, 0/91 points ok)
+Sat 15:30 London: too_few_runs (up to 0 runs, 0/91 points ok)

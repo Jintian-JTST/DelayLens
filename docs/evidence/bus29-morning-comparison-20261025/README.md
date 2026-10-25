@@ -1,4 +1,4 @@
-# Morning database comparison — 25 October 2026 (T42, database part)
+# Morning source comparison — 25 October 2026 (T42)
 
 Data provided by Transport for London.
 
@@ -37,10 +37,28 @@ Keep the locked 20:25Z stage default. PR70 is accepted as a separate candidate;
 no demo launcher or default was changed. Larger database counts do not replace
 independent samples or prove calibration.
 
-D's new overnight standalone handoff has not been delivered at this checkpoint.
-Its reported four trips are not independently accepted, and are not pooled with
-these counts or the older five-trip standalone package. T42 therefore remains
-partial until that source handoff can be verified.
+## Independent overnight handoff accepted
+
+PR74 head `7faef4631991c7a542b4a81825e06357ea20e1d2` supplies the separate
+[overnight package](../bus29-independent-20261025T0545Z/). The manager verified
+all 14 outer manifest entries, both ZIP digests and internal manifests/CRCs, then
+replayed all 685 raw polls using the reviewed repository derivation code (identical
+to the archived source). The replay exactly reproduces four CSV segments and 88
+stop events. Counts recomputed from raw polls: 683 successful, two failed,
+442 empty successes and 48,819 prediction rows. Empty responses do not establish
+why predictions were absent.
+
+The run spans 24 Oct 22:33:21Z to 25 Oct 04:59:21Z. Inferred origin-hour bins are
+24 Oct 23:00 BST: two; 25 Oct 00:00 BST: two. The model loads all four rows;
+these support no recommendation and remain below 15. They are separate from
+both the older five-trip standalone run and all database counts. No pooling,
+measured-arrival validation or calibration improvement is claimed.
+
+[standalone-verification.json](standalone-verification.json) records the independent
+checks; [standalone-t10-output.txt](standalone-t10-output.txt) records model loading
+and the unchanged locked-snapshot baseline. T42's source comparison is complete;
+the independent sample target remains unmet. The recorded pre-run gap
+22:11–22:33Z is producer-reported, not independently reconstructed from this run.
 
 ## Reproduce
 

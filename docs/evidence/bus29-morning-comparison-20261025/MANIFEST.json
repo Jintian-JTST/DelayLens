@@ -3,8 +3,18 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 2868,
-      "sha256": "011ec0c667b48991d77144c9fe85978b13b02a5201643dbce5f61a6ebb136521"
+      "bytes": 3977,
+      "sha256": "f1b2e47e59ef28c757cc281f07fa78e041108d3131b0cf5c5c449f4ba8fc819b"
+    },
+    {
+      "path": "standalone-t10-output.txt",
+      "bytes": 1732,
+      "sha256": "40e5cc26d820822b2c1a8c2feb94b6aec020b50d45c9efd37c74dec4414ecbe1"
+    },
+    {
+      "path": "standalone-verification.json",
+      "bytes": 569,
+      "sha256": "a00e67520a1df8c7de0611b21939151c927d9e9fc769b898ffd42bdeae6184a9"
     },
     {
       "path": "t10-output.txt",

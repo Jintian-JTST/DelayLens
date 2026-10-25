@@ -43,9 +43,13 @@ When the evidence is thin, it says so:
     compression ratio), with raw JSONL backups.
   - Stop events are inferred conservatively from near-stop predictions, and paired
     into origin → destination trips with quality labels.
-  - ___ D's data/infra paragraph: D-claude supplies the verified poll totals, UTC
-    start and end, and backup location after its export check. Keep the reported
-    22-minute recorder gap (22:11–22:33Z). Do not fill in estimates. ___
+  - A separate overnight standalone capture ran 24 Oct 22:33Z–25 Oct 04:59Z:
+    independently replaying its 685 raw polls reproduced 4 inferred trips and
+    88 stop events. The committed raw/source ZIPs and hashes are in the
+    [overnight evidence package](evidence/bus29-independent-20261025T0545Z/README.md).
+    D reports a preceding 22-minute move-related recorder gap (22:11–22:33Z).
+    This run stays separate from the database and the older 5-trip standalone run;
+    both standalone runs remain below 15, with no calibration claim.
 - **Model (M):**
   - Empirical replay in NumPy. Every recorded minute within ±60 min of your departure
     boards the first recorded bus and adds your walks.
@@ -95,8 +99,9 @@ When the evidence is thin, it says so:
 - Below 15 recorded trips there is no recommendation; below 5, only counts.
 - The calibration check scores the model against the same inferred events, not
   measured arrivals, and is reported as preliminary.
-- Our backup standalone recorder collected only 5 usable bus 29 trips (below our
-  15-trip target), so it cannot independently confirm the database counts.
+- The older standalone run has 5 usable bus 29 trips and the new overnight run
+  has 4. They are separate recordings, each below 15; neither independently
+  confirms the database counts or establishes calibration.
 - The journey map cannot locate delays at individual stops. Our trips are recorded
   origin to destination only.
 - Voice input and Gemini answers were tested only with mocks and a local stub, with no
@@ -137,11 +142,11 @@ guess links or numbers.
 | Demo video link | Olivia names who records it; the team records it | Not recorded yet |
 | Delta thread links | Olivia, from the team's Delta threads | Not collected |
 | Devpost track selections (HRT, Tiger Data, Gemini API, Built with Delta) | Olivia, confirmed with the organisers | Not confirmed |
-| D's data/infra paragraph and verified totals | D-claude, after the export check | Waiting for the export |
+| D's data/infra paragraph and verified totals | D supplied; manager replayed PR74 | Verified above; source packages committed |
 | Live Gemini Ask test (needs `GEMINI_API_KEY` in `backend/.env`) | Olivia at the 10:30 rehearsal | Not tested |
 | Real-microphone test (one `/api/ask` POST only) | Olivia at the 10:30 rehearsal | Not tested |
 | Latency re-measure on the demo laptop | B-claude, 08:30 | 4 ms p95 from the earlier smoke check |
-| Standalone count for task 1 (≥15 trips) | D-claude | Last verified: 5 trips |
+| Standalone count for task 1 (≥15 trips) | D-claude | Older run 5; overnight run 4, separately verified; target unmet |
 
 The demo stays on the locked 20:25Z snapshot.
 - The 06:07Z candidate snapshot (80 and 70 runs, including 6 and 3 Sunday runs) leaves

@@ -36,6 +36,7 @@ import RouteMap from "./components/RouteMap";
 import VoiceButton, { type VoiceTone } from "./components/VoiceButton";
 
 const ACCESS_CODE_KEY = "delaylens.askAccessCode";
+const ILLUSTRATIONS = `${import.meta.env.BASE_URL}illustrations/`;
 
 interface JourneyForm {
   routeId: string;
@@ -482,13 +483,30 @@ export default function App() {
               Your deadline. Your comfort with risk. A clearer way to get there.
             </p>
           </div>
-          <div className="intro-note">
-            <Icon name="shield" size={25} />
-            <span>
-              Know the odds.
-              <br />
-              <strong>Make the call.</strong>
-            </span>
+          <div className="intro-art" aria-hidden="true">
+            <img
+              className="intro-art-street"
+              src={`${ILLUSTRATIONS}street.jpg`}
+              alt=""
+            />
+            <img
+              className="intro-art-stop"
+              src={`${ILLUSTRATIONS}bus-stop.png`}
+              alt=""
+            />
+            <img
+              className="intro-art-bus"
+              src={`${ILLUSTRATIONS}bus.png`}
+              alt=""
+            />
+            <div className="intro-note">
+              <Icon name="shield" size={22} />
+              <span>
+                Know the odds.
+                <br />
+                <strong>Make the call.</strong>
+              </span>
+            </div>
           </div>
         </section>
         {fixture && (
@@ -1062,9 +1080,16 @@ export default function App() {
                   ) : (
                     <div className="chart-empty">
                       <div className="empty-route-art" aria-hidden="true">
-                        <span />
-                        <i />
-                        <span />
+                        <img
+                          className="empty-art-runner"
+                          src={`${ILLUSTRATIONS}runner.png`}
+                          alt=""
+                        />
+                        <img
+                          className="empty-art-clock"
+                          src={`${ILLUSTRATIONS}clock.png`}
+                          alt=""
+                        />
                       </div>
                       <h3>
                         {result
@@ -1264,6 +1289,10 @@ export default function App() {
               TfL Open Data
             </a>
             <span className="footer-divider">/</span>Built at OxHack 2026
+            <span className="footer-divider">/</span>Illustrations:{" "}
+            <a href="https://www.irasutoya.com/" target="_blank" rel="noreferrer">
+              irasutoya
+            </a>
           </span>
           <button
             type="button"

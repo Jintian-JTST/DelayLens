@@ -596,8 +596,16 @@ main {
 .map-prelim {
   color: var(--warning-text);
 }
-.route-map,
-.route-map text,
+.route-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: inherit;
+}
+.route-map text {
+  font-size: 14px;
+  fill: var(--ink);
+}
 .map-northern path {
   fill: none;
   stroke: #c6c8cc;

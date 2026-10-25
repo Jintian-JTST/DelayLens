@@ -87,6 +87,26 @@ backtests.
     - standalone 180-min recording: `load_handoff` used 5/5 rows (London 18, 20 and
       21 h). At most 4 runs per departure, so `too_few_runs` and no advice. Task 1's
       15-run gate is still not met.
+- **T16: morning rerun** (main `f57eb65`, by M with `tools.rerun_t10`; it matches the
+  manager's independent T42 comparison in
+  `docs/evidence/bus29-morning-comparison-20261025`):
+
+  | Route (database snapshot) | Runs 20:25Z → 06:07Z | Brier | Outcomes (runs) | Top bin, predicted → observed |
+  | --- | --- | --- | --- | --- |
+  | Mornington Crescent → TCR (short) | 56 → 80 (74 Sat + 6 Sun) | 0.1296 → 0.1276 | 1104 (49) → 1584 (67) | 0.918 → 0.908, then 0.929 → 0.924 |
+  | Finsbury Park → TCR (long) | 48 → 70 (67 Sat + 3 Sun) | 0.1318 → 0.1168 | 760 (42) → 1128 (56) | 0.934 → 0.949, then 0.931 → 0.960 |
+
+  - New runs are Saturday evening and Sunday 00:00–01:00 BST. Inferred runs stop
+    before 01:00 BST, so the clock change at 02:00 BST is not exercised by this data.
+  - Same local date only: with the 06:07Z data, Sat 17:00 still gives leave 16:22,
+    p=0.9174, and Sat 15:30 still gives no recommendation. Earlier checks agree:
+    adding a synthetic Sunday copy left the Saturday curve unchanged, and
+    `test_dates_are_not_pooled_unless_requested` covers this.
+  - New snapshot `MANIFEST.json`: 8/8 SHA256 match.
+  - The demo stays on the locked 20:25Z snapshot, because its numbers are unchanged.
+  - Status stays preliminary: scored against inferred events, mostly one Saturday.
+  - No new standalone export was available at 07:03 GMT, so task 1's standalone
+    count was not rechecked.
 - **Bus 29 standalone 90-min handoff** (`docs/evidence/bus29-short-20261024`):
   - 7 usable runs and 20 origin events. 8 departures inside coverage had no usable
     segment and are censored; 5 come after the recording end.

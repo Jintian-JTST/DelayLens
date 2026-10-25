@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "files": [
+    {
+      "path": "bus-29-outbound-finsbury-park-tottenham-court-road/coverage.json",
+      "bytes": 382,
+      "sha256": "97fe08db7a2001a1a77493b8609ff00242f5251423ebc335809ec8a14540f408"
+    },
+    {
+      "path": "bus-29-outbound-finsbury-park-tottenham-court-road/origin_events.csv",
+      "bytes": 11769,
+      "sha256": "8925b2530829e063dad6896bd5e111bbc1ec5881f5bf888cd8cc0df993aa997e"
+    },
+    {
+      "path": "bus-29-outbound-finsbury-park-tottenham-court-road/segments.csv",
+      "bytes": 10885,
+      "sha256": "c498f219c371575c84321d92fb802346a5918a1273588761da90c8f07af76c68"
+    },
+    {
+      "path": "bus-29-outbound-mornington-crescent-tottenham-court-road/coverage.json",
+      "bytes": 415,
+      "sha256": "d37887342b46dfbd6331db8dcb530fa47ff8e1f12d56633275cb7d66b2f064b2"
+    },
+    {
+      "path": "bus-29-outbound-mornington-crescent-tottenham-court-road/origin_events.csv",
+      "bytes": 11688,
+      "sha256": "d4aafe43ff513ae56d326e91f6b33f496b03a400d689b710680f9a6aaae4715d"
+    },
+    {
+      "path": "bus-29-outbound-mornington-crescent-tottenham-court-road/segments.csv",
+      "bytes": 12837,
+      "sha256": "0e5cdc488a1a974673d85481c031116cbbc67ea9ca1c9aee730a63a8c191e26b"
+    },
+    {
+      "path": "poll_times.csv",
+      "bytes": 62809,
+      "sha256": "08428c388acb9babdc09a8cb44628431cf8b9431fdd74e885f606ae928bcc798"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 1768,
+      "sha256": "d2ca2ad4d75e6429c096d6e85cc2326bfbe94520dbbcd450d5a62e3b0e2e5b66"
+    }
+  ]
+}

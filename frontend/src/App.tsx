@@ -11,6 +11,12 @@ import { recommend, delayedPoint, MIN_RECOMMENDATION_TRIPS } from "./advisor";
 import { demoCurve, demoRoutes } from "./demo";
 import { demoRequested } from "./demoFlag";
 import { nextResultFocus } from "./resultFocus";
+import {
+  destinationsFor,
+  originsOf,
+  reselect,
+  usableRoutes,
+} from "./routePicker";
 import { exampleDeadline, isCovered, pickInitialRoute } from "./defaults";
 import {
   askOffFromHealth,
@@ -136,8 +142,9 @@ export default function App() {
     setDelay(0);
     void (async () => {
       try {
-        const list =
-          mode === "demo" ? demoRoutes : await api.routes(controller.signal);
+        const list = usableRoutes(
+          mode === "demo" ? demoRoutes : await api.routes(controller.signal),
+        );
         if (controller.signal.aborted) return;
         setRoutes(list);
         setCatalogBusy(false);
@@ -249,6 +256,38 @@ export default function App() {
       form.walkTo !== result.request.walk_to_min ||
       form.walkFrom !== result.request.walk_from_min ||
       form.deadline !== inputDate(result.request.deadline, clock));
+  const walkOk = (minutes: number) =>
+    Number.isFinite(minutes) && minutes >= 0 && minutes <= 60;
+  const deadlineOk = (() => {
+    try {
+      return (
+        !!form.deadline &&
+        Number.isFinite(Date.parse(inputISO(form.deadline, clock)))
+      );
+    } catch {
+      return false;
+    }
+  })();
+  const formValid = deadlineOk && walkOk(form.walkTo) && walkOk(form.walkFrom);
+
+  // The right-hand side follows the left: a valid change recalculates after a
+  // short pause, so nobody has to press Update and an old curve is never left
+  // standing as the answer to new conditions.
+  useEffect(() => {
+    if (!dirty || !formValid || catalogBusy) return;
+    const timer = window.setTimeout(() => void runCurve(form, false), 500);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    dirty,
+    formValid,
+    catalogBusy,
+    form.routeId,
+    form.deadline,
+    form.walkTo,
+    form.walkFrom,
+    clock,
+  ]);
 
   function editForm(patch: Partial<JourneyForm>) {
     askController.current?.abort();
@@ -257,28 +296,33 @@ export default function App() {
     setForm((current) => ({ ...current, ...patch }));
   }
 
-  async function submitJourney(event: FormEvent) {
-    event.preventDefault();
-    if (!activeRoute) return;
-    focusResultPending.current = true;
-    askController.current?.abort();
-    setAskBusy(false);
-    setAskMessage("");
-    setInterpretation(null);
+  // One request path for the submit button and for automatic updates. An
+  // automatic update keeps the previous result on screen (marked stale) until
+  // the new one arrives, and never moves keyboard focus.
+  async function runCurve(snapshot: JourneyForm, manual: boolean) {
+    const route = routes.find((r) => r.route_id === snapshot.routeId);
+    if (!route) return;
+    if (manual) {
+      focusResultPending.current = true;
+      askController.current?.abort();
+      setAskBusy(false);
+      setAskMessage("");
+      setInterpretation(null);
+    }
     curveController.current?.abort();
     const controller = new AbortController();
     curveController.current = controller;
     setCurveBusy(true);
     setCurveError("");
-    setResult(null);
+    if (manual) setResult(null);
     setDelay(0);
     try {
-      const body = requestFor(form, tolerance, clock);
+      const body = requestFor(snapshot, tolerance, clock);
       const curve = demo
         ? demoCurve(body)
         : await api.curve(body, controller.signal);
       if (!controller.signal.aborted)
-        setResult({ curve, request: body, route: activeRoute });
+        setResult({ curve, request: body, route });
     } catch {
       if (!controller.signal.aborted)
         setCurveError(
@@ -287,6 +331,11 @@ export default function App() {
     } finally {
       if (!controller.signal.aborted) setCurveBusy(false);
     }
+  }
+
+  async function submitJourney(event: FormEvent) {
+    event.preventDefault();
+    await runCurve(form, true);
   }
 
   function submitQuestion(event: FormEvent) {
@@ -755,21 +804,60 @@ export default function App() {
                     </div>
                   ) : (
                     <form id="journey-form" onSubmit={submitJourney}>
-                      <label htmlFor="route">Your route</label>
-                      <select
-                        id="route"
-                        value={form.routeId}
-                        onChange={(event) =>
-                          editForm({ routeId: event.target.value })
-                        }
-                        required
-                      >
-                        {routes.map((route) => (
-                          <option key={route.route_id} value={route.route_id}>
-                            {route.origin.name} → {route.destination.name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="od-fields">
+                        <div>
+                          <label htmlFor="origin">From</label>
+                          <select
+                            id="origin"
+                            value={activeRoute?.origin.naptan_id ?? ""}
+                            onChange={(event) => {
+                              const next = reselect(routes, activeRoute, {
+                                origin: event.target.value,
+                              });
+                              if (next) editForm({ routeId: next.route_id });
+                            }}
+                            required
+                          >
+                            {originsOf(routes).map((stop) => (
+                              <option
+                                key={stop.naptan_id}
+                                value={stop.naptan_id}
+                              >
+                                {stop.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="destination">To</label>
+                          <select
+                            id="destination"
+                            value={activeRoute?.destination.naptan_id ?? ""}
+                            onChange={(event) => {
+                              const next = reselect(routes, activeRoute, {
+                                destination: event.target.value,
+                              });
+                              if (next) editForm({ routeId: next.route_id });
+                            }}
+                            required
+                          >
+                            {destinationsFor(
+                              routes,
+                              activeRoute?.origin.naptan_id ?? "",
+                            ).map((stop) => (
+                              <option
+                                key={stop.naptan_id}
+                                value={stop.naptan_id}
+                              >
+                                {stop.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <p className="route-only-note">
+                        Only journeys with recorded trips are listed.
+                      </p>
                       {activeRoute && (
                         <div className="route-stops">
                           <div>
@@ -945,12 +1033,12 @@ export default function App() {
                         {curveBusy
                           ? "Finding your departure…"
                           : dirty
-                            ? "Update my journey"
+                            ? "Update now"
                             : "Find my departure"}
                         <Icon name="arrow" size={18} />
                       </button>
                       <p className="form-footnote">
-                        Risk changes update instantly, right here.
+                        Changes update the answer automatically.
                       </p>
                     </form>
                   )}
@@ -964,7 +1052,9 @@ export default function App() {
                   </p>
                 </div>
               </aside>
-              <div className="results-column">
+              <div
+                className={`results-column${dirty || (curveBusy && result) ? " is-stale" : ""}`}
+              >
                 <section
                   className="card chart-card"
                   aria-busy={curveBusy || catalogBusy}
@@ -1080,8 +1170,9 @@ export default function App() {
                   )}
                   {dirty && (
                     <p className="pending-notice" role="status">
-                      Your journey has changed. Update it to see a new departure
-                      window.
+                      {formValid
+                        ? "Updating for your new settings…"
+                        : "Enter a valid arrival time and walking minutes (0–60) to update."}
                     </p>
                   )}
                   {result &&

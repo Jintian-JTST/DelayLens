@@ -155,8 +155,8 @@ export default function DepartureCurve({
         </desc>
         <defs>
           <linearGradient id="curve-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop stopColor="#7961bf" stopOpacity=".10" />
-            <stop offset="1" stopColor="#7961bf" stopOpacity=".01" />
+            <stop stopColor="#2f6fe4" stopOpacity=".10" />
+            <stop offset="1" stopColor="#2f6fe4" stopOpacity=".01" />
           </linearGradient>
         </defs>
         {ticks.map((p) => (
@@ -166,7 +166,7 @@ export default function DepartureCurve({
               x2={width - right}
               y1={y(p)}
               y2={y(p)}
-              stroke="#eae9ed"
+              stroke="#e9ebed"
               strokeDasharray={p === 0 ? undefined : "3 5"}
             />
             <text
@@ -185,7 +185,7 @@ export default function DepartureCurve({
               d={`${line}L${x(segment.at(-1)!.depart_at)},${y(0)}L${x(segment[0].depart_at)},${y(0)}Z`}
               fill="url(#curve-fill)"
             />
-            <path d={band} fill="#b2a0d8" opacity=".27" />
+            <path d={band} fill="#a0b5d8" opacity=".27" />
           </g>
         ))}
         <line
@@ -193,7 +193,7 @@ export default function DepartureCurve({
           x2={width - right}
           y1={y(1 - tolerance)}
           y2={y(1 - tolerance)}
-          stroke="#d98866"
+          stroke="#7fa6ee"
           strokeDasharray="5 5"
         />
         {paths.map(({ segment, line }) => (
@@ -201,7 +201,7 @@ export default function DepartureCurve({
             <path
               className="probability-line"
               d={line}
-              stroke="#7961bf"
+              stroke="#2f6fe4"
               strokeWidth="3"
               fill="none"
               strokeLinejoin="round"
@@ -214,14 +214,14 @@ export default function DepartureCurve({
                   x2={x(segment[0].depart_at)}
                   y1={y(segment[0].ci[0])}
                   y2={y(segment[0].ci[1])}
-                  stroke="#b2a0d8"
+                  stroke="#a0b5d8"
                   strokeWidth="3"
                 />
                 <circle
                   cx={x(segment[0].depart_at)}
                   cy={y(segment[0].p_on_time)}
                   r="3"
-                  fill="#7961bf"
+                  fill="#2f6fe4"
                 />
               </>
             )}
@@ -233,7 +233,7 @@ export default function DepartureCurve({
             x2={x(recommended.depart_at)}
             y1={top}
             y2={height - bottom}
-            stroke="#e36e43"
+            stroke="#2f6fe4"
             strokeDasharray="4 5"
             opacity=".7"
           />
@@ -245,7 +245,7 @@ export default function DepartureCurve({
               x2={x(focus.depart_at)}
               y1={y(focus.p_on_time)}
               y2={height - bottom}
-              stroke="#9585b5"
+              stroke="#8597b5"
               strokeDasharray="2 4"
             />
             <circle
@@ -253,14 +253,14 @@ export default function DepartureCurve({
               cy={y(focus.p_on_time)}
               r="8"
               fill="#fff"
-              stroke="#7961bf"
+              stroke="#2f6fe4"
               strokeWidth="3"
             />
             <circle
               cx={x(focus.depart_at)}
               cy={y(focus.p_on_time)}
               r="3"
-              fill="#7961bf"
+              fill="#2f6fe4"
             />
           </g>
         )}

@@ -1,0 +1,38 @@
+const {chromium}=require('playwright');
+const fs=require('fs');const path=require('path');const out=process.env.RECORD_OUTPUT_DIR||__dirname;fs.mkdirSync(out,{recursive:true});
+(async()=>{
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_EXECUTABLE?{executablePath:process.env.CHROME_EXECUTABLE}:{})});
+ const context=await browser.newContext({viewport:{width:1440,height:1000},timezoneId:'Europe/London',recordVideo:{dir:path.join(out,'raw'),size:{width:1440,height:1000}}});
+ const page=await context.newPage();const requests=[];const results=[];const errors=[];const scenes=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ page.on('request',r=>{if(new URL(r.url()).pathname.startsWith('/api/'))requests.push({path:new URL(r.url()).pathname,method:r.method()});});
+ page.on('response',async r=>{if(new URL(r.url()).pathname==='/api/departure-curve'){const j=await r.json();results.push({status:r.status(),request:r.request().postDataJSON(),recommended:j.recommended,basis:j.data_quality.basis});}});
+ await page.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='127.0.0.1'||u.pathname.startsWith('/api/live'))return r.abort();return r.continue();});
+ await page.goto((process.env.DEMO_BASE_URL||'http://127.0.0.1:5188/'));await page.locator('#route').waitFor();
+ await page.evaluate(()=>{document.activeElement.blur();const style=document.createElement('style');style.textContent='#recording-caption{position:fixed;bottom:16px;left:36px;right:36px;z-index:99999;padding:15px 24px;background:rgba(35,39,50,.97);color:#fff;border-radius:14px;box-shadow:0 8px 24px #0003;pointer-events:none;font:600 23px/1.35 Arial,sans-serif}#recording-caption small{display:block;font-size:12px;letter-spacing:1px;color:#dad4ef;margin-bottom:5px;font-weight:400}';document.head.appendChild(style);const cap=document.createElement('div');cap.id='recording-caption';document.body.appendChild(cap);});
+ async function scene(name,text,ms=9000){scenes.push({name,caption:text});console.log('Scene:',name);await page.evaluate(text=>{const cap=document.getElementById('recording-caption');cap.replaceChildren();const small=document.createElement('small');small.textContent='BACKUP RECORDING · HISTORICAL REPLAY · CAPTIONS ADDED FOR THIS VIDEO';cap.append(small,document.createTextNode(text));},text);await page.mouse.move(1400,40);await page.waitForTimeout(700);await page.screenshot({path:path.join(out,name+'.png')});await page.waitForTimeout(ms);}
+ await scene('01-intro','DelayLens: when should I leave to arrive on time? A recorded-data demo, not live travel advice.',6000);
+ await page.locator('#route').selectOption('bus-29-outbound-mornington-crescent-tottenham-court-road');await page.locator('#deadline').fill('2026-10-24T17:00');await page.locator('#walk-to').fill('5');await page.locator('#walk-from').fill('5');
+ await page.locator('#deadline').scrollIntoViewIfNeeded();
+ await scene('02-form','Bus 29, Mornington Crescent to Tottenham Court Road. Saturday 24 October, 17:00 London; walks 5 + 5 minutes.',8000);
+ await page.getByRole('button',{name:/Find my departure|Update my journey/}).click();await page.waitForFunction(()=>document.body.innerText.includes('16:22'));await page.evaluate(()=>document.activeElement.blur());
+ await page.locator('.chart-card').evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));
+ await scene('03-curve','Each possible departure gets an estimated on-time chance and a 90% uncertainty band. The source and sample count stay visible.',8000);
+ await page.getByRole('region',{name:'Departure recommendation'}).scrollIntoViewIfNeeded();
+ await scene('03-advice','Leave by 16:22: an estimated 92% on-time chance. The page shows the uncertainty and recorded support.',10000);
+ await page.getByRole('button',{name:'+5 min',exact:true}).click();
+ await scene('04-later','Leave five minutes later and the estimated chance falls to about 75%. The comparison updates in the browser.',8000);
+ await page.getByRole('button',{name:'On plan',exact:true}).click();await page.locator('.map-card').evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));
+ await scene('05-map','The map separates walking from the uncertain wait and ride. It does not measure delays at individual stops.',9000);
+ await page.locator('#deadline').fill('2026-10-24T15:30');await page.getByRole('button',{name:/Find my departure|Update my journey/}).click();await page.waitForTimeout(600);await page.getByRole('region',{name:'Departure recommendation'}).scrollIntoViewIfNeeded();
+ await scene('06-no-advice','For a 15:30 deadline, no departure meets the 90% target on these recordings. DelayLens gives no recommendation.',10000);
+ await page.getByRole('button',{name:'Our methodology',exact:true}).click();await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
+ await scene('07-method','TfL supplies predictions. Arrivals are inferred, not measured. Calibration remains preliminary; one Saturday cannot establish general reliability.',10000);
+ await scene('08-close','The form works without Gemini or a database. This backup uses the frozen 20:25Z snapshot; live arrivals, voice and live Gemini are not demonstrated.',8000);
+ const video=page.video();await page.close();await context.close();await video.saveAs(path.join(out,'delaylens-backup.webm'));await browser.close();
+ const expected=results.find(r=>new Date(r.request.deadline).getTime()===Date.parse('2026-10-24T16:00:00Z'));
+ const noAdvice=results.find(r=>new Date(r.request.deadline).getTime()===Date.parse('2026-10-24T14:30:00Z'));
+ if(expected?.recommended?.depart_at!=='2026-10-24T15:22:00Z'||expected?.recommended?.p_on_time!==0.9174||!noAdvice||noAdvice.recommended!==null||errors.length||requests.some(r=>r.path==='/api/ask'))throw new Error('Recording acceptance failed: '+JSON.stringify({results,errors}));
+ fs.writeFileSync(path.join(out,'recording-checks.json'),JSON.stringify({recordedAt:new Date().toISOString(),snapshot:'bus29-db-final-20261024T202558Z',scenes,curveResults:results,pageErrors:errors,askRequests:0,liveArrivalsBlocked:true,speechOrGeminiDemonstrated:false,captionsAdded:true,audioTrack:false},null,2)+'\n');
+ console.log('Recording and API assertions complete.');
+})().catch(e=>{console.error(e);process.exitCode=1});

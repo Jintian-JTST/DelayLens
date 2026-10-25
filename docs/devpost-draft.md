@@ -64,9 +64,9 @@ When the evidence is thin, it says so:
   runs the whole demo without a database. On one laptop over local loopback, a warm
   /api/departure-curve call takes about 4.3 ms at p95 (3.5 ms server-side). The first
   curve takes about 23 ms, not counting process start.
-  - Measured by the manager on Sun 25 Oct (T47, evidence in PR #77). Clean main
-    `1df3f4b`, locked 20:25Z snapshot, no database or API keys, after 20 warm-up
-    requests.
+  - Measured by the manager on Sun 25 Oct (T47). Clean main `1df3f4b`, locked
+    20:25Z snapshot, no database or API keys: three warm-up requests followed by
+    20 measured requests. [Method and all samples](evidence/demo-api-smoke-20261025/README.md).
   - Every response gave 16:22, p=0.9174.
   - This is not internet latency, and it is not an offline test on the presentation
     laptop.

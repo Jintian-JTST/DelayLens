@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -19,7 +20,7 @@ from pydantic import Field, TypeAdapter, ValidationError
 
 from app import ask as ask_module
 from app import calibration as calibration_module
-from app import curves, db, fixtures, model, snapshot_files, tfl
+from app import curves, db, fixtures, journeys, model, snapshot_files, tfl
 from app.schemas import (
     AskRequest,
     AskResponse,
@@ -27,10 +28,14 @@ from app.schemas import (
     DataQuality,
     DepartureCurveRequest,
     DepartureCurveResponse,
+    JourneyCurveRequest,
+    JourneyCurveResponse,
+    JourneyLeg,
     LiveError,
     LiveResponse,
     Route,
     Stats,
+    Stop,
 )
 
 load_dotenv()
@@ -109,8 +114,15 @@ app.add_middleware(
 )
 
 
+def _all_routes() -> list[_ConfiguredRoute]:
+    """Configured routes plus their generated stop-pair sub-routes."""
+    configured = _load_routes()
+    subs = journeys.expand_subroutes([r.model_dump() for r in configured])
+    return configured + [_ConfiguredRoute.model_validate(r) for r in subs]
+
+
 def _route_or_404(route_id: str) -> _ConfiguredRoute:
-    for route in _load_routes():
+    for route in _all_routes():
         if route.route_id == route_id:
             return route
     raise HTTPException(status_code=404, detail=f"Unknown route_id: {route_id}")
@@ -127,14 +139,21 @@ def _snapshot() -> db.Snapshot | None:
 
 
 @app.get("/api/routes", response_model=list[Route])
-def routes() -> list[Route]:
-    result = _load_routes()
+def routes(include_subroutes: bool = False) -> list[Route]:
+    result = _all_routes() if include_subroutes else _load_routes()
     if snapshot := _snapshot():
         for route in result:
             if cov := snapshot.coverage.get(route.route_id):
                 route.trips_observed = cov.trips_observed
                 route.hours_covered = cov.hours_covered
     return result
+
+
+@app.get("/api/stops", response_model=list[Stop])
+def stops() -> list[Stop]:
+    return [Stop.model_validate(s) for s in journeys.stop_catalogue(
+        [r.model_dump() for r in _load_routes()]
+    )]
 
 
 # TfL's rate limit is per app key, so viewers share one upstream request per route
@@ -217,6 +236,98 @@ def _compute_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
     return result
 
 
+def _line_label(routes: list[_ConfiguredRoute]) -> str:
+    lines = list(dict.fromkeys(r.line_id for r in routes))
+    if routes[0].mode == "tube":
+        return " or ".join(f"{line.capitalize()} line" for line in lines)
+    return f"bus {' or '.join(lines)}"
+
+
+def _journey_leg(leg: list[_ConfiguredRoute]) -> JourneyLeg:
+    return JourneyLeg(
+        route_ids=[r.route_id for r in leg],
+        line_ids=list(dict.fromkeys(r.line_id for r in leg)),
+        mode=leg[0].mode,
+        origin=leg[0].origin,
+        destination=leg[0].destination,
+    )
+
+
+def _compute_journey(req: JourneyCurveRequest) -> JourneyCurveResponse:
+    started = time.perf_counter()
+    by_id = {r.route_id: r for r in _all_routes()}
+    options = journeys.journey_options(
+        req.origin_naptan_id, req.destination_naptan_id, [r.model_dump() for r in by_id.values()]
+    )
+    if not options:
+        raise HTTPException(status_code=404, detail="No configured journey between these stops")
+    snapshot = _snapshot() if ROUTES_PATH.exists() else None
+    if snapshot is None:
+        legs = [[by_id[r["route_id"]] for r in leg] for leg in options[0]]
+        return JourneyCurveResponse(
+            points=[], recommended=None, what_if=[], server_ms=0,
+            data_quality=DataQuality(
+                status="insufficient_data",
+                basis="Recorded-trip data not connected; no probability available.",
+            ),
+            legs=[_journey_leg(leg) for leg in legs],
+            options_considered=len(options),
+        )
+
+    kwargs = {"window_min": req.window_min, "tod_window_min": curves.TOD_WINDOW_MIN}
+    best = None
+    for option in options:
+        legs = [[by_id[r["route_id"]] for r in leg] for leg in option]
+        segs = [
+            model.merge_segments([_segments_for(snapshot, r.route_id) for r in leg])
+            for leg in legs
+        ]
+        if len(segs) == 1:
+            curve, ref = model.departure_curve_with_reference(
+                segs[0], req.deadline, walk_to_min=req.walk_to_min,
+                walk_from_min=req.walk_from_min, **kwargs,
+            )
+        else:
+            curve, ref = model.transfer_curve_with_reference(
+                segs[0], segs[1], req.deadline, walk_to_min=req.walk_to_min,
+                transfer_min=req.transfer_min, walk_from_min=req.walk_from_min, **kwargs,
+            )
+        advice = model.recommend(curve, req.tolerance)
+        shown = int(np.isfinite(curve.p_on_time).sum())
+        direct = len(segs) == 1
+        # Prefer any recommendation (direct first, then latest departure), then data.
+        if advice.depart_at is not None:
+            score = (2, direct, advice.depart_at)
+        else:
+            score = (1 if shown else 0, direct, shown)
+        if best is None or score > best[0]:
+            best = (score, legs, segs, curve, ref)
+
+    _, legs, segs, curve, ref = best
+    pseudo = DepartureCurveRequest(
+        route_id=legs[0][0].route_id, deadline=req.deadline, walk_to_min=req.walk_to_min,
+        walk_from_min=req.walk_from_min, tolerance=req.tolerance, window_min=req.window_min,
+    )
+    result = curves.build_response(curve, pseudo, segs[0], snapshot_label=snapshot.source_label)
+    labels = [
+        f"{_line_label(leg)} {leg[0].origin.name} to {leg[0].destination.name}" for leg in legs
+    ]
+    result.data_quality.basis = curves.journey_basis(
+        labels, segs, req.transfer_min, snapshot.source_label,
+        curves._reference_note(req.deadline, ref) if ref else None,
+    )
+    return JourneyCurveResponse(
+        **result.model_dump(),
+        legs=[_journey_leg(leg) for leg in legs],
+        options_considered=len(options),
+    ).model_copy(update={"server_ms": round((time.perf_counter() - started) * 1000, 2)})
+
+
+@app.post("/api/journey-curve", response_model=JourneyCurveResponse)
+def journey_curve(req: JourneyCurveRequest) -> JourneyCurveResponse:
+    return _compute_journey(req)
+
+
 @app.post("/api/departure-curve", response_model=DepartureCurveResponse)
 def departure_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
     _route_or_404(req.route_id)
@@ -253,7 +364,18 @@ def ask(
         models=_gemini_models(),
         compute_curve=_compute_curve,
         get_live=_live_for,
+        stops=stops(),
+        compute_journey=_journey_or_none,
     )
+
+
+def _journey_or_none(req: JourneyCurveRequest) -> JourneyCurveResponse | None:
+    try:
+        return _compute_journey(req)
+    except HTTPException as exc:
+        if exc.status_code == 404:
+            return None
+        raise
 
 
 @app.get(

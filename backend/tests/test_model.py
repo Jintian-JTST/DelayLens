@@ -25,8 +25,10 @@ from app.model import (
     reference_date_candidates,
     reference_instants,
     replay_curve,
+    replay_transfer_curve,
     synthetic_segments,
     to_epoch,
+    transfer_curve_with_reference,
     what_if,
 )
 
@@ -561,3 +563,99 @@ def test_no_recorded_day_covers_the_time(timetable: Segments) -> None:
     curve, ref = departure_curve_with_reference(timetable, night, window_min=30)
     assert ref is None
     assert not np.isfinite(curve.p_on_time).any()
+
+
+# --- two-leg journeys with one change --------------------------------------
+
+
+def _brute_transfer(first, second, reach, instants, deadline, walk_from_s, gap_s, buf_s):
+    """Loop version of replay_transfer_curve's rules, for one departure row."""
+    def board(seg, t):
+        for (a, b) in seg.coverage:
+            if a <= t <= b:
+                for k, o in enumerate(seg.t_origin):
+                    if o >= t:
+                        return k if o <= b else None
+                return None
+        return None
+
+    arrivals = []
+    for s in instants:
+        k1 = board(first, s + buf_s)
+        if k1 is None:
+            continue
+        k2 = board(second, first.t_dest[k1] + gap_s + buf_s)
+        if k2 is None:
+            continue
+        arrivals.append(reach + second.t_dest[k2] - s + walk_from_s)
+    return arrivals
+
+
+def test_transfer_matches_a_hand_checked_connection() -> None:
+    # Leg 1 every 10 min, 20 min ride; leg 2 every 15 min from :05, 10 min ride;
+    # fifteen recorded days so the single replayed instant has 15 distinct runs.
+    last = END + timedelta(days=14)
+    first = synthetic_segments(START, last, headway_min=10, ride_min=20)
+    second = synthetic_segments(
+        START + timedelta(minutes=5), last, headway_min=15, ride_min=10
+    )
+
+    def leave_at_10(deadline: datetime):
+        return replay_transfer_curve(
+            first, second, np.array([to_epoch(at(10, 0))]), to_epoch(deadline),
+            tod_window_min=0, board_buffer_min=0, transfer_min=3,
+            reference_dates=FIFTEEN_DAYS, n_boot=0,
+        )
+
+    # 10:00 bus reaches X 10:20; 3 min later the next leg-2 bus is 10:35 -> 10:45.
+    on_time = leave_at_10(at(10, 45))
+    assert on_time.n_trips[0] == 15 and on_time.status[0] == "ok"
+    assert on_time.p_on_time[0] == 1.0
+    assert on_time.arrive_p50[0] == to_epoch(at(10, 45))
+    assert leave_at_10(at(10, 44)).p_on_time[0] == 0.0
+
+
+def test_transfer_matches_a_brute_force_replay() -> None:
+    first = synthetic_segments(
+        START, END, headway_min=8, ride_min=18, headway_jitter_min=3,
+        ride_jitter_min=4, seed=3,
+    )
+    second = synthetic_segments(
+        START, END, headway_min=12, ride_min=9, headway_jitter_min=4,
+        ride_jitter_min=2, seed=4,
+    )
+    deadline = to_epoch(at(13, 0))
+    depart = np.array([to_epoch(at(11, m)) for m in (0, 17, 33, 48)])
+    curve = replay_transfer_curve(
+        first, second, depart, deadline, walk_to_min=4, transfer_min=2,
+        walk_from_min=3, tod_window_min=30, n_boot=0,
+    )
+    for i, d in enumerate(depart):
+        reach = d + 240
+        instants = [reach + k * 60 for k in range(-30, 31)]
+        arrivals = _brute_transfer(first, second, reach, instants, deadline, 180, 120, 60)
+        assert curve.n_steps[i] == len(arrivals)
+        assert curve.p_on_time[i] == pytest.approx(
+            sum(a <= deadline for a in arrivals) / len(arrivals)
+        )
+        assert curve.arrive_p50[i] == pytest.approx(np.percentile(arrivals, 50))
+
+
+def test_transfer_is_censored_when_the_second_leg_is_not_recorded() -> None:
+    first = synthetic_segments(START, END, headway_min=10, ride_min=20)
+    second = synthetic_segments(START, at(10, 0), headway_min=10, ride_min=10)
+    curve = replay_transfer_curve(
+        first, second, np.array([to_epoch(at(11, 0))]), to_epoch(at(12, 0)), n_boot=0
+    )
+    assert curve.n_steps[0] == 0
+    assert curve.status[0] == "insufficient_data"
+
+
+def test_transfer_borrows_only_days_both_legs_recorded() -> None:
+    fri_start = datetime(2026, 10, 23, 6, tzinfo=LONDON)
+    first = synthetic_segments(fri_start, END, headway_min=10, ride_min=20)
+    second = synthetic_segments(START, END, headway_min=10, ride_min=10)  # Sat only
+    next_friday = datetime(2026, 10, 30, 12, tzinfo=LONDON)
+    curve, ref = transfer_curve_with_reference(first, second, next_friday, window_min=30)
+    assert ref == SAT  # Friday has no second leg, so the shared Saturday is used
+    assert np.isfinite(curve.p_on_time).any()

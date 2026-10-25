@@ -2,6 +2,8 @@
 
 import os
 
+from app.journeys import expand_subroutes
+
 from .settings import load_routes
 
 
@@ -51,7 +53,14 @@ def sync_routes(connection) -> None:
                 mode=EXCLUDED.mode, origin_naptan_id=EXCLUDED.origin_naptan_id,
                 destination_naptan_id=EXCLUDED.destination_naptan_id, active=TRUE
         """, [(r["route_id"], r["line_id"], r["direction"], r["mode"],
-               r["origin"]["naptan_id"], r["destination"]["naptan_id"]) for r in load_routes()])
+               r["origin"]["naptan_id"], r["destination"]["naptan_id"])
+              for r in _with_subroutes(load_routes())])
+
+
+def _with_subroutes(routes: list[dict]) -> list[dict]:
+    """Configured routes plus their stop-pair sub-routes, which get_segments
+    derives from the same recorded stop events."""
+    return routes + expand_subroutes(routes)
 
 
 def ingest_batch(connection, batch: dict) -> bool:

@@ -19,8 +19,11 @@ from app.schemas import (
     DepartureCurveRequest,
     DepartureCurveResponse,
     Interpretation,
+    JourneyCurveRequest,
+    JourneyCurveResponse,
     LiveResponse,
     Route,
+    Stop,
 )
 
 log = logging.getLogger(__name__)
@@ -33,6 +36,8 @@ DEFAULT_MODELS = ("gemini-3.1-flash-lite", "gemini-3-flash-preview")
 
 CurveFn = Callable[[DepartureCurveRequest], DepartureCurveResponse]
 LiveFn = Callable[[Route], LiveResponse]
+# Returns None when no configured journey connects the stops.
+JourneyFn = Callable[[JourneyCurveRequest], JourneyCurveResponse | None]
 
 
 def _as_london(value: object) -> object:
@@ -61,6 +66,7 @@ _DEADLINE = {
     "description": "Arrival deadline as London local time, ISO 8601 without offset, e.g. 2026-10-25T14:10:00.",
 }
 _WALK = {"type": "number", "description": "Minutes, default 5."}
+_STOP_ID = {"type": "string", "description": "A stop id from the stop list."}
 _TOLERANCE = {
     "type": "number",
     "description": "Accepted chance of being late, 0.05 to 0.30. Default 0.10; 0.05 for 'I really can't be late'; 0.20 for relaxed.",
@@ -84,6 +90,26 @@ _DECLARATIONS = [
                 "tolerance": _TOLERANCE,
             },
             "required": ["route_id", "deadline"],
+        },
+    },
+    {
+        "name": "get_journey",
+        "description": (
+            "When should the user leave to travel between two stops that are not "
+            "exactly a listed route's origin and destination (part of a route, or a "
+            "journey with one change)?"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "origin_stop_id": _STOP_ID,
+                "destination_stop_id": _STOP_ID,
+                "deadline": _DEADLINE,
+                "walk_to_min": _WALK,
+                "walk_from_min": _WALK,
+                "tolerance": _TOLERANCE,
+            },
+            "required": ["origin_stop_id", "destination_stop_id", "deadline"],
         },
     },
     {
@@ -138,14 +164,24 @@ class _CompareArgs(BaseModel):
     walk_from_min: float = Field(5, ge=0, le=60)
 
 
+class _JourneyArgs(BaseModel):
+    origin_stop_id: str
+    destination_stop_id: str
+    deadline: LocalTime
+    walk_to_min: float = Field(5, ge=0, le=60)
+    walk_from_min: float = Field(5, ge=0, le=60)
+    tolerance: float = Field(0.10, gt=0, lt=1)
+
+
 class _LiveArgs(BaseModel):
     route_id: str
 
 
-def _system_prompt(now: datetime, routes: list[Route]) -> str:
+def _system_prompt(now: datetime, routes: list[Route], stops: list[Stop]) -> str:
     listing = "\n".join(
         f"- {r.route_id}: {r.origin.name} to {r.destination.name} ({r.mode})" for r in routes
     )
+    stop_listing = "\n".join(f"- {s.naptan_id}: {s.name}" for s in stops)
     local = now.astimezone(LONDON)
     return (
         "You turn a traveller's question into exactly one function call. "
@@ -157,9 +193,12 @@ def _system_prompt(now: datetime, routes: list[Route]) -> str:
         "Match place names loosely: 'Finsbury Park' or 'Tottenham Court Road' matches a "
         "route whose stop name starts with or contains it. Call list_routes only when the "
         "user asks which routes or places are supported. "
-        "If the user names a place that matches none of the supported routes, call "
+        "Use get_departure_curve only when the start and end are a listed route's own "
+        "origin and destination; when both are in the stop list otherwise, call "
+        "get_journey with their stop ids. Never swap in a different start or end. "
+        "If the user names a place that matches no route or stop, call "
         "get_departure_curve with route_id 'none'.\n"
-        f"Supported routes:\n{listing}"
+        f"Supported routes:\n{listing}\nStops:\n{stop_listing}"
     )
 
 
@@ -167,6 +206,7 @@ def _call_gemini(
     question: str,
     now: datetime,
     routes: list[Route],
+    stops: list[Stop],
     *,
     api_key: str,
     models: tuple[str, ...],
@@ -175,7 +215,7 @@ def _call_gemini(
     if not api_key or api_key == "your-gemini-api-key":
         raise GeminiUnavailable
     body = {
-        "systemInstruction": {"parts": [{"text": _system_prompt(now, routes)}]},
+        "systemInstruction": {"parts": [{"text": _system_prompt(now, routes, stops)}]},
         "contents": [{"role": "user", "parts": [{"text": question}]}],
         "tools": [{"functionDeclarations": _DECLARATIONS}],
         "toolConfig": {"functionCallingConfig": {"mode": "ANY"}},
@@ -245,11 +285,14 @@ def answer_question(
     models: tuple[str, ...] = DEFAULT_MODELS,
     compute_curve: CurveFn,
     get_live: LiveFn,
+    stops: list[Stop] | None = None,
+    compute_journey: JourneyFn | None = None,
     transport: httpx.BaseTransport | None = None,
 ) -> AskResponse:
+    stops = stops or []
     try:
         name, raw = _call_gemini(
-            question, now, routes, api_key=api_key, models=models, transport=transport
+            question, now, routes, stops, api_key=api_key, models=models, transport=transport
         )
     except GeminiUnavailable:
         return AskResponse(
@@ -275,6 +318,14 @@ def answer_question(
             if args.route_id not in by_id:
                 return _unsupported(routes)
             return _departure_answer(args, compute_curve, by_id[args.route_id], now)
+        if name == "get_journey":
+            journey_args = _JourneyArgs.model_validate(raw)
+            known = {s.naptan_id for s in stops}
+            if compute_journey is None or not {
+                journey_args.origin_stop_id, journey_args.destination_stop_id
+            } <= known:
+                return _unsupported(routes)
+            return _journey_answer(journey_args, compute_journey, now) or _unsupported(routes)
         if name == "compare_departures":
             cmp_args = _CompareArgs.model_validate(raw)
             if cmp_args.route_id not in by_id:
@@ -290,15 +341,18 @@ def answer_question(
     return _unclear()
 
 
+def _walks(walk_to_min: float, walk_from_min: float) -> str:
+    if walk_to_min == walk_from_min:
+        return f"{walk_to_min:g}-minute walks at each end"
+    return (
+        f"a {walk_to_min:g}-minute walk to the stop "
+        f"and {walk_from_min:g} minutes from the last stop"
+    )
+
+
 def _route_context(route: Route, walk_to_min: float, walk_from_min: float) -> str:
     """Name the route and the assumed walks, so a wrong route or default is visible."""
-    if walk_to_min == walk_from_min:
-        walks = f"{walk_to_min:g}-minute walks at each end"
-    else:
-        walks = (
-            f"a {walk_to_min:g}-minute walk to the stop "
-            f"and {walk_from_min:g} minutes from the last stop"
-        )
+    walks = _walks(walk_to_min, walk_from_min)
     return (
         f" ({route.mode} {route.line_id}, {route.origin.name} to {route.destination.name}; "
         f"assuming {walks})"
@@ -361,6 +415,57 @@ def _departure_answer(
             f"Leave by {_hhmm(rec.depart_at)} for an estimated {round(rec.p_on_time * 100)}% "
             f"chance{support} of arriving by {_hhmm(args.deadline)}{context}.{past}"
         )
+    return AskResponse(interpretation=interp, curve=curve, answer=answer, status="ok")
+
+
+def _journey_answer(
+    args: _JourneyArgs, compute_journey: JourneyFn, now: datetime
+) -> AskResponse | None:
+    curve = compute_journey(
+        JourneyCurveRequest(
+            origin_naptan_id=args.origin_stop_id,
+            destination_naptan_id=args.destination_stop_id,
+            deadline=args.deadline,
+            walk_to_min=args.walk_to_min,
+            walk_from_min=args.walk_from_min,
+            tolerance=args.tolerance,
+        )
+    )
+    if curve is None:
+        return None
+    lines = [f"{leg.mode} {'/'.join(leg.line_ids)}" for leg in curve.legs]
+    if len(curve.legs) == 1:
+        how = f"{lines[0]}, {curve.legs[0].origin.name} to {curve.legs[0].destination.name}"
+    else:
+        how = (
+            f"{lines[0]} from {curve.legs[0].origin.name}, change at "
+            f"{curve.legs[0].destination.name} to {lines[1]} for {curve.legs[1].destination.name}"
+        )
+    context = f" ({how}; assuming {_walks(args.walk_to_min, args.walk_from_min)})"
+    past = _past_note(args.deadline, now) + _borrowed_note(curve)
+    if curve.data_quality.status == "insufficient_data" or not curve.points:
+        answer = (
+            f"I don't have enough recorded data to say{context}.{past} "
+            f"{curve.data_quality.basis}"
+        )
+    elif curve.recommended is None:
+        answer = (
+            f"No departure reaches an estimated {round((1 - args.tolerance) * 100)}% chance "
+            f"of arriving by {_hhmm(args.deadline)}{context}.{past}"
+        )
+    else:
+        rec = curve.recommended
+        answer = (
+            f"Leave by {_hhmm(rec.depart_at)} for an estimated "
+            f"{round(rec.p_on_time * 100)}% chance of arriving by "
+            f"{_hhmm(args.deadline)}{context}.{past}"
+        )
+    interp = Interpretation(
+        deadline=args.deadline,
+        walk_to_min=args.walk_to_min,
+        walk_from_min=args.walk_from_min,
+        tolerance=args.tolerance,
+    )
     return AskResponse(interpretation=interp, curve=curve, answer=answer, status="ok")
 
 

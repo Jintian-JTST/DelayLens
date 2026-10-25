@@ -193,3 +193,36 @@ def test_borrowed_day_note_is_repeated_in_the_answer():
         "yet)."
     )
     assert ask._borrowed_note(curve("Based on 48 trips recorded on this route.")) == ""
+
+
+def test_get_journey_between_known_stops_is_answered_from_our_model(monkeypatch):
+    stops = client.get("/api/stops").json()
+    origin, destination = stops[0]["naptan_id"], stops[-1]["naptan_id"]
+    _gemini(monkeypatch, _call("get_journey", {
+        "origin_stop_id": origin, "destination_stop_id": destination,
+        "deadline": "2026-10-25T11:00:00",
+    }))
+    data = _ask().json()
+    assert data["status"] == "ok"
+    assert data["curve"] is not None
+    assert data["interpretation"]["route_id"] is None  # a journey, not one listed route
+
+
+def test_get_journey_with_an_unknown_stop_lists_what_we_support(monkeypatch):
+    _gemini(monkeypatch, _call("get_journey", {
+        "origin_stop_id": "made-up", "destination_stop_id": "also-made-up",
+        "deadline": "2026-10-25T11:00:00",
+    }))
+    data = _ask().json()
+    assert data["status"] == "unsupported_route"
+    assert data["curve"] is None
+
+
+def test_prompt_lists_stops_and_forbids_swapping_endpoints():
+    from app.schemas import Stop
+
+    prompt = ask._system_prompt(
+        datetime(2026, 10, 25, 10, tzinfo=UTC), [], [Stop(naptan_id="S1", name="Stephen Street")]
+    )
+    assert "- S1: Stephen Street" in prompt
+    assert "Never swap in a different start or end" in prompt

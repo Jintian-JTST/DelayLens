@@ -1,0 +1,78 @@
+[
+  {
+    "segment_id": "segment_f922053d8a54331067082f618c13c3a4",
+    "origin": {
+      "local_at": "2026-10-24T23:50:08+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    },
+    "destination": {
+      "local_at": "2026-10-25T00:01:48+01:00",
+      "local_date": "2026-10-25",
+      "weekday": 6,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    }
+  },
+  {
+    "segment_id": "segment_7ec8c425a41c6ef066d5dd1f0b4a8d46",
+    "origin": {
+      "local_at": "2026-10-24T23:53:51+01:00",
+      "local_date": "2026-10-24",
+      "weekday": 5,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    },
+    "destination": {
+      "local_at": "2026-10-25T00:02:59+01:00",
+      "local_date": "2026-10-25",
+      "weekday": 6,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    }
+  },
+  {
+    "segment_id": "segment_4d114aec80f1deb4db60a51746436c92",
+    "origin": {
+      "local_at": "2026-10-25T00:14:14+01:00",
+      "local_date": "2026-10-25",
+      "weekday": 6,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    },
+    "destination": {
+      "local_at": "2026-10-25T00:23:40+01:00",
+      "local_date": "2026-10-25",
+      "weekday": 6,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    }
+  },
+  {
+    "segment_id": "segment_c56ba3b088e7bf6e649ed9cee69460cf",
+    "origin": {
+      "local_at": "2026-10-25T00:56:39+01:00",
+      "local_date": "2026-10-25",
+      "weekday": 6,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    },
+    "destination": {
+      "local_at": "2026-10-25T01:04:26+01:00",
+      "local_date": "2026-10-25",
+      "weekday": 6,
+      "utc_offset_seconds": 3600,
+      "fold": 0,
+      "timezone": "Europe/London"
+    }
+  }
+]

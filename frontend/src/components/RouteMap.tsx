@@ -3,8 +3,11 @@ import {
   MAP_GEOMETRY as G,
   journeySummary,
   journeyTimeline,
+  hasStopList,
   layoutStops,
+  lineLabel,
   mapStops,
+  showsNorthernContext,
   slackLabel,
   wrapLabel,
   type JourneyTimeline,
@@ -37,6 +40,8 @@ const NORTHERN: { name: string; at: number }[] = [
 ];
 const NORTHERN_OFFSET = 72;
 const HEIGHT = 296;
+/** Without the Northern line context the drawing ends below the lower run. */
+const HEIGHT_PLAIN = 226;
 const END_X = 840;
 
 export default function RouteMap({
@@ -50,20 +55,9 @@ export default function RouteMap({
   chanceLabel,
   preliminary,
 }: Props) {
-  const stops = mapStops(route);
-  if (!stops)
-    return (
-      <section className="card map-card" aria-labelledby="map-title">
-        <MapHeading />
-        <div className="inline-state">
-          <Icon name="map" />
-          <p>
-            The schematic map is available for the bus 29 demo route only
-            (Mornington Crescent → Tottenham Court Road).
-          </p>
-        </div>
-      </section>
-    );
+  const stops = mapStops(route)!;
+  const routeLine = lineLabel(route);
+  const northernContext = showsNorthernContext(route);
 
   const fmt = (ms: number) => timeLabel(new Date(ms).toISOString(), clock);
   const layout = layoutStops(stops.length);
@@ -73,10 +67,12 @@ export default function RouteMap({
   const timeline = point
     ? journeyTimeline(point, walkTo, walkFrom, deadline)
     : null;
-  const northern = northernLine(layout.points, layout.bendAfter);
+  const northern = northernContext
+    ? northernLine(layout.points, layout.bendAfter)
+    : null;
   const summary = timeline
-    ? journeySummary(timeline, stops, fmt, chancePercent)
-    : `Schematic map of bus 29 from ${stops[0].name} to ${stops.at(-1)!.name}, ${stops.length} stops. No departure is highlighted because there is no recommendation for this deadline.`;
+    ? journeySummary(timeline, stops, fmt, chancePercent, routeLine)
+    : `Schematic map of ${routeLine} from ${stops[0].name} to ${stops.at(-1)!.name}, ${stops.length} stops. No departure is highlighted because there is no recommendation for this deadline.`;
 
   return (
     <section className="card map-card" aria-labelledby="map-title">
@@ -97,7 +93,7 @@ export default function RouteMap({
       )}
       <svg
         className="route-map"
-        viewBox={`0 0 ${G.width} ${HEIGHT}`}
+        viewBox={`0 0 ${G.width} ${northern ? HEIGHT : HEIGHT_PLAIN}`}
         role="img"
         aria-label={summary}
       >
@@ -114,36 +110,45 @@ export default function RouteMap({
           </pattern>
         </defs>
 
-        {/* Context: Northern line, faint and secondary. */}
-        <g className="map-northern" aria-hidden="true">
-          <path d={northern.path} />
-          {northern.stations.map((s) => (
-            <g key={s.name}>
-              <line x1={s.x} y1={s.y} x2={s.x} y2={s.y + 7} />
-              {wrapLabel(s.name, 12).map((line, i) => (
-                <text
-                  key={i}
-                  x={s.atBend ? s.x + 4 : s.x}
-                  y={s.y + 24 + i * 15}
-                  textAnchor={s.atBend ? "end" : "middle"}
-                >
-                  {line}
-                </text>
-              ))}
-            </g>
-          ))}
-          <text className="map-northern-key" x={northern.keyX} y={HEIGHT - 8}>
-            Northern line stations nearby (context only, not modelled)
-          </text>
-        </g>
+        {/* Context: Northern line, faint and secondary (demo route only). */}
+        {northern && (
+          <g className="map-northern" aria-hidden="true">
+            <path d={northern.path} />
+            {northern.stations.map((s) => (
+              <g key={s.name}>
+                <line x1={s.x} y1={s.y} x2={s.x} y2={s.y + 7} />
+                {wrapLabel(s.name, 12).map((line, i) => (
+                  <text
+                    key={i}
+                    x={s.atBend ? s.x + 4 : s.x}
+                    y={s.y + 24 + i * 15}
+                    textAnchor={s.atBend ? "end" : "middle"}
+                  >
+                    {line}
+                  </text>
+                ))}
+              </g>
+            ))}
+            <text className="map-northern-key" x={northern.keyX} y={HEIGHT - 8}>
+              Northern line stations nearby (context only, not modelled)
+            </text>
+          </g>
+        )}
 
         {/* Uncertainty lives in the wait and the whole ride, not at one stop. */}
         {timeline && (
-          <path className="map-uncertainty" d={layout.path} aria-hidden="true" />
+          <path
+            className="map-uncertainty"
+            d={layout.path}
+            aria-hidden="true"
+          />
         )}
 
         {/* Walks */}
-        <g className={timeline ? "map-walk" : "map-walk muted"} aria-hidden="true">
+        <g
+          className={timeline ? "map-walk" : "map-walk muted"}
+          aria-hidden="true"
+        >
           <line x1={50} y1={origin.y} x2={origin.x - 10} y2={origin.y} />
           <line x1={end.x + 10} y1={end.y} x2={END_X} y2={end.y} />
           <circle className="map-endpoint" cx={50} cy={origin.y} r={7} />
@@ -162,7 +167,7 @@ export default function RouteMap({
           </text>
         </g>
 
-        {/* Bus 29 */}
+        {/* The route */}
         <path
           className={timeline ? "map-route active" : "map-route"}
           d={layout.path}
@@ -177,7 +182,13 @@ export default function RouteMap({
                 {terminal ? (
                   <circle className="map-interchange" cx={p.x} cy={p.y} r={9} />
                 ) : (
-                  <line className="map-tick" x1={p.x} y1={p.y} x2={p.x} y2={p.y - 11} />
+                  <line
+                    className="map-tick"
+                    x1={p.x}
+                    y1={p.y}
+                    x2={p.x}
+                    y2={p.y - 11}
+                  />
                 )}
                 {lines.map((line, j) => (
                   <text
@@ -197,20 +208,50 @@ export default function RouteMap({
 
         {timeline && (
           <g className="map-callouts" aria-hidden="true">
-            <circle className="map-wait-halo" cx={origin.x} cy={origin.y} r={17} />
-            <text x={10} y={origin.y + 42} textAnchor="start" className="strong">
+            <circle
+              className="map-wait-halo"
+              cx={origin.x}
+              cy={origin.y}
+              r={17}
+            />
+            <text
+              x={10}
+              y={origin.y + 42}
+              textAnchor="start"
+              className="strong"
+            >
               Leave {fmt(timeline.leave)}
             </text>
-            <text x={origin.x - 4} y={origin.y + 38} textAnchor="start" className="accent">
+            <text
+              x={origin.x - 4}
+              y={origin.y + 38}
+              textAnchor="start"
+              className="accent"
+            >
               At stop ~{fmt(timeline.atStop)}
             </text>
-            <text x={origin.x - 4} y={origin.y + 53} textAnchor="start" className="accent small">
+            <text
+              x={origin.x - 4}
+              y={origin.y + 53}
+              textAnchor="start"
+              className="accent small"
+            >
               wait varies
             </text>
-            <text x={END_X - 14} y={end.y + 40} textAnchor="middle" className="strong">
+            <text
+              x={END_X - 14}
+              y={end.y + 40}
+              textAnchor="middle"
+              className="strong"
+            >
               {fmt(timeline.arriveP50)}–{fmt(timeline.arriveP90)}
             </text>
-            <text x={END_X - 14} y={end.y + 54} textAnchor="middle" className="small">
+            <text
+              x={END_X - 14}
+              y={end.y + 54}
+              textAnchor="middle"
+              className="small"
+            >
               p50–p90
             </text>
           </g>
@@ -225,6 +266,8 @@ export default function RouteMap({
           Schematic, not to scale. Our recordings time whole trips from{" "}
           {stops[0].name} to {stops.at(-1)!.name}, inferred from TfL
           predictions, so delays at individual stops are not measured.
+          {!hasStopList(route) &&
+            " Intermediate stops are not configured for this route, so only its two ends are shown."}
           {timeline &&
             " The shaded band marks where the uncertainty lives: the wait at the stop and the ride as a whole."}
         </span>
@@ -253,7 +296,7 @@ export default function RouteMap({
                 </td>
               </tr>
               <tr>
-                <th scope="row">Wait and ride bus 29</th>
+                <th scope="row">Wait and ride {routeLine}</th>
                 <td>{timeline.waitRideMin} min</td>
                 <td>{timeline.waitRideMin + timeline.spreadMin} min</td>
               </tr>
@@ -272,7 +315,7 @@ export default function RouteMap({
           </table>
         )}
         <table>
-          <caption>Stops on bus 29, in order</caption>
+          <caption>Stops on {routeLine}, in order</caption>
           <thead>
             <tr>
               <th scope="col">#</th>
@@ -285,7 +328,11 @@ export default function RouteMap({
                 <td>{i + 1}</td>
                 <td>
                   {stop.name}
-                  {i === 0 ? " (board)" : i === stops.length - 1 ? " (alight)" : ""}
+                  {i === 0
+                    ? " (board)"
+                    : i === stops.length - 1
+                      ? " (alight)"
+                      : ""}
                 </td>
               </tr>
             ))}
@@ -347,7 +394,8 @@ function Timeline({
   const start = timeline.leave;
   const finish = Math.max(timeline.deadline, timeline.arriveP90) + 60_000;
   const x = (ms: number) =>
-    left + ((ms - start) / Math.max(60_000, finish - start)) * (width - left - right);
+    left +
+    ((ms - start) / Math.max(60_000, finish - start)) * (width - left - right);
   const rowY = [26, 66];
   const barH = 22;
   const deadlineX = x(timeline.deadline);
@@ -387,7 +435,9 @@ function Timeline({
                   width={w}
                   height={barH}
                   rx={4}
-                  fill={leg.kind === "spread" ? "url(#spread-hatch)" : undefined}
+                  fill={
+                    leg.kind === "spread" ? "url(#spread-hatch)" : undefined
+                  }
                 />
                 {w > label.length * 7.6 + 10 && (
                   <text
@@ -407,7 +457,12 @@ function Timeline({
           </text>
         </g>
       ))}
-      <text className="tl-deadline-label" x={deadlineX} y={118} textAnchor="middle">
+      <text
+        className="tl-deadline-label"
+        x={deadlineX}
+        y={118}
+        textAnchor="middle"
+      >
         Deadline {fmt(timeline.deadline)}
       </text>
       <text className="tl-axis" x={x(start)} y={118} textAnchor="start">

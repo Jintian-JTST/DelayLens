@@ -5,8 +5,11 @@ import {
   MAP_ROUTE_ID,
   journeySummary,
   journeyTimeline,
+  hasStopList,
   layoutStops,
+  lineLabel,
   mapStops,
+  showsNorthernContext,
   slackLabel,
   wrapLabel,
 } from "../src/routeMap.ts";
@@ -33,12 +36,39 @@ const route = (overrides: Partial<Route> = {}): Route => ({
   ...overrides,
 });
 
-test("the map is only drawn for the bus 29 demo route with stops", () => {
+test("every route gets stops: its stop list, or just both ends", () => {
   assert.equal(mapStops(route())?.length, 8);
-  assert.equal(mapStops(route({ route_id: "bus-24-inbound-warren-tottenham" })), null);
-  assert.equal(mapStops(route({ stops: undefined })), null);
-  assert.equal(mapStops(route({ stops: null })), null);
+  const ends = [route().origin, route().destination];
+  assert.deepEqual(mapStops(route({ stops: undefined })), ends);
+  assert.deepEqual(mapStops(route({ stops: null })), ends);
+  assert.deepEqual(mapStops(route({ stops: [route().origin] })), ends);
   assert.equal(mapStops(null), null);
+  assert.equal(hasStopList(route()), true);
+  assert.equal(hasStopList(route({ stops: null })), false);
+});
+
+test("the Northern line context is drawn only for the demo route", () => {
+  assert.equal(showsNorthernContext(route()), true);
+  assert.equal(
+    showsNorthernContext(route({ route_id: "bus-24-inbound-warren-tottenham" })),
+    false,
+  );
+  assert.equal(showsNorthernContext(route({ stops: null })), false);
+});
+
+test("line labels name the bus or tube line", () => {
+  assert.equal(lineLabel({ mode: "bus", line_id: "24" }), "bus 24");
+  assert.equal(lineLabel({ mode: "tube", line_id: "victoria" }), "Victoria line");
+});
+
+test("any stop count ends at the same x as the 8-stop demo route", () => {
+  const demoEnd = layoutStops(8).points.at(-1)!.x;
+  assert.equal(layoutStops(8).points[1].x - layoutStops(8).points[0].x, 86);
+  for (const n of [2, 5, 7]) {
+    const { points } = layoutStops(n);
+    assert.ok(Math.abs(points.at(-1)!.x - demoEnd) < 1e-9, `n=${n}`);
+    assert.ok(points.every((p, i) => i === 0 || p.x > points[i - 1].x));
+  }
 });
 
 test("labels wrap on word boundaries", () => {

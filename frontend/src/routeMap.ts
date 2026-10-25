@@ -7,15 +7,35 @@ import type { CurvePoint, Route, Stop } from "./api.ts";
  * intermediate stop: uncertainty is attributed to the wait and the whole ride.
  */
 
-/** The bus 29 demo route; the only route the schematic is drawn for. */
+/** The bus 29 demo route: the only one with the Northern line context drawn. */
 export const MAP_ROUTE_ID =
   "bus-29-outbound-mornington-crescent-tottenham-court-road";
 
-/** The configured stop sequence for the demo route, or null when unavailable. */
+/**
+ * Stops to draw: the configured stop sequence, or just origin and destination
+ * when a route has no stop list. Null only when there is no route.
+ */
 export function mapStops(route: Route | null | undefined): Stop[] | null {
-  if (!route || route.route_id !== MAP_ROUTE_ID) return null;
+  if (!route) return null;
   const stops = route.stops ?? [];
-  return stops.length >= 2 ? stops : null;
+  return stops.length >= 2 ? stops : [route.origin, route.destination];
+}
+
+/** True when the route has its intermediate stops configured. */
+export function hasStopList(route: Route): boolean {
+  return (route.stops ?? []).length >= 2;
+}
+
+/** The faint Northern line is hand-placed for the demo route's stops only. */
+export function showsNorthernContext(route: Route): boolean {
+  return route.route_id === MAP_ROUTE_ID && hasStopList(route);
+}
+
+/** "bus 29" or "Victoria line", for labels and the map's accessible name. */
+export function lineLabel(route: Pick<Route, "mode" | "line_id">): string {
+  if (route.mode === "tube")
+    return `${route.line_id.charAt(0).toUpperCase()}${route.line_id.slice(1)} line`;
+  return `${route.mode} ${route.line_id}`;
 }
 
 /** Split a stop name into short lines for SVG labels (no mid-word breaks). */
@@ -41,6 +61,9 @@ export interface StopLayout {
   path: string;
 }
 
+/** Right-most stop x for the 8-stop demo route; other counts are spaced to match. */
+const LAST_STOP_X = 759;
+
 export const MAP_GEOMETRY = {
   width: 880,
   startX: 130,
@@ -53,7 +76,15 @@ export const MAP_GEOMETRY = {
  * Tube-map layout: a horizontal run, one 45-degree diagonal, a second
  * horizontal run. Stops sit only on the horizontal runs.
  */
-export function layoutStops(count: number, g = MAP_GEOMETRY): StopLayout {
+export function layoutStops(count: number, base = MAP_GEOMETRY): StopLayout {
+  // The last stop sits at startX + drop + (count - 1.5) * spacing; keep it fixed.
+  const g =
+    count >= 2
+      ? {
+          ...base,
+          spacing: (LAST_STOP_X - base.startX - base.drop) / (count - 1.5),
+        }
+      : base;
   const bendAfter = Math.max(0, Math.floor((count - 1) / 2));
   const points: MapPoint[] = [];
   for (let i = 0; i < count; i++) {
@@ -61,13 +92,20 @@ export function layoutStops(count: number, g = MAP_GEOMETRY): StopLayout {
     else
       points.push({
         // The diagonal covers `drop` horizontally (45 degrees), then half a gap.
-        x: g.startX + bendAfter * g.spacing + g.drop + (i - bendAfter - 0.5) * g.spacing,
+        x:
+          g.startX +
+          bendAfter * g.spacing +
+          g.drop +
+          (i - bendAfter - 0.5) * g.spacing,
         y: g.topY + g.drop,
       });
   }
   if (!points.length) return { points, bendAfter, path: "" };
   const corner = points[bendAfter];
-  const segments = [`M${points[0].x},${points[0].y}`, `L${corner.x},${corner.y}`];
+  const segments = [
+    `M${points[0].x},${points[0].y}`,
+    `L${corner.x},${corner.y}`,
+  ];
   if (count > bendAfter + 1) {
     segments.push(`L${corner.x + g.drop},${corner.y + g.drop}`);
     const end = points.at(-1)!;
@@ -119,7 +157,10 @@ export function journeyTimeline(
 ): JourneyTimeline {
   const leave = Date.parse(point.depart_at);
   const atStop = leave + walkToMin * 60_000;
-  const arriveP50 = Math.max(atStop + walkFromMin * 60_000, Date.parse(point.arrive_p50));
+  const arriveP50 = Math.max(
+    atStop + walkFromMin * 60_000,
+    Date.parse(point.arrive_p50),
+  );
   const arriveP90 = Math.max(arriveP50, Date.parse(point.arrive_p90));
   const stopP50 = arriveP50 - walkFromMin * 60_000;
   const stopP90 = arriveP90 - walkFromMin * 60_000;
@@ -164,13 +205,16 @@ export function journeySummary(
   stops: Stop[],
   format: (ms: number) => string,
   chancePercent: number | null,
+  line = "bus 29",
 ): string {
   const from = stops[0].name;
   const to = stops.at(-1)!.name;
   const chance =
-    chancePercent === null ? "" : ` Estimated ${chancePercent}% chance of arriving on time.`;
+    chancePercent === null
+      ? ""
+      : ` Estimated ${chancePercent}% chance of arriving on time.`;
   return (
-    `Schematic map of bus 29 from ${from} to ${to}, ${stops.length} stops. ` +
+    `Schematic map of ${line} from ${from} to ${to}, ${stops.length} stops. ` +
     `Leave ${format(timeline.leave)}, reach the stop about ${format(timeline.atStop)}, ` +
     `typical arrival ${format(timeline.arriveP50)}, 9 in 10 replayed trips by ` +
     `${format(timeline.arriveP90)}, deadline ${format(timeline.deadline)}.${chance} ` +

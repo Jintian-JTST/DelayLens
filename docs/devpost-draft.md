@@ -104,5 +104,8 @@ TfL Unified API.
 - Tracks to tick: HRT (Data for Predictions & Decision Making), Tiger Data, Gemini API,
   Built with Delta. ___ Check that each is selected on Devpost and needs no separate form.
 - Delta thread links: ___
-- Data attribution: "Data provided by Transport for London." ___ Check the exact
-  wording required by TfL's terms.
+- Data attribution: "Data provided by Transport for London." This is the notice
+  listed in TfL's [live bus arrivals branding guidance](https://tfl.gov.uk/info-for/open-data-users/our-open-data)
+  (instant and stream sections; checked 25 Oct 2026). The app also retains its
+  existing general open-data credit. This source check does not establish full
+  compliance with every term or permission to use TfL logos or imply endorsement.

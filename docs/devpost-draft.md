@@ -61,8 +61,11 @@ When the evidence is thin, it says so:
   the last good snapshot. Gemini is used only for Ask: it maps a question to one
   validated function call, with a 4 s timeout and a fallback model. It never produces
   numbers; the answer is a template filled from our model. An offline snapshot mode
-  runs the whole demo without a database. On the demo laptop, /api/departure-curve
-  takes about 4 ms at p95 (smoke check, 20 requests; re-measure Sun 08:30).
+  runs the whole demo without a database. A warm /api/departure-curve call takes about
+  5 ms at p95 in-process; the first call takes about 140 ms.
+  - B's Sun 08:31 UTC measurement: 240 requests, total p95 5.3 ms, server-side p95
+    4.2 ms. The earlier smoke check gave 4 ms.
+  - We did not measure real network latency (no deployed site).
 - **Frontend:** React + TypeScript + Vite. The curve is a hand-built SVG with keyboard
   exploration and a data table. Risk and "+5/+10/+15 min" update instantly in the browser.
   - The journey map is our own SVG of bus 29's 8 stops. It is not TfL artwork.
@@ -145,7 +148,7 @@ guess links or numbers.
 | D's data/infra paragraph and verified totals | D supplied; manager replayed PR74 | Verified above; source packages committed |
 | Live Gemini Ask test (needs `GEMINI_API_KEY` in `backend/.env`) | Olivia at the 10:30 rehearsal | Not tested |
 | Real-microphone test (one `/api/ask` POST only) | Olivia at the 10:30 rehearsal | Not tested |
-| Latency re-measure on the demo laptop | B-claude, 08:30 | 4 ms p95 from the earlier smoke check |
+| Latency re-measure | B-claude | Done: Sun 08:31 UTC, in-process p95 5.3 ms total (4.2 ms server-side). Taken on B's working branch against the live database, so its Brier and trip counts are not used here. |
 | Standalone count for task 1 (≥15 trips) | D-claude | Older run 5; overnight run 4, separately verified; target unmet |
 
 The demo stays on the locked 20:25Z snapshot.

@@ -7,7 +7,6 @@ import {
   mapStops,
   slackLabel,
   wrapLabel,
-  type JourneyTimeline,
 } from "../routeMap";
 import { timeLabel, type Clock } from "../time";
 import Icon from "./Icon";
@@ -101,18 +100,6 @@ export default function RouteMap({
         role="img"
         aria-label={summary}
       >
-        <defs>
-          <pattern
-            id="spread-hatch"
-            width="6"
-            height="6"
-            patternUnits="userSpaceOnUse"
-            patternTransform="rotate(45)"
-          >
-            <rect width="6" height="6" fill="#f7dccf" />
-            <line x1="0" y1="0" x2="0" y2="6" stroke="#df6c43" strokeWidth="2.4" />
-          </pattern>
-        </defs>
 
         {/* Context: Northern line, faint and secondary. */}
         <g className="map-northern" aria-hidden="true">
@@ -216,8 +203,6 @@ export default function RouteMap({
           </g>
         )}
       </svg>
-
-      {timeline && <Timeline timeline={timeline} fmt={fmt} />}
 
       <p className="map-caption">
         <Icon name="info" size={15} />
@@ -332,91 +317,4 @@ function northernLine(points: { x: number; y: number }[], bendAfter: number) {
     stations,
     keyX: startX,
   };
-}
-
-function Timeline({
-  timeline,
-  fmt,
-}: {
-  timeline: JourneyTimeline;
-  fmt: (ms: number) => string;
-}) {
-  const left = 104;
-  const right = 44;
-  const width = G.width;
-  const start = timeline.leave;
-  const finish = Math.max(timeline.deadline, timeline.arriveP90) + 60_000;
-  const x = (ms: number) =>
-    left + ((ms - start) / Math.max(60_000, finish - start)) * (width - left - right);
-  const rowY = [26, 66];
-  const barH = 22;
-  const deadlineX = x(timeline.deadline);
-  return (
-    <svg
-      className="journey-timeline"
-      viewBox={`0 0 ${width} 140`}
-      role="img"
-      aria-label={`Timeline: walk ${fmt(timeline.leave)} to ${fmt(timeline.atStop)}; wait and ride about ${timeline.waitRideMin} minutes typically, up to ${timeline.spreadMin} minutes more at p90; arrive ${fmt(timeline.arriveP50)} typically or ${fmt(timeline.arriveP90)} at p90; deadline ${fmt(timeline.deadline)}.`}
-    >
-      <line
-        className="tl-deadline"
-        x1={deadlineX}
-        x2={deadlineX}
-        y1={14}
-        y2={100}
-      />
-      {timeline.rows.map((row, r) => (
-        <g key={row.label}>
-          <text className="tl-row-label" x={0} y={rowY[r] + 15}>
-            {row.label}
-          </text>
-          {row.legs.map((leg, i) => {
-            const w = Math.max(0, x(leg.end) - x(leg.start));
-            const label =
-              leg.kind === "walk"
-                ? "Walk"
-                : leg.kind === "ride"
-                  ? `Wait + ride ${timeline.waitRideMin} min`
-                  : `+${timeline.spreadMin} min`;
-            return (
-              <g key={i}>
-                <rect
-                  className={`tl-leg tl-${leg.kind}`}
-                  x={x(leg.start)}
-                  y={rowY[r]}
-                  width={w}
-                  height={barH}
-                  rx={4}
-                  fill={leg.kind === "spread" ? "url(#spread-hatch)" : undefined}
-                />
-                {w > label.length * 7.6 + 10 && (
-                  <text
-                    className={`tl-leg-label tl-${leg.kind}-label`}
-                    x={x(leg.start) + w / 2}
-                    y={rowY[r] + 15}
-                    textAnchor="middle"
-                  >
-                    {label}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-          <text className="tl-arrive" x={x(row.arrive) + 6} y={rowY[r] + 15}>
-            {fmt(row.arrive)}
-          </text>
-        </g>
-      ))}
-      <text className="tl-deadline-label" x={deadlineX} y={118} textAnchor="middle">
-        Deadline {fmt(timeline.deadline)}
-      </text>
-      <text className="tl-axis" x={x(start)} y={118} textAnchor="start">
-        Leave {fmt(start)}
-      </text>
-      <text className="tl-note" x={0} y={136}>
-        Walks are fixed. Only the wait and the ride vary between replayed trips;
-        the hatched block is the extra time on a slower (p90) trip.
-      </text>
-    </svg>
-  );
 }

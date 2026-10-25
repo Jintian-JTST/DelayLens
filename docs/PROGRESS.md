@@ -1,7 +1,7 @@
 # DelayLens — Progress and Handoff
 
-Updated: 2026-10-25, Europe/London. Current integration: main `e31bf98` (PR #67),
-after the independently reviewed frontend PR #66. Older delivery records below
+Updated: 2026-10-25, Europe/London. Current integration: PR83 frontend refresh, PR84 recovery correction,
+and T52 selected-route map review. Older delivery records below
 retain their original test counts and dates. Local tests and recorded-data
 browser checks do not establish public deployment or overnight availability.
 
@@ -15,7 +15,7 @@ browser checks do not establish public deployment or overnight availability.
 | Overnight standalone | PR74 accepted after raw replay: 685 polls, 4 inferred trips, 88 events; all 14 manifest entries and both archive digests/internal manifests pass. Model loads 4/4 rows, no recommendation. Separate from the older 5-trip run and database; target below 15 remains unmet. [Independent comparison](evidence/bus29-morning-comparison-20261025/README.md#independent-overnight-handoff-accepted). |
 | Offline data/model/API/UI | Locked 20:25Z snapshot, bus 29 Mornington Crescent, Sat 24 Oct 17:00 London, walks 5/5: leave 16:22, p=0.9174, 56 recorded trips. API and T10 rerun independently reproduce this; Sat 15:30 gives no qualifying advice. This remains historical replay of inferred arrivals. |
 | Presentation | Desktop Chrome rendering and Ask/voice cancellation interactions checked for PR #66 with recorded snapshot responses and local health/Ask/SpeechRecognition stubs. Frozen date/source labels remain visible. Real microphone, speech service, Gemini calls, screen readers and physical offline rehearsal remain unverified. Desktop only is the agreed scope. |
-| CI | Backend: 247 offline tests passed, 28 live tests deselected; Ruff passed. Frontend: 47 tests and production build passed. Main e31bf98 has [successful push CI](https://github.com/Jintian-JTST/OxHack/actions/runs/40150320031). Check subsequent heads independently; the existing Starlette/httpx deprecation warning remains. |
+| CI | Backend: 247 offline tests passed, 28 live tests deselected; Ruff passed. Frontend: 62 tests and production build passed in the T52 integration. Main e31bf98 has [successful push CI](https://github.com/Jintian-JTST/OxHack/actions/runs/40150320031). Check subsequent heads independently; the existing Starlette/httpx deprecation warning remains. |
 | Current capture | The frozen 180-minute standalone run finished at 20:21:55 UTC on 24 Oct; its final packages appeared at 20:23:09. Overnight collection has newer agent-reported poll counts, but no new overnight export/source-trace acceptance is established here. No overnight continuity claim is made. |
 
 ## Delivery records
@@ -56,3 +56,5 @@ Clean demo API check (T47/T45 takeover): [local HTTP evidence](evidence/demo-api
 Captioned backup recording (T48): [93-second silent actual-UI video](evidence/backup-demo-20261025/README.md) preserves the locked16:22/p0.9174 result and15:30no-advice case, with inferred/preliminary/offline captions. Repository backup only; formal video URL/Delta/eligibility remain unconfirmed. [Task record](../tasks/manager-backup-demo-video.md).
 
 Submission handoff after M offline (T49): [ready-to-copy packet](submission-handoff.md), story, actual video/screenshot and source evidence available. Authenticated submitter, accepted video-host URL, actual Delta links, track selections/eligibility and submission receipt remain unconfirmed. The manager owns repository preparation; no submitted/eligible claim. [Task record](../tasks/manager-submission-takeover.md).
+
+T52 selected-route maps: Northern line context and two horizontal timing bars removed; Finsbury fallback uses only real endpoint names. Map label stroke/fill regression corrected and both route images/bounds independently verified. [Evidence](evidence/selected-map-review-20261025/README.md), [review record](../tasks/frontend-review-integration.md).

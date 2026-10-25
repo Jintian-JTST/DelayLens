@@ -544,8 +544,13 @@ main {
 .map-prelim {
   color: var(--warning-text);
 }
-.route-map,
-.route-map text,
+.route-map {
+  font-family: inherit;
+}
+.route-map text {
+  fill: var(--ink);
+  stroke: none;
+}
 .map-route {
   fill: none;
   stroke: #b4c8ee;

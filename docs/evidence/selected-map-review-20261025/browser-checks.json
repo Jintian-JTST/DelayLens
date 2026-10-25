@@ -1,0 +1,24 @@
+{
+  "realApi": true,
+  "unmodelledLineRemoved": true,
+  "horizontalTimingBarsRemoved": true,
+  "bothOriginsRendered": true,
+  "goldenShortDeparture": "16:22",
+  "pageErrors": [],
+  "checks": [
+    {
+      "origin": "Mornington Crescent Station",
+      "svgLabel": "Schematic map of bus 29 from Mornington Crescent Station to Tottenham Court Road Station, 8 stops. Leave 16:22, reach the stop about 16:27, typical arrival 16:49, 9 in 10 replayed trips by 16:59, deadline 17:00. Estimated 92% chance of arriving on time. Delays at individual stops are not measured.",
+      "textCount": 29,
+      "allTextFillAndStrokeCorrect": true,
+      "allLabelsWithinViewbox": true
+    },
+    {
+      "origin": "Finsbury Park / Blackstock Road",
+      "svgLabel": "Schematic map of bus 29 from Finsbury Park / Blackstock Road to Tottenham Court Road Station, 2 stops. Leave 15:57, reach the stop about 16:02, typical arrival 16:51, 9 in 10 replayed trips by 16:58, deadline 17:00. Estimated 92% chance of arriving on time. Delays at individual stops are not measured.",
+      "textCount": 16,
+      "allTextFillAndStrokeCorrect": true,
+      "allLabelsWithinViewbox": true
+    }
+  ]
+}

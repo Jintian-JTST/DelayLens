@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 963,
+      "sha256": "213c8c2750b1499a5d77e371c1e590ab593f3d8aea213898bea5355dab6ad650"
+    },
+    {
+      "path": "browser-checks.json",
+      "bytes": 1172,
+      "sha256": "2db8b6fc83e80c2dca9ffb3386a3f0ebc21067c9eaf3ee750ef338adb71a2236"
+    },
+    {
+      "path": "mornington.png",
+      "bytes": 148052,
+      "sha256": "03ce65d7c7212937b4ea4356b54bd81c0c1e28125d80ae6f871cf6f5a30c969a"
+    },
+    {
+      "path": "finsbury.png",
+      "bytes": 127882,
+      "sha256": "a3b67c148bd43912cb4ba477bb269bbce3f5f33440b1a5574eb684a4f3e58d6a"
+    }
+  ]
+}

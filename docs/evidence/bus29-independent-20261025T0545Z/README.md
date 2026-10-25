@@ -18,7 +18,7 @@ from them and are not measured actual arrivals.
   Hour bins above are London natural hours.
 - This run is separate from earlier runs (for example 20261024T1721Z and 20261024T2032Z) and from the keyed/night runs started by other sessions; samples are not pooled.
 - The data level is not raised by this export; support state is reported as computed (insufficient_data).
-- The final zip packages are not committed; their SHA256 values are in `export-report.json`.
+- The final data and source zip packages are committed under `packages/` so the replay can be reproduced independently (SHA256 also in `export-report.json` and `MANIFEST.json`).
 
 ## Capture gap and scope notes
 

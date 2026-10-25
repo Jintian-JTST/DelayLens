@@ -17,14 +17,24 @@
       "sha256": "010df684845b9aaeca8b1bec0867436ede6f37d35d8ee666c2eec5510eaf951e"
     },
     {
+      "path": "packages/delaylens-bus-29-outbound-mornington-crescent-tottenham-court-road-final-data.zip",
+      "bytes": 2602316,
+      "sha256": "7844578c6d2591d014f908b921c91e66e4c07c3367eba3649f891eae62ffa774"
+    },
+    {
+      "path": "packages/delaylens-bus-29-outbound-mornington-crescent-tottenham-court-road-final-source.zip",
+      "bytes": 37724,
+      "sha256": "4b347d9ec227c1212d0c50a25bcd19a06fcad19547dfbfe85288252bad2a1bac"
+    },
+    {
       "path": "quality.json",
       "bytes": 22571,
       "sha256": "0bc39ecbfb1d8cfd7dee2b3af433af7377805a524d2d9a07b751e705ac61ddc1"
     },
     {
       "path": "README.md",
-      "bytes": 3478,
-      "sha256": "fe74835b9650ab13b997fb29c5b7d2a1f563ff6acc472b215f546b75bf730af6"
+      "bytes": 3563,
+      "sha256": "b2eda623cf256bbbe7eb923e68878809331644a7f25394cde5f4f18e5007c9b2"
     },
     {
       "path": "rejected_segments.json",

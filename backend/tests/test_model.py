@@ -16,11 +16,13 @@ from app.model import (
     LONDON,
     Segments,
     departure_curve,
+    departure_curve_with_reference,
     evidence_status,
     load_handoff,
     load_segments_csv,
     p_on_time,
     recommend,
+    reference_date_candidates,
     reference_instants,
     replay_curve,
     synthetic_segments,
@@ -510,3 +512,52 @@ def test_n_boot_zero_skips_the_band_but_keeps_the_estimate(fortnight: Segments) 
     assert no_band.status[0] == "ok"
     assert no_band.p_on_time[0] == with_band.p_on_time[0]
     assert np.isnan(no_band.ci_low[0]) and np.isnan(no_band.ci_high[0])
+
+
+# --- borrowing a recorded day when the deadline's date has none --------------
+
+
+def test_own_date_is_used_when_it_has_trips(timetable: Segments) -> None:
+    curve, ref = departure_curve_with_reference(timetable, DEADLINE, window_min=30)
+    assert ref is None
+    assert np.isfinite(curve.p_on_time).all()
+
+
+def test_unrecorded_day_replays_the_most_recent_day(timetable: Segments) -> None:
+    sunday = datetime(2026, 10, 25, 12, tzinfo=LONDON)  # after the clock change
+    plain = departure_curve(timetable, sunday, window_min=30)
+    assert not np.isfinite(plain.p_on_time).any()
+
+    curve, ref = departure_curve_with_reference(timetable, sunday, window_min=30)
+    assert ref == SAT
+    expected = departure_curve(timetable, sunday, window_min=30, reference_dates=[SAT])
+    np.testing.assert_array_equal(curve.p_on_time, expected.p_on_time)
+    np.testing.assert_array_equal(curve.n_trips, expected.n_trips)
+    # Same London clock time as Saturday, so arrivals shift by the 25-hour day
+    # between 12:00 BST Saturday and 12:00 GMT Sunday.
+    saturday = departure_curve(timetable, DEADLINE, window_min=30)
+    shift = to_epoch(sunday) - to_epoch(DEADLINE)
+    assert shift == 25 * 3600
+    np.testing.assert_array_equal(curve.p_on_time, saturday.p_on_time)
+    np.testing.assert_array_equal(curve.arrive_p50, saturday.arrive_p50 + shift)
+
+
+def test_same_weekday_is_preferred_over_a_more_recent_day() -> None:
+    fri = date(2026, 10, 23)
+    two_days = synthetic_segments(
+        datetime(2026, 10, 23, 6, tzinfo=LONDON), END, headway_min=10, ride_min=20
+    )
+    next_friday = datetime(2026, 10, 30, 12, tzinfo=LONDON)
+    assert reference_date_candidates(two_days, next_friday) == [fri, SAT]
+    _, ref = departure_curve_with_reference(two_days, next_friday, window_min=30)
+    assert ref == fri
+
+    sunday = datetime(2026, 10, 25, 12, tzinfo=LONDON)
+    assert reference_date_candidates(two_days, sunday) == [SAT, fri]
+
+
+def test_no_recorded_day_covers_the_time(timetable: Segments) -> None:
+    night = datetime(2026, 10, 27, 3, tzinfo=LONDON)  # recordings are 06:00-23:00
+    curve, ref = departure_curve_with_reference(timetable, night, window_min=30)
+    assert ref is None
+    assert not np.isfinite(curve.p_on_time).any()

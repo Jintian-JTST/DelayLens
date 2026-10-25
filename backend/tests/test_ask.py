@@ -171,3 +171,25 @@ def test_local_time_without_offset_is_accepted(monkeypatch):
     deadline = datetime.fromisoformat(data["interpretation"]["deadline"])
     assert deadline == datetime(2026, 10, 24, 13, 0, tzinfo=UTC)  # BST is UTC+1
     assert "arriving by 14:00" in data["answer"]
+
+
+def test_borrowed_day_note_is_repeated_in_the_answer():
+    from app.schemas import DataQuality, DepartureCurveResponse
+
+    def curve(basis):
+        return DepartureCurveResponse(
+            points=[], recommended=None, what_if=[], server_ms=0,
+            data_quality=DataQuality(status="ok", basis=basis),
+        )
+
+    borrowed = (
+        "No trips recorded for Sun 25 Oct near this time, so this replays Sat 24 Oct "
+        "at the same London time (most recent recorded day; no same-weekday recordings "
+        "yet). Based on 48 trips recorded on this route (Sat 24 Oct 15:06 - 20:42)."
+    )
+    assert ask._borrowed_note(curve(borrowed)) == (
+        " No trips recorded for Sun 25 Oct near this time, so this replays Sat 24 Oct "
+        "at the same London time (most recent recorded day; no same-weekday recordings "
+        "yet)."
+    )
+    assert ask._borrowed_note(curve("Based on 48 trips recorded on this route.")) == ""

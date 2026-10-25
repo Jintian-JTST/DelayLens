@@ -196,7 +196,7 @@ def _compute_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
             )
         else:
             segments = _segments_for(snapshot, req.route_id)
-            curve = model.departure_curve(
+            curve, reference_date = model.departure_curve_with_reference(
                 segments,
                 req.deadline,
                 walk_to_min=req.walk_to_min,
@@ -205,7 +205,11 @@ def _compute_curve(req: DepartureCurveRequest) -> DepartureCurveResponse:
                 tod_window_min=curves.TOD_WINDOW_MIN,
             )
             result = curves.build_response(
-                curve, req, segments, snapshot_label=snapshot.source_label
+                curve,
+                req,
+                segments,
+                snapshot_label=snapshot.source_label,
+                reference_date=reference_date,
             )
     else:
         result = fixtures.fixture_curve(req)

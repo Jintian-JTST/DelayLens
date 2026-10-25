@@ -318,21 +318,70 @@ main {
   color: #716b78;
   font-size: var(--text-body);
 }
+.intro {
+  gap: 32px;
+}
+.intro-art {
+  position: relative;
+  flex: none;
+  width: clamp(300px, 34vw, 480px);
+  aspect-ratio: 550 / 260;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 18px 40px -28px rgba(40, 43, 57, 0.55);
+}
+.intro-art-street {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+.intro-art-stop {
+  position: absolute;
+  left: 7%;
+  bottom: 6%;
+  height: 62%;
+}
+.intro-art-bus {
+  position: absolute;
+  right: 4%;
+  bottom: 3%;
+  width: 46%;
+  animation: bus-arrive 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes bus-arrive {
+  from {
+    transform: translateX(70%);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
 .intro-note {
+  position: absolute;
+  top: 12px;
+  right: 12px;
   display: flex;
-  gap: 14px;
+  gap: 10px;
   align-items: center;
   font-size: var(--text-helper);
-  line-height: 1.8;
-  color: #716b78;
-  padding-right: 9px;
+  line-height: 1.5;
+  color: var(--ink);
+  padding: 8px 14px 8px 10px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px -10px rgba(40, 43, 57, 0.5);
 }
 .intro-note > svg {
-  color: #a2a599;
+  color: var(--orange);
 }
 .intro-note strong {
-  color: #606369;
-  font-weight: 500;
+  color: var(--ink);
+  font-weight: 600;
 }
 .fixture-banner {
   display: flex;
@@ -1326,29 +1375,27 @@ caption {
   color: #716b78;
 }
 .empty-route-art {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  width: 110px;
+  position: relative;
+  width: 150px;
+  height: 140px;
 }
-.empty-route-art span {
-  width: 18px;
-  height: 18px;
-  background: #e6e0ef;
-  border: 5px solid #f4f1f8;
-  border-radius: 50%;
-  flex: none;
+.empty-art-runner {
+  position: absolute;
+  left: 18px;
+  bottom: 0;
+  height: 136px;
 }
-.empty-route-art i {
-  height: 1px;
-  width: 100%;
-  background: repeating-linear-gradient(
-    to right,
-    #bfb2d0 0,
-    #bfb2d0 4px,
-    transparent 4px,
-    transparent 8px
-  );
+.empty-art-clock {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 70px;
+  animation: clock-float 3s ease-in-out infinite;
+}
+@keyframes clock-float {
+  50% {
+    transform: translateY(-6px) rotate(-4deg);
+  }
 }
 .skeleton {
   background: linear-gradient(90deg, #f4f1f5 25%, #ebe7ef 45%, #f4f1f5 65%);
@@ -1916,8 +1963,12 @@ footer button {
     font-size: var(--text-body);
     max-width: none;
   }
-  .intro-note {
-    display: none;
+  .intro {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .intro-art {
+    width: 100%;
   }
   .fixture-banner {
     font-size: var(--text-helper);

@@ -1,0 +1,134 @@
+{
+  "measured_at_utc": "2026-10-25T09:08:23.223402+00:00",
+  "git_head": "1df3f4bbf43f1c1e26ec61ec382cd40b32e06b44",
+  "checkout_clean_before_measurement": true,
+  "snapshot": "docs/evidence/bus29-db-final-20261024T202558Z",
+  "service_keys_and_database_empty": true,
+  "environment": {
+    "os": "Darwin",
+    "os_release": "27.0.0",
+    "machine": "arm64",
+    "python": "3.14.7",
+    "packages": {
+      "fastapi": "0.162.0",
+      "uvicorn": "0.54.0",
+      "numpy": "2.5.4"
+    }
+  },
+  "transport": "loopback HTTP via urllib to uvicorn in a separate thread",
+  "health": {
+    "status": "ok",
+    "ask_available": false
+  },
+  "request": {
+    "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+    "deadline": "2026-10-24T17:00:00+01:00",
+    "walk_to_min": 5,
+    "walk_from_min": 5,
+    "tolerance": 0.1,
+    "window_min": 90
+  },
+  "recommended": {
+    "depart_at": "2026-10-24T15:22:00Z",
+    "p_on_time": 0.9174
+  },
+  "first_curve_request": {
+    "total_ms": 23.2415,
+    "server_ms": 22.08
+  },
+  "warmup_count": 3,
+  "sample_count": 20,
+  "samples": [
+    {
+      "total_ms": 4.4244,
+      "server_ms": 3.68
+    },
+    {
+      "total_ms": 4.3087,
+      "server_ms": 3.54
+    },
+    {
+      "total_ms": 4.2158,
+      "server_ms": 3.47
+    },
+    {
+      "total_ms": 4.1889,
+      "server_ms": 3.49
+    },
+    {
+      "total_ms": 4.082,
+      "server_ms": 3.39
+    },
+    {
+      "total_ms": 4.005,
+      "server_ms": 3.33
+    },
+    {
+      "total_ms": 4.0941,
+      "server_ms": 3.41
+    },
+    {
+      "total_ms": 4.0244,
+      "server_ms": 3.37
+    },
+    {
+      "total_ms": 4.0464,
+      "server_ms": 3.4
+    },
+    {
+      "total_ms": 4.1246,
+      "server_ms": 3.46
+    },
+    {
+      "total_ms": 3.9289,
+      "server_ms": 3.29
+    },
+    {
+      "total_ms": 3.9278,
+      "server_ms": 3.32
+    },
+    {
+      "total_ms": 3.9842,
+      "server_ms": 3.34
+    },
+    {
+      "total_ms": 4.1184,
+      "server_ms": 3.45
+    },
+    {
+      "total_ms": 3.9531,
+      "server_ms": 3.31
+    },
+    {
+      "total_ms": 3.8682,
+      "server_ms": 3.27
+    },
+    {
+      "total_ms": 3.8466,
+      "server_ms": 3.29
+    },
+    {
+      "total_ms": 3.9387,
+      "server_ms": 3.31
+    },
+    {
+      "total_ms": 3.9528,
+      "server_ms": 3.33
+    },
+    {
+      "total_ms": 4.0726,
+      "server_ms": 3.39
+    }
+  ],
+  "p95_ms": {
+    "total_ms": 4.3087,
+    "server_ms": 3.54
+  },
+  "percentile_method": "nearest rank ceil(0.95*n), nineteen of twenty",
+  "limits": [
+    "Single local machine; not public network latency or load test.",
+    "Not a physical Wi-Fi-off rehearsal, browser UI, microphone or live Gemini test.",
+    "First request follows API startup and health check; not cold process startup.",
+    "Measurements depend on this machine and background load."
+  ]
+}

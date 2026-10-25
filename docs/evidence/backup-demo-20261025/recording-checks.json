@@ -1,0 +1,104 @@
+{
+  "recordedAt": "2026-10-25T09:44:17.326Z",
+  "snapshot": "bus29-db-final-20261024T202558Z",
+  "scenes": [
+    {
+      "name": "01-intro",
+      "caption": "DelayLens: when should I leave to arrive on time? A recorded-data demo, not live travel advice."
+    },
+    {
+      "name": "02-form",
+      "caption": "Bus 29, Mornington Crescent to Tottenham Court Road. Saturday 24 October, 17:00 London; walks 5 + 5 minutes."
+    },
+    {
+      "name": "03-curve",
+      "caption": "Each possible departure gets an estimated on-time chance and a 90% uncertainty band. The source and sample count stay visible."
+    },
+    {
+      "name": "03-advice",
+      "caption": "Leave by 16:22: an estimated 92% on-time chance. The page shows the uncertainty and recorded support."
+    },
+    {
+      "name": "04-later",
+      "caption": "Leave five minutes later and the estimated chance falls to about 75%. The comparison updates in the browser."
+    },
+    {
+      "name": "05-map",
+      "caption": "The map separates walking from the uncertain wait and ride. It does not measure delays at individual stops."
+    },
+    {
+      "name": "06-no-advice",
+      "caption": "For a 15:30 deadline, no departure meets the 90% target on these recordings. DelayLens gives no recommendation."
+    },
+    {
+      "name": "07-method",
+      "caption": "TfL supplies predictions. Arrivals are inferred, not measured. Calibration remains preliminary; one Saturday cannot establish general reliability."
+    },
+    {
+      "name": "08-close",
+      "caption": "The form works without Gemini or a database. This backup uses the frozen 20:25Z snapshot; live arrivals, voice and live Gemini are not demonstrated."
+    }
+  ],
+  "curveResults": [
+    {
+      "status": 200,
+      "request": {
+        "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+        "deadline": "2026-10-24T16:00:00.000Z",
+        "walk_to_min": 5,
+        "walk_from_min": 5,
+        "tolerance": 0.1,
+        "window_min": 90
+      },
+      "recommended": {
+        "depart_at": "2026-10-24T15:22:00Z",
+        "p_on_time": 0.9174
+      },
+      "basis": "Based on 56 trips recorded on this route (Sat 24 Oct 14:49 - Sat 24 Oct 21:02, London time), replaying \u00b160 min around each departure. Arrivals are estimated from TfL predictions, not measured; not yet calibrated. Offline snapshot frozen 24 Oct 20:25 UTC; not live data."
+    },
+    {
+      "status": 200,
+      "request": {
+        "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+        "deadline": "2026-10-24T16:00:00.000Z",
+        "walk_to_min": 5,
+        "walk_from_min": 5,
+        "tolerance": 0.1,
+        "window_min": 90
+      },
+      "recommended": {
+        "depart_at": "2026-10-24T15:22:00Z",
+        "p_on_time": 0.9174
+      },
+      "basis": "Based on 56 trips recorded on this route (Sat 24 Oct 14:49 - Sat 24 Oct 21:02, London time), replaying \u00b160 min around each departure. Arrivals are estimated from TfL predictions, not measured; not yet calibrated. Offline snapshot frozen 24 Oct 20:25 UTC; not live data."
+    },
+    {
+      "status": 200,
+      "request": {
+        "route_id": "bus-29-outbound-mornington-crescent-tottenham-court-road",
+        "deadline": "2026-10-24T14:30:00.000Z",
+        "walk_to_min": 5,
+        "walk_from_min": 5,
+        "tolerance": 0.1,
+        "window_min": 90
+      },
+      "recommended": null,
+      "basis": "Based on 56 trips recorded on this route (Sat 24 Oct 14:49 - Sat 24 Oct 21:02, London time), replaying \u00b160 min around each departure. Arrivals are estimated from TfL predictions, not measured; not yet calibrated. Offline snapshot frozen 24 Oct 20:25 UTC; not live data."
+    }
+  ],
+  "pageErrors": [],
+  "askRequests": 0,
+  "liveArrivalsBlocked": true,
+  "speechOrGeminiDemonstrated": false,
+  "captionsAdded": true,
+  "audioTrack": false,
+  "encodedDuration": "00:01:33.20",
+  "decodedFrameSeconds": [
+    30,
+    50,
+    62,
+    78
+  ],
+  "sourceGitHead": "159433cea6a0a6f93a928a94c2df0c9a376c9d15",
+  "videoBytes": 7281385
+}

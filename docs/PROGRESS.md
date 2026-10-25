@@ -52,3 +52,5 @@ No sample threshold proves calibration. Database and standalone pipelines have
 different inference/provenance contracts; their run counts are not pooled.
 
 Clean demo API check (T47/T45 takeover): [local HTTP evidence](evidence/demo-api-smoke-20261025/README.md) on clean main1df3f4b, locked20:25Z, keys/DBempty reproduces16:22/p0.9174. Warm20-request loopback p95 is4.3087ms total/3.54ms server; no public-network, physical-rehearsal or live-microphone/Gemini claim. [Task record](../tasks/manager-clean-demo-api-smoke.md).
+
+Captioned backup recording (T48): [93-second silent actual-UI video](evidence/backup-demo-20261025/README.md) preserves the locked16:22/p0.9174 result and15:30no-advice case, with inferred/preliminary/offline captions. Repository backup only; formal video URL/Delta/eligibility remain unconfirmed. [Task record](../tasks/manager-backup-demo-video.md).

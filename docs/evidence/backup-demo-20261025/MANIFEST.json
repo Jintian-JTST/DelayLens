@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 2979,
+      "sha256": "65e325d0d6590c22815c2a01a74001e681ec2e975bf2db3d4c1158d7e9ead3f3"
+    },
+    {
+      "path": "delaylens-backup.webm",
+      "bytes": 7281385,
+      "sha256": "f643e60e6f010eba40867bd72b97b47349dd69b25bf880497736fe41a6821e38"
+    },
+    {
+      "path": "poster.png",
+      "bytes": 422188,
+      "sha256": "f1699a1f598fd2ea33c1384df2919a6515af8ac65803906b3b195e36a4601ed5"
+    },
+    {
+      "path": "record.cjs",
+      "bytes": 6288,
+      "sha256": "bc0a2be35eeb42b8b7ad01899e86bc996756caea9e6f496afb8a608bd4efdcee"
+    },
+    {
+      "path": "recording-checks.json",
+      "bytes": 4065,
+      "sha256": "1ed8d21a685f293ee700f0cb0cac410448a6e5d38a5e58092e04941aba5f521a"
+    }
+  ]
+}

@@ -65,6 +65,9 @@ When the evidence is thin, it says so:
   5 ms at p95 in-process; the first call takes about 140 ms.
   - B's Sun 08:31 UTC measurement: 240 requests, total p95 5.3 ms, server-side p95
     4.2 ms. The earlier smoke check gave 4 ms.
+  - Provisional: B ran it on branch `data/t17-db-snapshot` (e31bf98) with uncommitted
+    changes, against the live database. ___ Replace with B's T45 result from clean main
+    and the locked 20:25Z snapshot before submitting. ___
   - We did not measure real network latency (no deployed site).
 - **Frontend:** React + TypeScript + Vite. The curve is a hand-built SVG with keyboard
   exploration and a data table. Risk and "+5/+10/+15 min" update instantly in the browser.
@@ -148,7 +151,7 @@ guess links or numbers.
 | D's data/infra paragraph and verified totals | D supplied; manager replayed PR74 | Verified above; source packages committed |
 | Live Gemini Ask test (needs `GEMINI_API_KEY` in `backend/.env`) | Olivia at the 10:30 rehearsal | Not tested |
 | Real-microphone test (one `/api/ask` POST only) | Olivia at the 10:30 rehearsal | Not tested |
-| Latency re-measure | B-claude | Done: Sun 08:31 UTC, in-process p95 5.3 ms total (4.2 ms server-side). Taken on B's working branch against the live database, so its Brier and trip counts are not used here. |
+| Latency re-measure | B-claude | Done: Sun 08:31 UTC, in-process p95 5.3 ms total (4.2 ms server-side). Provisional: taken on B's working branch with uncommitted changes against the live database, so its Brier and trip counts are not used here. Waiting for T45 on clean main. |
 | Standalone count for task 1 (≥15 trips) | D-claude | Older run 5; overnight run 4, separately verified; target unmet |
 
 The demo stays on the locked 20:25Z snapshot.

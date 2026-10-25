@@ -127,7 +127,7 @@ Web Speech API, TfL Unified API.
 
 ## Links and tracks
 
-- Repo: https://github.com/Jintian-JTST/OxHack
+- Repo: https://github.com/Jintian-JTST/DelayLens
 - Formal hosted demo video: ___ (not confirmed). [93-second silent captioned backup](evidence/backup-demo-20261025/delaylens-backup.webm), backup owner PROJECT_REVIEWER; repository download is available, final host/Devpost acceptance unverified.
 - Try it: none (no public deployment; local demo, see README "Run the API")
 - Planned tracks: HRT (Data for Predictions & Decision Making), Tiger Data, Gemini API,

@@ -13,7 +13,7 @@ confirmed. No Devpost or Delta account/session is exposed in this environment.
 | --- | --- |
 | Project title | DelayLens |
 | Full story, stack and limitations | [Devpost draft](devpost-draft.md) |
-| Code | https://github.com/Jintian-JTST/OxHack |
+| Code | https://github.com/Jintian-JTST/DelayLens |
 | Actual captioned backup video | [93-second silent WebM](evidence/backup-demo-20261025/delaylens-backup.webm), repository download checked HTTP200; backup owner PROJECT_REVIEWER |
 | Screenshot | [Actual recorded UI frame](evidence/backup-demo-20261025/poster.png) |
 | Demo sequence | [Demo script](demo-script.md) and [judge Q&A](judge-qa.md) |

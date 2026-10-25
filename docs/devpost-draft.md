@@ -146,9 +146,9 @@ guess links or numbers.
 
 | Item | Owner | Status |
 | --- | --- | --- |
-| Demo video link | Olivia names who records it; the team records it | Not recorded yet |
-| Delta thread links | Olivia, from the team's Delta threads | Not collected |
-| Devpost track selections (HRT, Tiger Data, Gemini API, Built with Delta) | Olivia, confirmed with the organisers | Not confirmed |
+| Demo video link and backup owner | Proposed: Olivia assigns a recorder and a backup (not yet confirmed) | 09:30: recording status unconfirmed, no reply to #981. Proposed ETA, not agreed: record at the 10:30 rehearsal, link by 10:45 |
+| Delta thread links | Proposed: Olivia, with David and JTST (not yet confirmed) | 09:30: none received, no reply to #981. Proposed ETA, not agreed: 10:00 |
+| Devpost track selections and eligibility (HRT, Tiger Data, Gemini API, Built with Delta) | Proposed: Olivia, with the organisers (not yet confirmed) | 09:30: unconfirmed, and no eligibility check reported. Proposed ETA, not agreed: 10:00 |
 | D's data/infra paragraph and verified totals | D supplied; manager replayed PR74 | Verified above; source packages committed |
 | Live Gemini Ask test (needs `GEMINI_API_KEY` in `backend/.env`) | Olivia at the 10:30 rehearsal | Not tested |
 | Real-microphone test (one `/api/ask` POST only) | Olivia at the 10:30 rehearsal | Not tested |

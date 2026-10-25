@@ -61,13 +61,15 @@ Evidence: [tasks/model.md (T10 table)](../tasks/model.md),
 
 ## 6. Why only one Saturday? (D/M)
 
-We recorded live during the hackathon, so all usable data is from Sat 24 Oct 2026,
-about 14:50–21:00 London time. The model never pools dates silently. A Saturday 17:00
-query only replays Saturday data, and adding Sunday trips leaves its answer unchanged.
-That data says nothing about weekdays or rush hours.
+We recorded live during the hackathon. The locked demo snapshot (20:25Z) is all Sat
+24 Oct 2026, about 14:50–21:00 London, and the later 06:07Z candidate adds Saturday
+evening plus 6 and 3 runs from the first hour of Sunday. The model never pools dates
+silently, so a Saturday 17:00 query replays only Saturday data and gives 16:22 on both
+snapshots; neither says anything about weekdays or rush hours.
 
 Evidence: [README limitations](../README.md#how-the-model-works),
 [test_dates_are_not_pooled_unless_requested](../backend/tests/test_model.py),
+[morning comparison](evidence/bus29-morning-comparison-20261025/README.md),
 [tasks/model.md](../tasks/model.md).
 
 ## 7. What is the offline snapshot, and is the demo live? (B)
@@ -108,7 +110,8 @@ Evidence: [backend/app/ask.py](../backend/app/ask.py),
 
 The main limitations:
 - arrivals are inferred, not measured;
-- the data covers one Saturday;
+- the locked demo snapshot covers one Saturday, and the 06:07Z candidate adds only a
+  few runs from the first hour of Sunday;
 - below 15 runs there is no advice;
 - our backup standalone recorder collected only 5 usable trips, so it can't
   independently confirm the database counts;

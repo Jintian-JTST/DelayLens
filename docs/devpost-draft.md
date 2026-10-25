@@ -87,8 +87,11 @@ When the evidence is thin, it says so:
 
 - Arrival times are inferred from TfL's live predictions; we did not measure actual
   arrivals.
-- The usable data covers one Saturday afternoon and evening (24 Oct 2026, about
-  14:50–21:00 London) on bus 29, so it says nothing about weekdays or rush hours.
+- The demo snapshot covers one Saturday afternoon and evening on bus 29 (24 Oct 2026,
+  about 14:50–21:00 London).
+- A later snapshot (06:07Z) adds Saturday evening plus 6 and 3 runs from the first hour
+  of Sunday. It is not used for the demo.
+- Neither snapshot says anything about weekdays or rush hours.
 - Below 15 recorded trips there is no recommendation; below 5, only counts.
 - The calibration check scores the model against the same inferred events, not
   measured arrivals, and is reported as preliminary.

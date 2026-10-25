@@ -137,7 +137,7 @@ export default function Methodology({
             >
               <table className="coverage-table">
                 <caption>
-                  Reported coverage by route and hour. Purple cells indicate a
+                  Reported coverage by route and hour. Blue cells indicate a
                   covered hour; blank cells mean no coverage was reported.
                 </caption>
                 <thead>
@@ -227,11 +227,11 @@ export default function Methodology({
                 role="img"
                 aria-label="Calibration: predicted versus observed on-time probability"
               >
-                <path d="M30 15V170H285" fill="none" stroke="#c8c6cf" />
+                <path d="M30 15V170H285" fill="none" stroke="#c6c9cf" />
                 <path
                   d="m30 170 255-155"
                   fill="none"
-                  stroke="#a7a1b4"
+                  stroke="#a1a8b4"
                   strokeDasharray="4 4"
                 />
                 {calibration.bins.map((bin, i) => (
@@ -240,7 +240,7 @@ export default function Methodology({
                     cx={30 + bin.predicted * 255}
                     cy={170 - bin.observed * 155}
                     r="5"
-                    fill="#7961bf"
+                    fill="#2f6fe4"
                   >
                     <title>
                       Predicted {Math.round(bin.predicted * 100)}%; observed{" "}

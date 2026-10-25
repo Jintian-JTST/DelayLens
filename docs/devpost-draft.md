@@ -61,8 +61,15 @@ When the evidence is thin, it says so:
   the last good snapshot. Gemini is used only for Ask: it maps a question to one
   validated function call, with a 4 s timeout and a fallback model. It never produces
   numbers; the answer is a template filled from our model. An offline snapshot mode
-  runs the whole demo without a database. On the demo laptop, /api/departure-curve
-  takes about 4 ms at p95 (smoke check, 20 requests; re-measure Sun 08:30).
+  runs the whole demo without a database. On one laptop over local loopback, a warm
+  /api/departure-curve call takes about 4.3 ms at p95 (3.5 ms server-side). The first
+  curve takes about 23 ms, not counting process start.
+  - Measured by the manager on Sun 25 Oct (T47, evidence in PR #77). Clean main
+    `1df3f4b`, locked 20:25Z snapshot, no database or API keys, after 20 warm-up
+    requests.
+  - Every response gave 16:22, p=0.9174.
+  - This is not internet latency, and it is not an offline test on the presentation
+    laptop.
 - **Frontend:** React + TypeScript + Vite. The curve is a hand-built SVG with keyboard
   exploration and a data table. Risk and "+5/+10/+15 min" update instantly in the browser.
   - The journey map is our own SVG of bus 29's 8 stops. It is not TfL artwork.
@@ -145,7 +152,7 @@ guess links or numbers.
 | D's data/infra paragraph and verified totals | D supplied; manager replayed PR74 | Verified above; source packages committed |
 | Live Gemini Ask test (needs `GEMINI_API_KEY` in `backend/.env`) | Olivia at the 10:30 rehearsal | Not tested |
 | Real-microphone test (one `/api/ask` POST only) | Olivia at the 10:30 rehearsal | Not tested |
-| Latency re-measure on the demo laptop | B-claude, 08:30 | 4 ms p95 from the earlier smoke check |
+| Latency re-measure | PROJECT_REVIEWER (T47) | Done: clean main `1df3f4b`, locked snapshot, loopback only; p95 4.31 ms total and 3.54 ms server-side; first curve 23.2 ms |
 | Standalone count for task 1 (≥15 trips) | D-claude | Older run 5; overnight run 4, separately verified; target unmet |
 
 The demo stays on the locked 20:25Z snapshot.

@@ -1,0 +1,20 @@
+{
+  "head": "7faef4631991c7a542b4a81825e06357ea20e1d2",
+  "manifestFilesVerified": 14,
+  "archiveDigestsAndInternalManifestsVerified": true,
+  "rawPolls": 685,
+  "successfulPolls": 683,
+  "emptySuccessfulPolls": 442,
+  "rawPredictionRows": 48819,
+  "replayedSegments": 4,
+  "replayedEvents": 88,
+  "identicalCSVAndEvents": true,
+  "hourBins": {
+    "2026-10-24 23:00 BST": 2,
+    "2026-10-25 00:00 BST": 2
+  },
+  "sourceDeriveMatchesReviewedCode": true,
+  "secretScanIncludingArchiveContents": "passed",
+  "lockedSnapshotUnchanged": true,
+  "rawReplayVerified": true
+}

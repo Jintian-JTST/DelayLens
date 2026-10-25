@@ -2,8 +2,8 @@
 
 - Task ID: T42, linked to M's T16
 - Owner: PROJECT_REVIEWER (Codex manager)
-- Branch: `docs/morning-db-comparison`
-- Status: database comparison verified; new standalone handoff pending
+- Branch: `docs/accepted-overnight-comparison`
+- Status: complete; database and standalone sources independently verified
 - Contract: separate database/standalone provenance; preserve locked stage data
 
 ## Scope and evidence
@@ -18,9 +18,16 @@ All 91 Saturday 17:00 curve points, including bands, agree; advice remains
 No external API call or database write was made during the model/API comparison.
 The separate candidate export was supplied by B and independently checked here.
 
-## Remaining work
+## Standalone acceptance and limits
 
-The new D standalone package is not delivered. Do not mark T42 fully complete,
-pool its reported counts with database runs, or replace the old standalone source
-with a status message. Verify the new source/hashes and add its separately dated
-results when it arrives. Keep the 20:25Z default and its existing demo claims.
+PR74 supplied both raw-data and source ZIPs. The manager checked 14 outer hashes,
+both archive digests/internal manifests and CRCs, scanned decompressed contents
+for secrets, and replayed 685 polls with reviewed derive.py. Four segments and
+88 events exactly match the export; the model uses four of four rows and gives
+no recommendation. London-hour bins: Saturday 23:00 BST two, Sunday 00:00 BST two.
+The old locked snapshot tree and demo defaults are unchanged.
+
+The public comparison records raw checks and rerun output. Documentation links,
+manifest integrity and whitespace checks pass; exact-head CI gates the PR merge.
+The 15-trip target remains unmet. Human video/Delta/track selections and real
+microphone/Gemini acceptance remain separate pending work.

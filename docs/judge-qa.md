@@ -73,9 +73,10 @@ Evidence: [README limitations](../README.md#how-the-model-works),
 ## 7. What is the offline snapshot, and is the demo live? (B)
 
 The demo reads a frozen copy of our database (`SNAPSHOT_DIR`), so its numbers stay
-fixed: a Saturday 17:00 deadline gives leave by 16:22, about 92%. The live database
-gives the same answer. The page labels it "Offline snapshot frozen 24 Oct 20:25 UTC;
-not live data", and the live-arrivals panel and Ask need the network.
+fixed: a Saturday 17:00 deadline gives leave by 16:22, about 92%, and the live
+database gives the same answer. The page labels it "Offline snapshot frozen 24 Oct
+20:25 UTC; not live data". Live arrivals need the network, and Ask is enabled only when
+`/api/health` reports a Gemini key (`ask_available`).
 
 Evidence: [README "Run the API"](../README.md#run-the-api),
 [deploy/README.md](../deploy/README.md),
@@ -93,13 +94,15 @@ Evidence: [README "How the model works"](../README.md#how-the-model-works),
 
 ## 9. How reliable is Ask? Can Gemini make up numbers? (B)
 
-Gemini only turns the question into one validated function call. Our model computes
-every number, and the answer is a fixed template filled with those numbers. Each call
-has a 4-second timeout and a fallback model, and on the public site Ask needs a team
-passcode. The form works without Gemini.
+Gemini only turns a typed or spoken question into one validated function call. Our
+model computes every number into a fixed template, and each call has a 4-second
+timeout, a fallback model and, on the public site, a team passcode. Voice uses the
+browser's speech recognition (Chrome sends audio to Google); voice and live Gemini
+were tested only with mocks, and the form works without either.
 
 Evidence: [backend/app/ask.py](../backend/app/ask.py),
-[backend/app/main.py](../backend/app/main.py) (`ASK_ACCESS_CODE`).
+[backend/app/main.py](../backend/app/main.py) (`ASK_ACCESS_CODE`, `ask_available`),
+[frontend/src/speech.ts](../frontend/src/speech.ts).
 
 ## 10. What are the main limitations, and what would you do next? (M)
 
@@ -108,11 +111,14 @@ The main limitations:
 - the data covers one Saturday;
 - below 15 runs there is no advice;
 - our backup standalone recorder collected only 5 usable trips, so it can't
-  independently confirm the database counts.
+  independently confirm the database counts;
+- the journey map cannot locate delays at individual stops, because trips are recorded
+  origin to destination only.
 
 Next: record weekdays and peaks, add measured arrivals for true validation, cover more
 routes and support multi-leg journeys.
 
 Evidence: [README limitations](../README.md#how-the-model-works),
 [standalone 180-minute recording](evidence/bus29-standalone-180m-20261024T1721Z/README.md),
+[frontend/src/components/RouteMap.tsx](../frontend/src/components/RouteMap.tsx),
 [docs/PROGRESS.md](PROGRESS.md).

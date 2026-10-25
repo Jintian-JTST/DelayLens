@@ -23,8 +23,10 @@ your risk tolerance (default: at most 10% late).
 
 On bus 29 (Mornington Crescent → Tottenham Court Road) with a 5pm Saturday deadline, it
 says **leave by 16:22 for an estimated 92% chance** (frozen snapshot of our recording; the live database gives the same).
-You can also just ask in plain English. Gemini interprets the question; our model
-computes every number.
+You can also just ask in plain English, by typing or by voice. Gemini interprets the
+question; our model computes every number. A schematic journey map shows the
+recommended walk, wait and ride, and marks where the uncertainty is: the wait at the
+stop and the ride as a whole. We do not claim delays at individual stops.
 
 When the evidence is thin, it says so:
 
@@ -41,7 +43,9 @@ When the evidence is thin, it says so:
     compression ratio), with raw JSONL backups.
   - Stop events are inferred conservatively from near-stop predictions, and paired
     into origin → destination trips with quality labels.
-  - ___ D's data/infra paragraph (due Sun 10:00) ___
+  - ___ D's data/infra paragraph: D-claude supplies the verified poll totals, UTC
+    start and end, and backup location after its export check. Keep the reported
+    22-minute recorder gap (22:11–22:33Z). Do not fill in estimates. ___
 - **Model (M):**
   - Empirical replay in NumPy. Every recorded minute within ±60 min of your departure
     boards the first recorded bus and adds your walks.
@@ -57,6 +61,11 @@ When the evidence is thin, it says so:
   takes about 4 ms at p95 (smoke check, 20 requests; re-measure Sun 08:30).
 - **Frontend:** React + TypeScript + Vite. The curve is a hand-built SVG with keyboard
   exploration and a data table. Risk and "+5/+10/+15 min" update instantly in the browser.
+  - The journey map is our own SVG of bus 29's 8 stops. It is not TfL artwork.
+  - Ask is enabled only when the server reports a Gemini key (`/api/health`
+    `ask_available`).
+  - Voice input uses the browser's Web Speech API. In Chrome, audio is sent to
+    Google's speech service.
 
 ## Challenges
 
@@ -85,6 +94,11 @@ When the evidence is thin, it says so:
   measured arrivals, and is reported as preliminary.
 - Our backup standalone recorder collected only 5 usable bus 29 trips (below our
   15-trip target), so it cannot independently confirm the database counts.
+- The journey map cannot locate delays at individual stops. Our trips are recorded
+  origin to destination only.
+- Voice input and Gemini answers were tested only with mocks and a local stub, with no
+  real microphone or live Gemini call. ___ Update this line if the rehearsal tests
+  them live. ___
 
 ## What's next
 
@@ -94,7 +108,7 @@ validation, and multi-leg journeys.
 ## Built with
 
 Python, NumPy, FastAPI, Tiger Data (TimescaleDB), Gemini API, React, TypeScript, Vite,
-TfL Unified API.
+Web Speech API, TfL Unified API.
 
 ## Links and tracks
 
@@ -109,3 +123,24 @@ TfL Unified API.
   (instant and stream sections; checked 25 Oct 2026). The app also retains its
   existing general open-data credit. This source check does not establish full
   compliance with every term or permission to use TfL logos or imply endorsement.
+
+## Before submitting: open items and owners
+
+Checked against main `f57eb65` on Sun 25 Oct by M (T43). Fill these in by hand. Do not
+guess links or numbers.
+
+| Item | Owner | Status |
+| --- | --- | --- |
+| Demo video link | Olivia names who records it; the team records it | Not recorded yet |
+| Delta thread links | Olivia, from the team's Delta threads | Not collected |
+| Devpost track selections (HRT, Tiger Data, Gemini API, Built with Delta) | Olivia, confirmed with the organisers | Not confirmed |
+| D's data/infra paragraph and verified totals | D-claude, after the export check | Waiting for the export |
+| Live Gemini Ask test (needs `GEMINI_API_KEY` in `backend/.env`) | Olivia at the 10:30 rehearsal | Not tested |
+| Real-microphone test (one `/api/ask` POST only) | Olivia at the 10:30 rehearsal | Not tested |
+| Latency re-measure on the demo laptop | B-claude, 08:30 | 4 ms p95 from the earlier smoke check |
+| Standalone count for task 1 (≥15 trips) | D-claude | Last verified: 5 trips |
+
+The demo stays on the locked 20:25Z snapshot.
+- The 06:07Z candidate snapshot (80 and 70 runs, including 6 and 3 Sunday runs) leaves
+  Sat 17:00 unchanged (16:22, p=0.9174). See `docs/evidence/bus29-morning-comparison-20261025`.
+- Keep the limitations above when copying into Devpost.

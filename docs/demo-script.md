@@ -28,6 +28,9 @@ the Sunday 10:30 rehearsal.
    - **leave by 16:22, about 92%**, from 18 recorded trips at that departure (up to 22
      across the window);
    - a basis line ending "Offline snapshot frozen 24 Oct 20:25 UTC; not live data."
+   - card **04 / Your journey, mapped**: leave 16:22, at the stop ~16:27, arrive
+     16:49 (typical) to 16:59 (9 in 10);
+   - without a Gemini key, the Ask box says it needs a key. That is expected offline.
 4. Open a second tab with the same route and deadline **Sat 24 Oct 15:30**. This is the
    no-advice state.
 5. Never show the 20:00 or 21:00 deadlines. They read 100% on only a handful of supported
@@ -42,9 +45,9 @@ the Sunday 10:30 rehearsal.
 | 0:00–0:15 | Show the form | "Your app says the bus is two minutes away. Eight minutes later you are still waiting. Journey planners give one estimate. We tell you how often it actually holds." |
 | 0:15–0:35 | Submit the 17:00 deadline | "I need to be at Tottenham Court Road by 5pm on Saturday 24 October. DelayLens replays every bus we recorded on this route that Saturday." |
 | 0:35–1:00 | Point at the curve, then the advice | "Each departure gets an estimated chance of arriving on time. Leave by 16:22 and on our recordings I make it about 92% of the time. This band is our uncertainty, and here is how many recorded trips back it." |
-| 1:00–1:15 | Move the risk slider; press +5 min | "Want more certainty? The advice moves instantly. Leave five minutes later and the chance drops, right here." |
+| 1:00–1:15 | Move the risk slider; press +5 min; scroll to the journey map | "Want more certainty? The advice moves instantly. Leave five minutes later and the chance drops. The map shows where the time goes: the uncertainty is in the wait and the ride, and we don't pretend to know which stop." |
 | 1:15–1:35 | Switch to the 15:30 tab | "For an earlier deadline no departure reaches our 90% target on the trips we have, so DelayLens gives no recommendation instead of a guess." |
-| 1:35–1:50 | Only with network and a Gemini key. Ask: "I need to be at Tottenham Court Road by 5pm on Saturday 24 October, when should I leave Mornington Crescent?" Otherwise skip this row. | "You can also just ask. Gemini only understands the question; our model computes every number, which is why it matches the form." |
+| 1:35–1:50 | Only with network and a Gemini key. Type or say, using the mic: "I need to be at Tottenham Court Road by 5pm on Saturday 24 October, when should I leave Mornington Crescent?" Otherwise skip this row. | "You can also just ask, by typing or by voice. Gemini only understands the question; our model computes every number, which is why it matches the form." |
 | 1:50–2:00 | Methodology tab | "In a held-out backtest on our own recordings, when we said about 92% we were on time about 91% of the time. It is preliminary: one Saturday, and arrivals inferred from TfL predictions." |
 
 **Always say the date.** On Sunday, "by 5pm" means a future 5pm with no recorded data.

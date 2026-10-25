@@ -33,8 +33,12 @@ def _london(epoch: float) -> datetime:
 
 
 def _runs_by_hour(segments: model.Segments) -> str:
-    hours = Counter(_london(t).strftime("%a %H") for t in segments.t_origin)
-    return ", ".join(f"{hour}h {n}" for hour, n in sorted(hours.items()))
+    # The autumn clock change repeats 01:00 in London. Keep both UTC offsets,
+    # and the full date, so distinct recorded hours cannot collapse together.
+    hours = Counter(
+        _london(t).strftime("%Y-%m-%d %H:00 %Z (%z)") for t in segments.t_origin
+    )
+    return ", ".join(f"{hour}: {n}" for hour, n in sorted(hours.items()))
 
 
 def _advice(segments: model.Segments, hour: int, minute: int) -> str:

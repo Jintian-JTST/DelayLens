@@ -154,6 +154,34 @@ def _basis(
     return f"{text} {snapshot_label}" if snapshot_label else text
 
 
+def journey_basis(
+    leg_labels: list[str],
+    leg_segments: list[model.Segments],
+    transfer_min: float,
+    snapshot_label: str | None = None,
+    reference_note: str | None = None,
+) -> str:
+    """Data note for a journey: trips behind each leg and, for a change, how the
+    legs are combined."""
+    legs = "; ".join(
+        f"{label} ({len(seg)} trips recorded)"
+        for label, seg in zip(leg_labels, leg_segments, strict=True)
+    )
+    if len(leg_labels) == 1:
+        text = f"Direct: {legs}, replaying ±{TOD_WINDOW_MIN} min around each departure."
+    else:
+        text = (
+            f"One change: {legs}. Both legs are replayed on the same recorded day "
+            f"(±{TOD_WINDOW_MIN} min), so a late first bus meets the second leg's real "
+            f"departures; the change allows {transfer_min:g} min plus the boarding "
+            "buffer, and evidence counts the fewer runs of either leg."
+        )
+    text += " Arrivals are estimated from TfL predictions, not measured; not yet calibrated."
+    if reference_note:
+        text = f"{reference_note} {text}"
+    return f"{text} {snapshot_label}" if snapshot_label else text
+
+
 def build_response(
     curve: model.Curve,
     req: DepartureCurveRequest,

@@ -24,6 +24,8 @@ class Route(BaseModel):
     hours_covered: list[datetime]
     # Optional, additive: the configured stop sequence (origin first) when known.
     stops: list[Stop] | None = None
+    # Set on generated sub-routes: the configured route whose stops they lie on.
+    parent_route_id: str | None = None
 
 
 class DepartureCurveRequest(BaseModel):
@@ -66,6 +68,32 @@ class DepartureCurveResponse(BaseModel):
     what_if: list[WhatIf]
     data_quality: DataQuality
     server_ms: float
+
+
+class JourneyCurveRequest(BaseModel):
+    origin_naptan_id: str
+    destination_naptan_id: str
+    deadline: AwareDatetime
+    walk_to_min: float = Field(5, ge=0, le=60)
+    walk_from_min: float = Field(5, ge=0, le=60)
+    transfer_min: float = Field(3, ge=0, le=30)
+    tolerance: float = Field(0.10, gt=0, lt=1)
+    window_min: int = Field(90, ge=10, le=240)
+
+
+class JourneyLeg(BaseModel):
+    """One leg; any of `route_ids` serves it (the rider takes the first bus)."""
+
+    route_ids: list[str]
+    line_ids: list[str]
+    mode: Literal["bus", "tube"]
+    origin: Stop
+    destination: Stop
+
+
+class JourneyCurveResponse(DepartureCurveResponse):
+    legs: list[JourneyLeg]
+    options_considered: int
 
 
 class AskRequest(BaseModel):

@@ -11,7 +11,7 @@ from __future__ import annotations
 import csv
 import json
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
@@ -388,6 +388,140 @@ def replay_curve(
     instants = reference_instants(reach, reference_dates, tod_window_min)  # (m, k)
     board = instants + buffer_s
 
+    valid, safe_idx = _board(segments, board)
+    if len(segments):
+        travel = segments.t_dest[safe_idx] - instants + walk_from_s
+    else:
+        travel = np.zeros_like(instants)
+    arrive = np.where(valid, reach[:, None] + travel, np.nan)
+    _, vehicle_codes = np.unique(segments.vehicle_id, return_inverse=True)
+    vehicles = vehicle_codes[safe_idx] if len(segments) else safe_idx
+    n_trips = _distinct_per_row(np.where(valid, safe_idx, -1), valid)
+    return _summarise(
+        depart_at, deadline, valid, arrive, safe_idx, len(segments), vehicles,
+        n_trips, n_boot, seed,
+    )
+
+
+def merge_segments(parts: Sequence[Segments]) -> Segments:
+    """Runs of several routes serving the same stop pair, as one route: a rider
+    boards whichever comes first. Coverage is where every part was recorded, so
+    a gap in one line is not read as that line not running.
+    """
+    if len(parts) == 1:
+        return parts[0]
+    order = np.argsort(np.concatenate([p.t_origin for p in parts]), kind="stable")
+    coverage = parts[0].coverage
+    for part in parts[1:]:
+        coverage = _intersect(coverage, part.coverage)
+    return Segments(
+        segment_id=np.concatenate(
+            [np.char.add(f"{i}:", p.segment_id.astype(str)) for i, p in enumerate(parts)]
+        )[order],
+        vehicle_id=np.concatenate([p.vehicle_id.astype(str) for p in parts])[order],
+        t_origin=np.concatenate([p.t_origin for p in parts])[order],
+        t_dest=np.concatenate([p.t_dest for p in parts])[order],
+        coverage=coverage,
+        unconfirmed_departures=np.sort(
+            np.concatenate([p.unconfirmed_departures for p in parts])
+        ),
+    )
+
+
+def _intersect(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Intersection of two sorted, non-overlapping (k, 2) interval lists."""
+    out, i, j = [], 0, 0
+    while i < len(a) and j < len(b):
+        lo, hi = max(a[i, 0], b[j, 0]), min(a[i, 1], b[j, 1])
+        if lo <= hi:
+            out.append((lo, hi))
+        if a[i, 1] < b[j, 1]:
+            i += 1
+        else:
+            j += 1
+    return np.array(out, dtype=np.int64).reshape(-1, 2)
+
+
+DEFAULT_TRANSFER_MIN = 3.0  # walk between stops at the interchange, before the buffer
+
+
+def replay_transfer_curve(
+    first: Segments,
+    second: Segments,
+    depart_at: np.ndarray,
+    deadline: int,
+    *,
+    walk_to_min: float = 0.0,
+    transfer_min: float = DEFAULT_TRANSFER_MIN,
+    walk_from_min: float = 0.0,
+    tod_window_min: int = 30,
+    board_buffer_min: float = BOARD_BUFFER_MIN,
+    reference_dates: Sequence[date] | None = None,
+    n_boot: int = N_BOOT,
+    seed: int = 0,
+) -> Curve:
+    """Empirical replay of a two-leg journey with one change at a shared stop X.
+
+    Each reference instant s' boards the first `first` run as in replay_curve,
+    reaches X at that run's t_dest, then boards the first `second` run leaving X
+    at or after arrival + transfer_min + board_buffer. Both legs come from the
+    same replayed day, so a late first bus meets the second leg's real timetable.
+    An instant is censored unless both boardings are valid (see _board).
+
+    Evidence counts the fewer distinct runs of either leg, and the band resamples
+    first-leg runs only, so it understates second-leg variability.
+    """
+    depart_at = np.asarray(depart_at, dtype=np.int64)
+    walk_to_s = round(walk_to_min * SECONDS_PER_MIN)
+    walk_from_s = round(walk_from_min * SECONDS_PER_MIN)
+    buffer_s = round(board_buffer_min * SECONDS_PER_MIN)
+    transfer_s = round(transfer_min * SECONDS_PER_MIN)
+    reach = depart_at + walk_to_s
+
+    instants = reference_instants(reach, reference_dates, tod_window_min)
+    valid1, idx1 = _board(first, instants + buffer_s)
+    at_x = first.t_dest[idx1] if len(first) else np.zeros_like(instants)
+    valid2, idx2 = _board(second, at_x + transfer_s + buffer_s)
+    valid = valid1 & valid2
+
+    if len(first) and len(second):
+        travel = second.t_dest[idx2] - instants + walk_from_s
+    else:
+        travel = np.zeros_like(instants)
+    arrive = np.where(valid, reach[:, None] + travel, np.nan)
+
+    _, vehicle_codes = np.unique(first.vehicle_id, return_inverse=True)
+    vehicles = vehicle_codes[idx1] if len(first) else idx1
+    n_trips = np.minimum(
+        _distinct_per_row(np.where(valid, idx1, -1), valid),
+        _distinct_per_row(np.where(valid, idx2, -1), valid),
+    )
+    return _summarise(
+        depart_at, deadline, valid, arrive, idx1, len(first), vehicles,
+        n_trips, n_boot, seed,
+    )
+
+
+def transfer_departure_curve(
+    first: Segments,
+    second: Segments,
+    deadline: datetime,
+    *,
+    window_min: int = 90,
+    **kwargs,
+) -> Curve:
+    """Two-leg curve from `deadline - window_min` to `deadline` at 1-min resolution."""
+    t = to_epoch(deadline)
+    depart_at = t - np.arange(window_min, -1, -1, dtype=np.int64) * SECONDS_PER_MIN
+    return replay_transfer_curve(first, second, depart_at, t, **kwargs)
+
+
+def _board(segments: Segments, board: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(valid, run index) for boarding the first run leaving O at or after `board`.
+
+    Censored (not valid) unless boarding and that run's departure lie in the same
+    coverage interval and no unconfirmed departure comes first.
+    """
     cov = segments.coverage
     ci = np.searchsorted(cov[:, 0], board, side="right") - 1
     safe_ci = np.clip(ci, 0, max(len(cov) - 1, 0))
@@ -416,20 +550,25 @@ def replay_curve(
             np.inf,
         )
         valid &= ~(next_unconfirmed <= segments.t_origin[safe_idx])
+    return valid, safe_idx
 
-    if n_runs:
-        travel = segments.t_dest[safe_idx] - instants + walk_from_s
-    else:
-        travel = np.zeros_like(instants)
-    arrive = np.where(valid, reach[:, None] + travel, np.nan)
 
+def _summarise(
+    depart_at: np.ndarray,
+    deadline: int,
+    valid: np.ndarray,
+    arrive: np.ndarray,
+    run_idx: np.ndarray,
+    n_runs: int,
+    vehicles: np.ndarray,
+    n_trips: np.ndarray,
+    n_boot: int,
+    seed: int,
+) -> Curve:
+    """Curve statistics from replayed arrivals; the band resamples `run_idx` runs."""
     m = len(depart_at)
     n_steps = valid.sum(axis=1)
-    _, vehicle_codes = np.unique(segments.vehicle_id, return_inverse=True)
-    n_trips = _distinct_per_row(np.where(valid, safe_idx, -1), valid)
-    n_vehicles = _distinct_per_row(
-        vehicle_codes[safe_idx] if n_runs else safe_idx, valid
-    )
+    n_vehicles = _distinct_per_row(vehicles, valid)
     status = evidence_status(n_trips)
 
     shown = status != "insufficient_data"
@@ -442,7 +581,7 @@ def replay_curve(
         p50[shown], p90[shown] = np.nanpercentile(arrive[shown], [50, 90], axis=1)
 
     ci_low, ci_high = _run_bootstrap(
-        valid, on_time, safe_idx, n_runs, status == "ok", n_boot, seed
+        valid, on_time, run_idx, n_runs, status == "ok", n_boot, seed
     )
 
     return Curve(
@@ -455,7 +594,7 @@ def replay_curve(
         n_trips=n_trips,
         n_vehicles=n_vehicles,
         n_steps=n_steps,
-        n_censored=instants.shape[1] - n_steps,
+        n_censored=valid.shape[1] - n_steps,
         status=status,
     )
 
@@ -523,21 +662,40 @@ def departure_curve(
 MAX_REFERENCE_TRIES = 8
 
 
-def reference_date_candidates(segments: Segments, deadline: datetime) -> list[date]:
+def reference_date_candidates(
+    segments: Segments, deadline: datetime, *also: Segments
+) -> list[date]:
     """Recorded London dates to borrow when the deadline's own date has no trips
     near that time: the same weekday first (most recent week first), then any
     other recorded date (most recent first). The deadline's own date is excluded.
+    With `also` (other legs of a journey), only dates every leg recorded count.
     """
     own = to_epoch(deadline)
     own_date = datetime.fromtimestamp(own, LONDON).date()
-    recorded = sorted(
-        {datetime.fromtimestamp(int(e), LONDON).date() for e in segments.t_origin},
-        reverse=True,
-    )
-    others = [d for d in recorded if d != own_date]
+
+    def dates(seg: Segments) -> set[date]:
+        return {datetime.fromtimestamp(int(e), LONDON).date() for e in seg.t_origin}
+
+    common = dates(segments)
+    for other in also:
+        common &= dates(other)
+    others = [d for d in sorted(common, reverse=True) if d != own_date]
     same_weekday = [d for d in others if d.weekday() == own_date.weekday()]
     rest = [d for d in others if d.weekday() != own_date.weekday()]
     return (same_weekday + rest)[:MAX_REFERENCE_TRIES]
+
+
+def _with_reference(
+    compute: Callable[..., Curve], candidates: list[date]
+) -> tuple[Curve, date | None]:
+    curve = compute()
+    if np.isfinite(curve.p_on_time).any():
+        return curve, None
+    for ref in candidates:
+        borrowed = compute(reference_dates=[ref])
+        if np.isfinite(borrowed.p_on_time).any():
+            return borrowed, ref
+    return curve, None
 
 
 def departure_curve_with_reference(
@@ -550,14 +708,24 @@ def departure_curve_with_reference(
     does (see reference_date_candidates). Returns the curve and the borrowed date,
     or None when the own date was used or nothing had data.
     """
-    curve = departure_curve(segments, deadline, **kwargs)
-    if np.isfinite(curve.p_on_time).any():
-        return curve, None
-    for ref in reference_date_candidates(segments, deadline):
-        borrowed = departure_curve(segments, deadline, reference_dates=[ref], **kwargs)
-        if np.isfinite(borrowed.p_on_time).any():
-            return borrowed, ref
-    return curve, None
+    return _with_reference(
+        lambda **ref: departure_curve(segments, deadline, **kwargs, **ref),
+        reference_date_candidates(segments, deadline),
+    )
+
+
+def transfer_curve_with_reference(
+    first: Segments,
+    second: Segments,
+    deadline: datetime,
+    **kwargs,
+) -> tuple[Curve, date | None]:
+    """transfer_departure_curve with the same borrowed-date fallback, using only
+    dates on which both legs were recorded."""
+    return _with_reference(
+        lambda **ref: transfer_departure_curve(first, second, deadline, **kwargs, **ref),
+        reference_date_candidates(first, deadline, second),
+    )
 
 
 def p_on_time(

@@ -6,5 +6,5 @@
     "rootDir": ".",
     "rewriteRelativeImportExtensions": true
   },
-  "include": ["src/advisor.ts", "src/time.ts", "src/defaults.ts", "src/api.ts", "src/demoFlag.ts", "src/live.ts", "src/askAvailability.ts", "src/resultFocus.ts", "src/speech.ts", "src/routeMap.ts", "src/routePicker.ts", "tests/*.test.ts"]
+  "include": ["src/advisor.ts", "src/time.ts", "src/defaults.ts", "src/api.ts", "src/demoFlag.ts", "src/live.ts", "src/askAvailability.ts", "src/resultFocus.ts", "src/speech.ts", "src/routeMap.ts", "src/routePicker.ts", "src/autoUpdate.ts", "tests/*.test.ts"]
 }

@@ -11,6 +11,7 @@ import { recommend, delayedPoint, MIN_RECOMMENDATION_TRIPS } from "./advisor";
 import { demoCurve, demoRoutes } from "./demo";
 import { demoRequested } from "./demoFlag";
 import { nextResultFocus } from "./resultFocus";
+import { requestKey, shouldAutoRequest } from "./autoUpdate";
 import {
   destinationsFor,
   originsOf,
@@ -125,6 +126,8 @@ export default function App() {
   const askController = useRef<AbortController | null>(null);
   const adviceRef = useRef<HTMLElement | null>(null);
   const focusResultPending = useRef(false);
+  // Inputs of the last curve request sent (successful or not), for auto updates.
+  const lastRequestKey = useRef<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -158,6 +161,7 @@ export default function App() {
         if (example && !isCovered(initialRoute, defaultDeadline()))
           initialForm.deadline = inputDate(example, clockRef.current);
         setForm(initialForm);
+        lastRequestKey.current = requestKey(initialForm, clockRef.current);
         setCurveBusy(true);
         const body = requestFor(
           initialForm,
@@ -274,12 +278,19 @@ export default function App() {
   // short pause, so nobody has to press Update and an old curve is never left
   // standing as the answer to new conditions.
   useEffect(() => {
-    if (!dirty || !formValid || catalogBusy) return;
+    if (
+      !shouldAutoRequest({
+        valid: formValid,
+        catalogBusy,
+        key: requestKey(form, clock),
+        lastKey: lastRequestKey.current,
+      })
+    )
+      return;
     const timer = window.setTimeout(() => void runCurve(form, false), 500);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    dirty,
     formValid,
     catalogBusy,
     form.routeId,
@@ -290,6 +301,14 @@ export default function App() {
   ]);
 
   function editForm(patch: Partial<JourneyForm>) {
+    // An input changed: the answer in flight belongs to the old inputs, so cancel
+    // it now (it must never land as the answer to the new ones) and let the
+    // auto update send the right request once the inputs settle.
+    if (curveBusy) {
+      curveController.current?.abort();
+      setCurveBusy(false);
+      lastRequestKey.current = null;
+    }
     askController.current?.abort();
     setAskBusy(false);
     setInterpretation(null);
@@ -309,6 +328,7 @@ export default function App() {
       setAskMessage("");
       setInterpretation(null);
     }
+    lastRequestKey.current = requestKey(snapshot, clock);
     curveController.current?.abort();
     const controller = new AbortController();
     curveController.current = controller;

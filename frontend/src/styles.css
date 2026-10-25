@@ -470,6 +470,243 @@ main {
   color: var(--muted);
   font-size: var(--text-helper);
 }
+/* Ask: disabled reason, voice input */
+.ask-bar input:disabled {
+  cursor: not-allowed;
+}
+.ask-bar input:disabled::placeholder {
+  color: #9a94a0;
+  font-style: italic;
+}
+.ask-off-notice {
+  color: var(--warning-text);
+}
+.ask-off-notice svg {
+  vertical-align: -3px;
+  margin-right: 6px;
+}
+.ask-off-notice .text-button {
+  display: inline;
+  width: auto;
+  min-height: 24px;
+  padding: 0 4px;
+  font-size: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.mic-button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 1px solid #dfddd8;
+  border-radius: 50%;
+  background: white;
+  color: var(--purple);
+  padding: 0;
+}
+.mic-button:not(:disabled):not([aria-disabled="true"]):hover {
+  background: #f1ede6;
+}
+.mic-button[aria-disabled="true"] {
+  color: #b3aeb7;
+  cursor: not-allowed;
+}
+.mic-button.listening {
+  background: var(--action);
+  border-color: var(--action);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(189, 80, 45, 0.18);
+}
+.voice-status {
+  margin: -12px 0 18px;
+  font-size: var(--text-helper);
+  color: var(--muted);
+}
+.voice-status:empty {
+  display: none;
+}
+.voice-status.error {
+  color: #9c3b1d;
+  font-weight: 550;
+}
+/* Schematic journey map (our own drawing; not TfL artwork) */
+.map-card {
+  margin-top: var(--section-gap);
+}
+.map-card h2 {
+  margin: 0 0 4px;
+}
+.map-lede {
+  margin: 0 0 8px;
+  font-size: var(--text-body);
+  color: var(--ink);
+}
+.map-prelim {
+  color: var(--warning-text);
+}
+.route-map,
+.journey-timeline {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: inherit;
+}
+.route-map text,
+.journey-timeline text {
+  font-size: 14px;
+  fill: var(--ink);
+}
+.map-northern path {
+  fill: none;
+  stroke: #c9c6cc;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+.map-northern line {
+  stroke: #c9c6cc;
+  stroke-width: 3;
+}
+.route-map .map-northern text {
+  fill: #8f8a95;
+  font-size: 12.5px;
+}
+.route-map .map-northern-key {
+  font-style: italic;
+}
+.map-route {
+  fill: none;
+  stroke: #d8b8ab;
+  stroke-width: 7;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.map-route.active {
+  stroke: var(--orange);
+}
+.map-uncertainty {
+  fill: none;
+  stroke: rgba(223, 108, 67, 0.16);
+  stroke-width: 26;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.map-tick {
+  stroke: var(--orange);
+  stroke-width: 5;
+}
+.map-interchange {
+  fill: white;
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+.route-map .map-stop {
+  font-size: 13.5px;
+}
+.route-map .map-stop.terminal {
+  font-weight: 650;
+}
+.map-walk line {
+  stroke: #7f7a86;
+  stroke-width: 3;
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+}
+.map-walk.muted {
+  opacity: 0.5;
+}
+.map-endpoint {
+  fill: var(--ink);
+}
+.route-map .map-walk text {
+  fill: var(--muted);
+  font-size: 13px;
+}
+.map-wait-halo {
+  fill: none;
+  stroke: var(--orange);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+.route-map .map-callouts .strong {
+  font-weight: 650;
+}
+.route-map .map-callouts .accent {
+  fill: #a8471f;
+  font-weight: 600;
+}
+.route-map .map-callouts .small {
+  font-size: 12.5px;
+  fill: var(--muted);
+}
+.route-map .map-callouts .accent.small {
+  fill: #a8471f;
+}
+.journey-timeline {
+  margin-top: 6px;
+}
+.tl-walk {
+  fill: #e6e3ea;
+}
+.tl-ride {
+  fill: var(--orange);
+}
+.journey-timeline .tl-leg-label {
+  font-size: 13px;
+}
+.journey-timeline .tl-ride-label {
+  fill: white;
+  font-weight: 600;
+}
+.journey-timeline .tl-spread-label {
+  fill: #7a2f12;
+  font-weight: 650;
+}
+.journey-timeline .tl-row-label {
+  fill: var(--muted);
+  font-weight: 600;
+}
+.journey-timeline .tl-arrive,
+.journey-timeline .tl-spread-label,
+.journey-timeline .tl-deadline-label {
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.journey-timeline .tl-arrive {
+  font-weight: 650;
+}
+.tl-deadline {
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+.journey-timeline .tl-deadline-label {
+  font-weight: 650;
+}
+.journey-timeline .tl-axis,
+.journey-timeline .tl-note {
+  fill: var(--muted);
+  font-size: 13px;
+}
+.map-caption {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: var(--text-meta);
+  color: #716b78;
+  border-top: 1px solid #eeecef;
+  padding-top: 12px;
+  margin: 10px 0 4px;
+  line-height: 1.6;
+}
+.map-caption svg {
+  flex: none;
+  margin-top: 2px;
+}
+.map-card .data-table table + table {
+  margin-top: 12px;
+}
 .workspace {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);

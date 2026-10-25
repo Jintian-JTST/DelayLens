@@ -22,6 +22,8 @@ class Route(BaseModel):
     destination: Stop
     trips_observed: int
     hours_covered: list[datetime]
+    # Optional, additive: the configured stop sequence (origin first) when known.
+    stops: list[Stop] | None = None
 
 
 class DepartureCurveRequest(BaseModel):

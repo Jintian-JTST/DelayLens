@@ -84,6 +84,20 @@ def test_routes_lists_fixture_route():
     assert data[0]["route_id"] == ROUTE_ID
 
 
+def test_routes_include_configured_stops_when_present(configured_route):
+    stops = [
+        {"naptan_id": "TEST-O", "name": "Test origin"},
+        {"naptan_id": "TEST-M", "name": "Test middle"},
+        {"naptan_id": "TEST-D", "name": "Test destination"},
+    ]
+    main.ROUTES_PATH.write_text(json.dumps([{**configured_route, "stops": stops}]), encoding="utf-8")
+    assert client.get("/api/routes").json()[0]["stops"] == stops
+
+
+def test_routes_without_stops_report_null(configured_route):
+    assert client.get("/api/routes").json()[0]["stops"] is None
+
+
 def test_curve_shape_and_monotonic():
     r = client.post("/api/departure-curve", json=_curve_body())
     assert r.status_code == 200

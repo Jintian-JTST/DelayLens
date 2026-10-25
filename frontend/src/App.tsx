@@ -13,7 +13,9 @@ import { demoRequested } from "./demoFlag";
 import { nextResultFocus } from "./resultFocus";
 import { exampleDeadline, isCovered, pickInitialRoute } from "./defaults";
 import {
+  askOffFromHealth,
   askOffNotice,
+  askPlaceholder,
   nextAskOffReason,
   type AskOffReason,
 } from "./askAvailability";
@@ -30,6 +32,8 @@ import Icon from "./components/Icon";
 import LivePanel from "./components/LivePanel";
 import { isOfflineSnapshot } from "./live";
 import Methodology from "./components/Methodology";
+import RouteMap from "./components/RouteMap";
+import VoiceButton, { type VoiceTone } from "./components/VoiceButton";
 
 const ACCESS_CODE_KEY = "delaylens.askAccessCode";
 
@@ -102,6 +106,12 @@ export default function App() {
   });
   const [needsCode, setNeedsCode] = useState(false);
   const [askOff, setAskOff] = useState<AskOffReason>(null);
+  const [askChecking, setAskChecking] = useState(true);
+  const [healthRetry, setHealthRetry] = useState(0);
+  const [voiceStatus, setVoiceStatus] = useState<{
+    message: string;
+    tone: VoiceTone;
+  }>({ message: "", tone: "info" });
   const [interpretation, setInterpretation] = useState<Interpretation | null>(
     null,
   );
@@ -123,7 +133,6 @@ export default function App() {
     setAskMessage("");
     setInterpretation(null);
     setAskBusy(false);
-    setAskOff(null);
     setDelay(0);
     void (async () => {
       try {
@@ -180,14 +189,6 @@ export default function App() {
     };
   }, [mode, retry]);
 
-  // Snapshot mode is known from the first curve basis, before any question.
-  useEffect(() => {
-    if (result)
-      setAskOff((current) =>
-        nextAskOffReason(current, { basis: result.curve.data_quality.basis }),
-      );
-  }, [result]);
-
   // The old result unmounts on submit, which drops focus to the page top;
   // hand it to the new recommendation once for keyboard and screen-reader users.
   useEffect(() => {
@@ -196,7 +197,32 @@ export default function App() {
     if (next.focus) adviceRef.current?.focus();
   }, [result]);
 
+  // Ask works in snapshot mode too: GET /api/health says whether the server
+  // has a Gemini key. A failed check leaves Ask off ("unchecked").
+  useEffect(() => {
+    setAskOff(null);
+    if (mode !== "api") {
+      setAskChecking(false);
+      return;
+    }
+    const controller = new AbortController();
+    setAskChecking(true);
+    api
+      .health(controller.signal)
+      .then(
+        (health) => askOffFromHealth(health),
+        () => askOffFromHealth(null),
+      )
+      .then((reason) => {
+        if (controller.signal.aborted) return;
+        setAskOff(reason);
+        setAskChecking(false);
+      });
+    return () => controller.abort();
+  }, [mode, retry, healthRetry]);
+
   const demo = mode === "demo";
+  const askBlocked = !!askOff || askChecking;
   const fixture =
     demo ||
     routes.some((route) => route.line_id === "fixture") ||
@@ -263,10 +289,16 @@ export default function App() {
     }
   }
 
-  async function submitQuestion(event: FormEvent) {
+  function submitQuestion(event: FormEvent) {
     event.preventDefault();
-    if (!question.trim() || demo || askOff) return;
-    askController.current?.abort();
+    void askQuestion(question);
+  }
+
+  async function askQuestion(text: string) {
+    if (!text.trim() || demo || askBlocked || !routes.length) return;
+    // One question at a time: a second submit while one is in flight (e.g. the
+    // text Ask button pressed during voice input) must not POST again.
+    if (askController.current && !askController.current.signal.aborted) return;
     const controller = new AbortController();
     askController.current = controller;
     setAskBusy(true);
@@ -274,15 +306,14 @@ export default function App() {
     setInterpretation(null);
     try {
       const response = await api.ask(
-        question.trim(),
+        text.trim(),
         controller.signal,
         accessCode,
       );
       if (controller.signal.aborted) return;
       setNeedsCode(false);
-      setAskOff((current) =>
-        nextAskOffReason(current, { askStatus: response.status }),
-      );
+      setAskOff((current) => nextAskOffReason(current, response.status));
+      setVoiceStatus({ message: "", tone: "info" });
       // The Ask-off notice explains this case; skip the duplicate reply.
       if (response.status === "gemini_unavailable") return;
       setAskMessage(response.answer);
@@ -336,6 +367,7 @@ export default function App() {
       }
     } catch (error) {
       if (controller.signal.aborted) return;
+      setVoiceStatus({ message: "", tone: "info" });
       if (error instanceof ApiError && error.status === 401) {
         setNeedsCode(true);
         setAskMessage(
@@ -349,6 +381,7 @@ export default function App() {
         );
       }
     } finally {
+      if (askController.current === controller) askController.current = null;
       if (!controller.signal.aborted) setAskBusy(false);
     }
   }
@@ -496,14 +529,30 @@ export default function App() {
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
                   placeholder={
-                    askOff
-                      ? "Ask is unavailable"
-                      : "“I need to be at Oxford Circus around 2…”"
+                    askChecking
+                      ? "Checking whether Ask is available…"
+                      : askPlaceholder(askOff)
                   }
                   maxLength={500}
                   required
-                  disabled={demo || !routes.length || askBusy || !!askOff}
+                  disabled={demo || !routes.length || askBusy || askBlocked}
+                  aria-describedby={
+                    askOff && !demo ? "ask-off-notice" : undefined
+                  }
                 />
+                {!askBlocked && !demo && (
+                  <VoiceButton
+                    disabled={!routes.length || askBusy}
+                    onInterim={setQuestion}
+                    onFinal={(text) => {
+                      setQuestion(text);
+                      void askQuestion(text);
+                    }}
+                    onStatus={(message, tone) =>
+                      setVoiceStatus({ message, tone })
+                    }
+                  />
+                )}
                 {needsCode && (
                   <>
                     <label className="sr-only" htmlFor="ask-passcode">
@@ -536,7 +585,7 @@ export default function App() {
                     demo ||
                     !routes.length ||
                     askBusy ||
-                    !!askOff ||
+                    askBlocked ||
                     !question.trim()
                   }
                 >
@@ -545,9 +594,20 @@ export default function App() {
                 </button>
               </form>
             </section>
+            <p
+              className={`voice-status ${voiceStatus.tone === "error" ? "error" : ""}`}
+              aria-live="polite"
+            >
+              {askBlocked || demo ? "" : voiceStatus.message}
+            </p>
             {askOff && !demo && (
-              <p className="demo-ask-note" role="status">
-                {askOffNotice(askOff)}
+              <p
+                id="ask-off-notice"
+                className="demo-ask-note ask-off-notice"
+                role="status"
+              >
+                <Icon name="info" size={15} />
+                <span>{askOffNotice(askOff)}</span>
                 {askOff === "gemini" && (
                   <>
                     {" "}
@@ -557,6 +617,18 @@ export default function App() {
                       onClick={() => setAskOff(null)}
                     >
                       Try Ask again
+                    </button>
+                  </>
+                )}
+                {askOff === "unchecked" && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => setHealthRetry((n) => n + 1)}
+                    >
+                      Check again
                     </button>
                   </>
                 )}
@@ -1149,6 +1221,31 @@ export default function App() {
                     </section>
                   )}
                 </div>
+                {result && points.length > 0 && (
+                  <RouteMap
+                    route={result.route}
+                    point={selected}
+                    walkTo={result.request.walk_to_min}
+                    walkFrom={result.request.walk_from_min}
+                    deadline={result.request.deadline}
+                    clock={clock}
+                    chancePercent={
+                      selected
+                        ? Math.round(
+                            (conservative
+                              ? selected.ci[0]
+                              : selected.p_on_time) * 100,
+                          )
+                        : null
+                    }
+                    chanceLabel={
+                      conservative
+                        ? "lower-bound chance"
+                        : "estimated chance on time"
+                    }
+                    preliminary={lowData}
+                  />
+                )}
               </div>
             </div>
           </>

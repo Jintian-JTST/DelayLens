@@ -80,6 +80,21 @@ configuration, not hard-coded deployment assumptions.
   the frontend never invents natural-language travel predictions. Interpretation
   chips focus editable form fields. Partial parsing pre-fills usable fields;
   newer form edits cancel pending Ask requests.
+- Ask availability comes from `GET /api/health` (`ask_available`: the server has
+  a Gemini key). It works in offline snapshot mode too. Without a key, or when the
+  health check fails, the Ask box is visibly disabled with the reason; the page
+  never claims Gemini is connected. A `gemini_unavailable` reply turns Ask off
+  with a "Try Ask again" option.
+- Voice input: the microphone next to Ask uses the browser Web Speech API
+  (`SpeechRecognition`/`webkitSpeechRecognition`, `en-GB`). Interim words appear
+  in the box and the final transcript is sent to `/api/ask` automatically. In
+  Chrome, speech recognition sends audio to Google's speech service. Browsers
+  without the API (e.g. Firefox) show a disabled microphone with an explanation.
+- The schematic journey map (bus 29 demo route only) is our own SVG drawing in a
+  tube-map style, not TfL artwork. It highlights the walk, wait/board, ride and
+  walk for the selected departure and updates with risk and what-if changes. Our
+  data is origin-to-destination trips, so it never places a delay at a stop: the
+  p50 to p90 spread is shown for the wait and ride as a whole.
 - All API timestamps are absolute ISO 8601 instants. Display defaults to the
   browser's labelled time zone. Switch to UTC to specify either occurrence of
   the repeated UK hour unambiguously. Changing the display zone preserves the

@@ -11,6 +11,13 @@ export interface Route {
   destination: Stop;
   trips_observed: number;
   hours_covered: string[];
+  /** Configured stop sequence, origin first; absent on older backends. */
+  stops?: Stop[] | null;
+}
+export interface Health {
+  status: string;
+  /** A Gemini key is configured on the server; absent on older backends. */
+  ask_available?: boolean;
 }
 export interface CurveRequest {
   route_id: string;
@@ -119,6 +126,7 @@ async function request<T>(
 }
 
 export const api = {
+  health: (signal?: AbortSignal) => request<Health>("health", undefined, signal),
   routes: (signal?: AbortSignal) =>
     request<Route[]>("routes", undefined, signal),
   curve: (body: CurveRequest, signal?: AbortSignal) =>
